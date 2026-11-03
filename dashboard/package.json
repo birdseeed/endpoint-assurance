@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "scripts": {
+    "test:console": "node --test tests/js/*.test.js"
+  }
+}

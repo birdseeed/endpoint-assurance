@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% if success %}Enquiry sent{% else %}Enquiry not sent{% endif %} | Patched.im</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="icon" type="image/svg+xml" href="{{ static_url('favicon.svg') }}">
+<link rel="stylesheet" href="{{ static_url('css/public-brand.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/site.css') }}">
+</head>
+<body>
+<div class="pub-page">
+
+{% include "_site_nav.html" %}
+
+  <main class="scan-main">
+    <div class="scan-wrap" style="text-align:center">
+      {% if success %}
+      <div class="pub-tick">&#10003;</div>
+      <h1 class="pub-page-title">Thanks{% if name %}, {{ name }}{% endif %}</h1>
+      <p class="pub-lede">Your enquiry has gone to Patched. Andy replies directly, usually within a day or two.</p>
+      <p style="font-size:14px;color:var(--on-slate-mute);"><a href="https://patched.im/">Back to patched.im</a></p>
+      {% else %}
+      <div class="pub-tick" style="opacity:.6">&#x2717;</div>
+      <h1 class="pub-page-title">We could not send that</h1>
+      <p class="pub-lede">{{ reason }}</p>
+      <p style="font-size:14px;color:var(--on-slate-mute);">Email <a href="mailto:hello@patched.im">hello@patched.im</a> directly, or <a href="https://patched.im/">go back and try again</a>.</p>
+      {% endif %}
+    </div>
+  </main>
+
+{% include "_site_footer.html" %}
+
+</div>
+<script>document.querySelectorAll('[data-year]').forEach(function(e){e.textContent=new Date().getFullYear();});</script>
+</body>
+</html>

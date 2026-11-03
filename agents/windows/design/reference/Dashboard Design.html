@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Patched — Posture Dashboard Design Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --snow:#FFFFFF; --paper:#F5F5F3; --slate:#0F1115;
+    --signal:#F5530A; --signal-deep:#C93F04; --signal-wash:rgba(245,83,10,.08);
+    --rule:rgba(15,17,21,.12); --hair:rgba(15,17,21,.07);
+    --mute:rgba(15,17,21,.40); --graphite:rgba(15,17,21,.58); --slate-200:rgba(15,17,21,.16);
+    --d:'Archivo',sans-serif; --b:'Inter',sans-serif; --m:'JetBrains Mono',monospace;
+    --radius-cell:3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{background:#e9e9e6; color:var(--slate); font-family:var(--b); -webkit-font-smoothing:antialiased;}
+  .mono{font-family:var(--m); text-transform:uppercase; letter-spacing:.12em;}
+
+  .frame{max-width:1180px; margin:40px auto;}
+  .specbar{display:flex; justify-content:space-between; align-items:baseline; padding:0 6px 16px;}
+  .specbar .t{font-family:var(--d); font-weight:700; font-size:20px; letter-spacing:-.02em;}
+  .specbar .s{font-family:var(--m); font-size:10.5px; letter-spacing:.12em; color:var(--mute); text-transform:uppercase;}
+
+  /* app shell */
+  .app{display:flex; height:760px; background:var(--snow); border:1px solid var(--rule); border-radius:8px; overflow:hidden; box-shadow:0 30px 80px -40px rgba(15,17,21,.4);}
+
+  /* sidebar */
+  .side{width:218px; flex-shrink:0; border-right:1px solid var(--rule); padding:24px 20px; display:flex; flex-direction:column; background:var(--snow);}
+  .brand{display:flex; align-items:center; gap:11px; padding-left:2px;}
+  .brand .wm{font-family:var(--d); font-weight:600; font-size:19px; letter-spacing:-.03em;}
+  nav.menu{margin-top:34px; display:flex; flex-direction:column;}
+  .nav{position:relative; display:flex; align-items:center; gap:12px; padding:10px 10px; cursor:pointer; color:var(--mute); font-weight:500; font-size:13.5px;}
+  .nav .d{width:6px;height:6px;border-radius:var(--radius-cell); background:var(--rule);}
+  .nav.on{color:var(--slate); font-weight:600;}
+  .nav.on .d{background:var(--signal);}
+  .nav.on::before{content:""; position:absolute; left:-20px; top:8px; bottom:8px; width:2px; background:var(--signal);}
+  .side .user{margin-top:auto; padding-top:14px; border-top:1px solid var(--rule); display:flex; align-items:center; gap:10px;}
+  .side .user .av{width:28px;height:28px;border-radius:6px; background:var(--slate); display:flex; align-items:center; justify-content:center; color:#fff; font-family:var(--d); font-weight:700; font-size:12px;}
+  .side .user .nm{font-size:12px; font-weight:600;}
+  .side .user .co{font-family:var(--m); font-size:9.5px; color:var(--mute);}
+
+  /* main */
+  .main{flex:1; display:flex; flex-direction:column; min-width:0;}
+  .topbar{height:58px; flex-shrink:0; border-bottom:1px solid var(--rule); display:flex; align-items:center; justify-content:space-between; padding:0 28px;}
+  .topbar .crumb{font-family:var(--m); font-size:11px; color:var(--mute); letter-spacing:.1em; text-transform:uppercase;}
+  .topbar .right{display:flex; align-items:center; gap:14px;}
+  .pillbadge{font-family:var(--m); font-size:10px; letter-spacing:.08em; text-transform:uppercase; border:1px solid var(--rule); color:var(--graphite); padding:6px 11px; border-radius:3px;}
+  .btn-accent{background:var(--signal); color:#fff; font-size:12.5px; font-weight:600; padding:9px 15px; border-radius:4px; border:none; cursor:pointer;}
+
+  .scroll{flex:1; overflow:auto; padding:28px 28px 34px; display:flex; flex-direction:column; gap:24px;}
+
+  .pagehead{display:flex; justify-content:space-between; align-items:flex-end;}
+  .pagehead h1{font-family:var(--d); font-weight:700; font-size:38px; letter-spacing:-.03em; margin:0; line-height:1;}
+  .pagehead p{font-size:13.5px; color:var(--graphite); margin:8px 0 0;}
+  .pagehead .score{text-align:right;}
+  .pagehead .score .v{font-family:var(--d); font-weight:700; font-size:42px; letter-spacing:-.03em; color:var(--signal); line-height:1;}
+  .pagehead .score .k{font-family:var(--m); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--mute); margin-top:5px;}
+
+  .estatebox{border:1px solid var(--rule); border-radius:var(--radius-cell); padding:20px;}
+  .estatebox .cap{display:flex; justify-content:space-between; margin-bottom:14px; font-family:var(--m); font-size:10.5px; color:var(--mute); letter-spacing:.1em; text-transform:uppercase;}
+  .estatebox .legend{display:flex; gap:14px;}
+  .estatebox .legend span b{font-weight:400;}
+  .sw{display:inline-block; width:8px;height:8px;border-radius:1px; vertical-align:middle; margin-right:5px;}
+  .ebar{display:flex; height:30px; border-radius:3px; overflow:hidden; background:rgba(15,17,21,.07);}
+  .ebar .seg-closed{background:var(--slate);}
+  .ebar .seg-closing{background:var(--signal);}
+  .ebar .seg-open{background:transparent;}
+  .ebar .seg{position:relative;}
+  .ebarfoot{display:flex; justify-content:space-between; margin-top:11px; font-family:var(--m); font-size:11px; letter-spacing:.04em; color:var(--graphite); font-variant-numeric:tabular-nums;}
+  .ebarfoot .o{color:var(--signal);}
+
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+  .kpi{border:1px solid var(--rule); border-radius:var(--radius-cell); padding:16px 18px;}
+  .kpi .k{font-family:var(--m); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--mute);}
+  .kpi .v{font-family:var(--d); font-weight:700; font-size:30px; letter-spacing:-.02em; margin-top:10px; line-height:1; font-variant-numeric:tabular-nums;}
+  .kpi .v.o{color:var(--signal);}
+  .kpi .s{font-size:11.5px; color:var(--graphite); margin-top:7px;}
+
+  .tablebox{border:1px solid var(--rule); border-radius:var(--radius-cell);}
+  .trow{display:grid; grid-template-columns:1.4fr 1.1fr 1.2fr 0.9fr 0.5fr; align-items:center; padding:13px 18px;}
+  .thead{border-bottom:1px solid var(--rule); font-family:var(--m); font-size:10px; color:var(--mute); letter-spacing:.1em; text-transform:uppercase;}
+  .trow.row{border-top:1px solid var(--hair);}
+  .trow.row:first-of-type{border-top:none;}
+  .trow .id{font-family:var(--m); font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--slate);}
+  .trow .os, .trow .ow{font-size:13px; color:var(--graphite);}
+  .trow .arr{font-family:var(--m); font-size:12px; color:var(--mute); text-align:right;}
+  .chip{display:inline-flex; align-items:center; gap:7px; font-family:var(--m); font-size:10px; letter-spacing:.06em; text-transform:uppercase; padding:5px 9px; border-radius:3px; border:1px solid var(--rule); color:var(--graphite);}
+  .chip .dt{width:6px;height:6px;border-radius:50%;}
+  .chip.closed .dt{background:var(--slate);}
+  .chip.closing{border-color:rgba(245,83,10,.4); color:var(--signal-deep);}
+  .chip.closing .dt{background:var(--signal);}
+  .chip.open .dt{background:var(--slate-200);}
+
+  /* design notes */
+  .notes{margin-top:34px; background:var(--snow); border:1px solid var(--rule); border-radius:8px; padding:30px 34px;}
+  .notes h3{font-family:var(--d); font-weight:600; font-size:15px; margin:0 0 18px; display:flex; align-items:center; gap:10px;}
+  .notes h3 .b{font-family:var(--m); font-size:9px; letter-spacing:.12em; color:var(--signal-deep); border:1px solid var(--signal); border-radius:3px; padding:2px 7px; text-transform:uppercase;}
+  .notegrid{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--rule); border:1px solid var(--rule);}
+  .ncell{background:var(--snow); padding:18px;}
+  .ncell .k{font-family:var(--m); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--mute); margin-bottom:9px;}
+  .ncell .v{font-size:12.5px; color:var(--slate); line-height:1.5;}
+  .swatches{display:flex; gap:6px; margin-top:8px;}
+  .swx{width:22px;height:22px;border-radius:3px;border:1px solid var(--rule);}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="specbar">
+    <span class="t">Posture — internal dashboard</span>
+    <span class="s">Web surface · brand webfonts · MMXXVI</span>
+  </div>
+
+  <div class="app">
+    <!-- SIDEBAR -->
+    <div class="side">
+      <div class="brand"><span id="sideMark"></span><span class="wm">Patched</span></div>
+      <nav class="menu">
+        <div class="nav"><span class="d"></span>Overview</div>
+        <div class="nav on"><span class="d"></span>Posture</div>
+        <div class="nav"><span class="d"></span>Estate</div>
+        <div class="nav"><span class="d"></span>Identity</div>
+        <div class="nav"><span class="d"></span>Field reports</div>
+        <div class="nav"><span class="d"></span>Roster</div>
+      </nav>
+      <div class="user">
+        <div class="av">D</div>
+        <div><div class="nm">Dana Reyes</div><div class="co">Northwind</div></div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+      <div class="topbar">
+        <span class="crumb">Northwind Logistics / Posture</span>
+        <div class="right">
+          <span class="pillbadge">Q2 MMXXVI</span>
+          <button class="btn-accent">Export review →</button>
+        </div>
+      </div>
+      <div class="scroll">
+        <div class="pagehead">
+          <div>
+            <h1>Posture</h1>
+            <p>1,063 of 1,847 apps patched — the front is advancing.</p>
+          </div>
+          <div class="score">
+            <div class="v">82</div>
+            <div class="k">Posture score · +38</div>
+          </div>
+        </div>
+
+        <div class="estatebox">
+          <div class="cap">
+            <span>The estate</span>
+            <span class="legend">
+              <span><span class="sw" style="background:var(--slate)"></span>Patched</span>
+              <span><span class="sw" style="background:var(--signal)"></span>Patching</span>
+              <span><span class="sw" style="background:var(--slate-200)"></span>Unpatched</span>
+            </span>
+          </div>
+          <div class="ebar">
+            <div class="seg seg-closed" style="flex:57.6"></div>
+            <div class="seg seg-closing" style="flex:11.6"></div>
+            <div class="seg seg-open" style="flex:30.8"></div>
+          </div>
+          <div class="ebarfoot">
+            <span><span class="o">▸</span> Patching front · advancing</span>
+            <span>1,063 patched · 214 patching · 570 unpatched</span>
+          </div>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi"><div class="k">Patched</div><div class="v">1,063</div><div class="s">57.6% of estate</div></div>
+          <div class="kpi"><div class="k">Patching</div><div class="v o">214</div><div class="s">in flight</div></div>
+          <div class="kpi"><div class="k">Median patch</div><div class="v">11 days</div><div class="s">down from 26</div></div>
+          <div class="kpi"><div class="k">Critical unpatched</div><div class="v">38</div><div class="s">SLA · 72h</div></div>
+        </div>
+
+        <div class="tablebox">
+          <div class="trow thead"><span>Endpoint</span><span>OS</span><span>Owner</span><span>State</span><span></span></div>
+          <div class="trow row"><span class="id">NW-LAP-0421</span><span class="os">macOS 14.5</span><span class="ow">Dana Reyes</span><span><span class="chip closed"><span class="dt"></span>Patched</span></span><span class="arr">→</span></div>
+          <div class="trow row"><span class="id">NW-LAP-0422</span><span class="os">macOS 14.4</span><span class="ow">Priya Nair</span><span><span class="chip closing"><span class="dt"></span>Patching</span></span><span class="arr">→</span></div>
+          <div class="trow row"><span class="id">NW-WIN-1180</span><span class="os">Windows 11</span><span class="ow">Marcus Hale</span><span><span class="chip closed"><span class="dt"></span>Patched</span></span><span class="arr">→</span></div>
+          <div class="trow row"><span class="id">NW-WIN-1181</span><span class="os">Windows 10</span><span class="ow">Otis Bennett</span><span><span class="chip open"><span class="dt"></span>Unpatched</span></span><span class="arr">→</span></div>
+          <div class="trow row"><span class="id">NW-LAP-0507</span><span class="os">macOS 13.6</span><span class="ow">Lena Cho</span><span><span class="chip closed"><span class="dt"></span>Patched</span></span><span class="arr">→</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESIGN NOTES -->
+  <div class="notes">
+    <h3><span class="b">Guide</span> Posture dashboard — design rules</h3>
+    <div class="notegrid">
+      <div class="ncell">
+        <div class="k">Mark</div>
+        <div class="v">Ring mark + Archivo "Patched" lockup, top-left of the sidebar (mark 22px). Outline ring on snow.</div>
+      </div>
+      <div class="ncell">
+        <div class="k">Hero metric</div>
+        <div class="v">The posture bar <em>is</em> the hero — not a chart. Closed = slate, the closing front = one signal segment, open = faint. Score in Archivo, the one orange number.</div>
+      </div>
+      <div class="ncell">
+        <div class="k">Type &amp; data</div>
+        <div class="v">Archivo headings, Inter UI, JetBrains Mono for IDs, labels &amp; tabular data. Status chips in mono.</div>
+      </div>
+      <div class="ncell">
+        <div class="k">Surface</div>
+        <div class="v">Flat snow, 1px hairline rules, 3px radii, no shadow on cards. Active nav = 2px signal rail. One orange event per view.</div>
+        <div class="swatches">
+          <span class="swx" style="background:#FFFFFF"></span>
+          <span class="swx" style="background:#0F1115"></span>
+          <span class="swx" style="background:#F5530A"></span>
+          <span class="swx" style="background:rgba(15,17,21,.12)"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SLATE="#0F1115", SIGNAL="#F5530A";
+function ring(size, o={}){
+  const ink=o.mono||o.ink||SLATE, accent=o.mono||o.accent||SIGNAL;
+  const t=Math.max(1.3,size*0.072), r=size*0.26, seg=size*0.26, fs=size*0.52;
+  let s=`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block">`;
+  s+=`<rect x="${t/2}" y="${t/2}" width="${size-t}" height="${size-t}" rx="${r}" fill="none" stroke="${ink}" stroke-width="${t}"/>`;
+  s+=`<path d="M ${size-r-seg} ${t/2} H ${size-r} A ${r} ${r} 0 0 1 ${size-t/2} ${r}" fill="none" stroke="${accent}" stroke-width="${t}" stroke-linecap="round"/>`;
+  s+=`<text x="50%" y="${size*0.50+fs*0.355}" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="700" font-size="${fs}" letter-spacing="-0.04em" fill="${ink}">P</text>`;
+  return s+"</svg>";
+}
+const $=id=>document.getElementById(id);
+$("sideMark").innerHTML=ring(22);
+</script>
+</body>
+</html>

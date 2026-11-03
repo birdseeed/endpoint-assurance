@@ -1,0 +1,74 @@
+{
+  "_comment": "Tests max-length strings. The schema imposes no maxLength constraints; all values here are valid. Exercises string-handling in upsert paths and ensures no silent truncation.",
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.3.0",
+  "tenant_id": "99999999-9999-9999-9999-999999999999",
+  "collected_at": "2026-12-01T00:00:00Z",
+  "device": {
+    "serial": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ01",
+    "hw_uuid": "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
+    "hostname": "this-is-a-very-long-hostname-that-exceeds-typical-netbios-limits-and-tests-string-handling-in-the-database-layer-of-the-patched-platform",
+    "computer_name": "This Is A Very Long Computer Name That Exceeds Typical Display Name Limits And Tests String Handling In The Database Layer Of The Patched Platform Dashboard UI Components",
+    "hw_model": "MacBookProVeryLongModelStringThatMightAppearInSomeEdgeCaseHardwareConfiguration14,2",
+    "arch": "arm64",
+    "last_boot": "2026-12-01T00:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M2 Pro Max Ultra Extreme Edition With Extra Silicon And Extended Cache (Hypothetical Very Long Model Name For Testing Purposes)",
+    "cpu_cores": 128,
+    "ram_gb": 1024,
+    "disk_total_gb": 99999.9,
+    "disk_free_gb": 0.1
+  },
+  "os": {
+    "name": "macOS",
+    "version": "99.99.99",
+    "build": "ZZZZZZ999999999"
+  },
+  "compliance": {
+    "password_policy_raw": "minLength=32 maxFailedAttempts=3 requiresUppercase=true requiresLowercase=true requiresNumeric=true requiresSymbol=true passwordHistoryLength=24 maxMinutesUntilChangePassword=43800 minMinutesBetweenChanges=1440 maxGracePeriod=0 this-field-can-be-arbitrarily-long-as-the-schema-places-no-maxlength-constraint-on-it-and-the-database-uses-text-type-without-length-limit"
+  },
+  "security_tools": [
+    { "id": "crowdstrike-falcon", "name": "CrowdStrike Falcon Sensor Platform Complete Edition With Extended Threat Intelligence" }
+  ],
+  "system_extensions": [
+    {
+      "enabled": true,
+      "active": true,
+      "team_id": "ABCDEFGHIJ",
+      "bundle_id": "com.very.long.reverse.domain.bundle.identifier.that.exceeds.typical.bundle.id.lengths.for.testing.purposes",
+      "version": "999.999.999.99999.0",
+      "name": "A Very Long System Extension Name That Tests String Handling In The Extension Inventory Display",
+      "state": "activated_enabled"
+    }
+  ],
+  "background_items": [
+    {
+      "name": "A Very Long Background Item Application Name For Testing String Handling",
+      "identifier": "com.very.long.reverse.domain.background.item.identifier.for.testing.string.handling.purposes.in.the.platform",
+      "team_id": "ABCDEFGHIJ",
+      "url": "/Applications/AVeryLongApplicationNameThatExceedsTypicalFilesystemPathLengthLimitsForTestingPurposes.app",
+      "type": 1,
+      "disposition": 11
+    }
+  ],
+  "icloud": {
+    "signed_in": "Yes"
+  },
+  "apps": [
+    {
+      "name": "An Application With A Very Long Display Name That Exceeds Typical Application Name Length Limits In Both The Mac App Store And The MDM Inventory System",
+      "version": "100.200.300.400.500",
+      "bundle_id": "com.very.long.reverse.domain.bundle.identifier.that.exceeds.typical.bundle.id.lengths",
+      "path": "/Applications/AVeryLongApplicationDirectoryName/AVeryLongApplicationName.app/Contents/MacOS/AVeryLongExecutableName",
+      "size_mb": 99999.99,
+      "modified_at": "2026-12-01T00:00:00Z",
+      "architecture": "x86_64 arm64",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "team_id": "ABCDEFGHIJ1",
+      "signed_by": "Developer ID Application: A Very Long Company Name That Tests The Display And Storage Of Signer Information (ABCDEFGHIJ1)",
+      "notarized": true
+    }
+  ]
+}

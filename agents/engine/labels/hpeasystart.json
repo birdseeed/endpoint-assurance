@@ -1,0 +1,23 @@
+{
+  "label": "hpeasystart",
+  "name": "HP Easy Start",
+  "type": "zip",
+  "app_path": "/Applications/HP Easy Start.app",
+  "expected_team_id": "6HB5Y2QTA3",
+  "download": {
+    "method": "static",
+    "url": "https://ftp.hp.com/pub/softlib/software12/HP_Quick_Start/osx/HP_Easy_Start/HP_Easy_Start.app.zip"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

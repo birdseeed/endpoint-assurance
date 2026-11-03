@@ -1,0 +1,37 @@
+Certificate Expiry Digest | {{ tenant_name }}
+{{ period }}
+Severity band: {{ severity_label }}
+
+{% if band == "all_categorised" %}
+Summary:
+  Expired  : {{ counts.expired }}
+  Critical : {{ counts.critical }} (<=7 days)
+  Warning  : {{ counts.warning }} (<=30 days)
+  Healthy  : {{ counts.healthy }}
+  Unknown  : {{ counts.unknown | default(0) }}
+{% endif %}
+{% if certs %}
+Certificates
+------------
+{% for cert in certs %}
+{% if cert.days_until_expiry is none %}[UNKNOWN EXPIRY]{% elif cert.days_until_expiry < 0 %}[EXPIRED {{ cert.days_until_expiry | abs }}d ago]{% elif cert.days_until_expiry <= 7 %}[CRITICAL {{ cert.days_until_expiry }}d]{% elif cert.days_until_expiry <= 30 %}[WARNING {{ cert.days_until_expiry }}d]{% else %}[OK {{ cert.days_until_expiry }}d]{% endif %} {{ cert.subject_cn | default("(no CN)") }}
+  Issuer : {{ cert.issuer_cn | default("(unknown)") }}
+  Type   : {{ cert.type }}
+  Expires: {% if cert.days_until_expiry is none %}Unknown{% else %}{{ cert.not_after[:10] }}{% endif %}
+{% if cert.source == "uploaded" %}
+  Source : Uploaded certificate
+  Label  : {{ cert.label }}
+{% else %}
+  Source : Endpoint certificate
+  Device : {{ cert.device_id | default("Unknown", true) }}
+{% endif %}
+{% endfor %}
+{% else %}
+No certificates matched the configured severity band.
+{% endif %}
+
+View full certificate list:
+{{ cert_view_url }}
+
+Patched | {{ tenant_name }}
+To change digest settings, contact Patched.

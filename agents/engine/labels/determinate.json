@@ -1,0 +1,24 @@
+{
+  "label": "determinate",
+  "name": "Determinate",
+  "type": "pkg",
+  "app_path": "/Applications/Determinate.app",
+  "expected_team_id": "X3JQ4VPJZ6",
+  "download": {
+    "method": "resolved",
+    "strategy": "http-redirect",
+    "source": "https://install.determinate.systems/determinate-pkg/stable/Universal"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

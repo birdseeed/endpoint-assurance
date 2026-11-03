@@ -1,0 +1,28 @@
+{
+  "label": "webexmeetings",
+  "name": "Cisco Webex Meetings",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "root-unique-pkg"
+  },
+  "app_path": "/Applications/Cisco Webex Meetings.app",
+  "expected_team_id": "DE8Y96K9QP",
+  "download": {
+    "method": "static",
+    "url": "https://akamaicdn.webex.com/client/webexapp.dmg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [
+    "Webex"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

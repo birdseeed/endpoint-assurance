@@ -1,0 +1,23 @@
+{
+  "label": "namiral",
+  "name": "Namirial Sign",
+  "type": "dmg",
+  "app_path": "/Applications/Namirial Sign.app",
+  "expected_team_id": "V7PV54FASQ",
+  "download": {
+    "method": "static",
+    "url": "https://sign-be.namirial.app/download/macos"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

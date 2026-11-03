@@ -1,0 +1,10 @@
+# labels-allowlist.txt — GENERATED from the label manifest by
+# ci/validate-labels.py --emit-allowlist. Do not edit by hand.
+# Format: label <TAB> name <TAB> expected_team_id <TAB> app_path <TAB> download_method <TAB> mirror_url <TAB> pinned_sha256
+1password	1Password	2BUA8C4S2C	/Applications/1Password.app	static		
+firefox	Mozilla Firefox	43AQ936H96	/Applications/Firefox.app	static		
+ghostty	ghostty	24VZTF6M5V	/Applications/ghostty.app	resolved	https://mirror.patched.im/ghostty/1.3.1/ghostty-1.3.1.dmg	18cff2b0a6cee90eead9c7d3064e808a252a40baf214aa752c1ecb793b8f5f69
+googlechrome	Google Chrome	EQHXZ8M8AV	/Applications/Google Chrome.app	static		
+notion	Notion	LBQJ96FQ8D	/Applications/Notion.app	static		
+slack	Slack	BQR82RBBHL	/Applications/Slack.app	static		
+zoom	Zoom	BJ4HAAB9B3	/Applications/zoom.us.app	static		

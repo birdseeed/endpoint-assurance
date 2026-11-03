@@ -1,0 +1,211 @@
+name: sign-notarize
+
+# PAT-8: Sign and notarize the Patched Updater endpoint .pkg on every release tag.
+#
+# Signing requires Apple Developer ID certs — see docs/signing-pipeline.md for the
+# full secret list and how to produce each one. Until those secrets are configured
+# (PAT-7), the build and structural steps run to completion and notarization is
+# cleanly skipped with a logged notice rather than failing.
+#
+# Trigger: push of any endpoint-v* tag, or workflow_dispatch for manual runs.
+#
+# ⚠ GitHub-Non-Author-Review: signing is security-sensitive. This workflow imports private key material
+# into a temporary keychain and cleans it up unconditionally (the "Delete keychain"
+# step runs on always()). Review any changes here under GitHub-Non-Author-Review.
+
+on:
+  push:
+    tags:
+      - 'endpoint-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version string (e.g. 1.0.0) — defaults to "dev" for manual runs'
+        required: false
+        default: 'dev'
+
+jobs:
+  sign-notarize:
+    runs-on: macos-latest
+    permissions:
+      contents: write   # to attach the signed artifact to a GitHub Release
+
+    env:
+      # Checked at job start. Empty secret evaluates to 'false'; set secret to 'true'.
+      # Step conditions use env.* rather than secrets.* directly (GHA security pattern).
+      INSTALLER_CERT_SET: ${{ secrets.DEVELOPER_ID_INSTALLER_CERT_P12_B64 != '' }}
+      APP_CERT_SET:       ${{ secrets.DEVELOPER_ID_APPLICATION_CERT_P12_B64 != '' }}
+      NOTARY_KEY_SET:     ${{ secrets.APPLE_ASC_API_KEY_P8_B64 != '' }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # ── Version ──────────────────────────────────────────────────────────────
+      - name: Derive version and artifact name
+        id: ver
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#endpoint-v}"
+          else
+            VERSION="${{ inputs.version }}"
+          fi
+          echo "version=$VERSION"                               >> "$GITHUB_OUTPUT"
+          echo "pkg=patched-updater-${VERSION}.pkg"            >> "$GITHUB_OUTPUT"
+
+      # ── Bundle ───────────────────────────────────────────────────────────────
+      - name: Install Python dependencies
+        run: pip install jsonschema --quiet
+
+      - name: Build endpoint bundle
+        run: bash tools/build-bundle.sh
+
+      # ── Keychain (only when Installer cert secret is set) ────────────────────
+      - name: Create temporary keychain
+        if: env.INSTALLER_CERT_SET == 'true'
+        env:
+          KC_PW: ${{ secrets.SIGNING_KEYCHAIN_PASSWORD }}
+        run: |
+          KC="$RUNNER_TEMP/signing.keychain-db"
+          security create-keychain -p "$KC_PW" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$KC_PW" "$KC"
+          echo "KC_PATH=$KC" >> "$GITHUB_ENV"
+
+      - name: Import Developer ID Application cert
+        # Only when both certs are configured — app cert is meaningless without installer.
+        if: env.APP_CERT_SET == 'true' && env.INSTALLER_CERT_SET == 'true'
+        env:
+          CERT_B64: ${{ secrets.DEVELOPER_ID_APPLICATION_CERT_P12_B64 }}
+          CERT_PW:  ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
+          KC_PW:    ${{ secrets.SIGNING_KEYCHAIN_PASSWORD }}
+        run: |
+          CERT_FILE="$RUNNER_TEMP/app-cert.p12"
+          echo "$CERT_B64" | base64 --decode > "$CERT_FILE"
+          security import "$CERT_FILE" -P "$CERT_PW" -A -t cert -f pkcs12 -k "$KC_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KC_PW" "$KC_PATH"
+          security list-keychain -d user -s "$KC_PATH"
+
+      - name: Import Developer ID Installer cert
+        if: env.INSTALLER_CERT_SET == 'true'
+        env:
+          CERT_B64: ${{ secrets.DEVELOPER_ID_INSTALLER_CERT_P12_B64 }}
+          CERT_PW:  ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
+          KC_PW:    ${{ secrets.SIGNING_KEYCHAIN_PASSWORD }}
+        run: |
+          CERT_FILE="$RUNNER_TEMP/installer-cert.p12"
+          echo "$CERT_B64" | base64 --decode > "$CERT_FILE"
+          security import "$CERT_FILE" -P "$CERT_PW" -A -t cert -f pkcs12 -k "$KC_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KC_PW" "$KC_PATH"
+
+      # ── App bundle codesign (PatchedUpdater.app — PAT-51) ───────────────────
+      # This step is a no-op until the Swift menu bar app is built (PAT-51).
+      # Once built, it expects dist/PatchedUpdater.app to exist.
+      - name: Codesign PatchedUpdater.app
+        if: env.APP_CERT_SET == 'true'
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          APP="dist/PatchedUpdater.app"
+          if [[ ! -d "$APP" ]]; then
+            echo "::notice::PatchedUpdater.app not present — skipping app codesign (PAT-51 pending)."
+            exit 0
+          fi
+          # Sign by Team ID alone. The Team ID is a unique substring of the
+          # Developer ID cert's CN ("Developer ID Application: <Org> ($TEAM_ID)"),
+          # and the CI keychain holds exactly one Developer ID Application cert,
+          # so this matches unambiguously. Do NOT re-hardcode the org name here:
+          # it changes when the signing account moves (individual → org), and the
+          # whole point is that the account transfer is a pure APPLE_TEAM_ID swap.
+          codesign --deep --force --options runtime \
+            --sign "$TEAM_ID" \
+            --timestamp \
+            "$APP"
+          codesign --verify --strict --verbose=2 "$APP"
+          spctl --assess --type exec --verbose "$APP"
+
+      # ── .pkg build ───────────────────────────────────────────────────────────
+      - name: Build signed .pkg
+        if: env.INSTALLER_CERT_SET == 'true'
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # Sign by Team ID alone — matches the single Developer ID Installer
+          # cert in the CI keychain by its CN substring. Keeps the account
+          # transfer to a pure APPLE_TEAM_ID swap (see codesign step above).
+          bash tools/build-pkg.sh \
+            --version "${{ steps.ver.outputs.version }}" \
+            --pkg     "${{ steps.ver.outputs.pkg }}" \
+            --sign    "$TEAM_ID"
+
+      - name: Build unsigned .pkg
+        if: env.INSTALLER_CERT_SET != 'true'
+        run: |
+          echo "::notice::DEVELOPER_ID_INSTALLER_CERT_P12_B64 not configured — building unsigned .pkg (PAT-7 pending)."
+          bash tools/build-pkg.sh \
+            --version "${{ steps.ver.outputs.version }}" \
+            --pkg     "${{ steps.ver.outputs.pkg }}"
+
+      # ── Notarization ─────────────────────────────────────────────────────────
+      - name: Notarize .pkg
+        if: env.INSTALLER_CERT_SET == 'true' && env.NOTARY_KEY_SET == 'true'
+        env:
+          ASC_KEY_B64: ${{ secrets.APPLE_ASC_API_KEY_P8_B64 }}
+          ASC_KEY_ID:  ${{ secrets.APPLE_ASC_API_KEY_ID }}
+          ASC_ISSUER:  ${{ secrets.APPLE_ASC_API_KEY_ISSUER_ID }}
+        run: |
+          KEY_FILE="$RUNNER_TEMP/asc-api-key.p8"
+          echo "$ASC_KEY_B64" | base64 --decode > "$KEY_FILE"
+          xcrun notarytool submit "${{ steps.ver.outputs.pkg }}" \
+            --key     "$KEY_FILE" \
+            --key-id  "$ASC_KEY_ID" \
+            --issuer  "$ASC_ISSUER" \
+            --wait \
+            --output-format plist \
+            --verbose
+
+      - name: Skip notarization notice
+        if: env.INSTALLER_CERT_SET != 'true' || env.NOTARY_KEY_SET != 'true'
+        run: |
+          echo "::notice::Signing/notarization secrets not fully configured — live notarization skipped (PAT-7 pending). Build and structural steps completed successfully."
+
+      # ── Staple ───────────────────────────────────────────────────────────────
+      - name: Staple notarization ticket
+        if: env.INSTALLER_CERT_SET == 'true' && env.NOTARY_KEY_SET == 'true'
+        run: xcrun stapler staple "${{ steps.ver.outputs.pkg }}"
+
+      # ── Verification ─────────────────────────────────────────────────────────
+      - name: Verify signed .pkg
+        if: env.INSTALLER_CERT_SET == 'true'
+        run: |
+          PKG="${{ steps.ver.outputs.pkg }}"
+          echo "=== pkgutil --check-signature ==="
+          pkgutil --check-signature "$PKG"
+          echo ""
+          echo "=== spctl --assess --type install ==="
+          # Will fail until notarized and stapled; treat as advisory until PAT-7 lands.
+          spctl --assess --type install --verbose "$PKG" || \
+            echo "::notice::spctl assess not clean — expected on a signed-but-not-yet-notarized package."
+
+      - name: Verify unsigned .pkg structure
+        if: env.INSTALLER_CERT_SET != 'true'
+        run: |
+          PKG="${{ steps.ver.outputs.pkg }}"
+          echo "=== pkgutil --payload-files (structural check) ==="
+          pkgutil --payload-files "$PKG"
+
+      # ── Upload artifact ───────────────────────────────────────────────────────
+      - name: Upload .pkg artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: patched-updater-pkg-${{ steps.ver.outputs.version }}
+          path: ${{ steps.ver.outputs.pkg }}
+          retention-days: 30
+
+      # ── Cleanup (always, even on failure) ─────────────────────────────────────
+      - name: Delete temporary keychain and signing material
+        if: always()
+        run: |
+          [ -n "${KC_PATH:-}" ] && security delete-keychain "$KC_PATH" 2>/dev/null || true
+          # Remove the base64-decoded signing certs so no private-key material is
+          # left on the runner even if a later step failed before this point.
+          rm -f "$RUNNER_TEMP/app-cert.p12" "$RUNNER_TEMP/installer-cert.p12"

@@ -1,0 +1,13 @@
+[Unit]
+Description=Hourly patch/reboot/timer drift snapshot for patched-prod-01 (PAT-989)
+
+[Timer]
+OnCalendar=hourly
+# Jitter so this doesn't collide with other on-the-hour jobs the Jarvis
+# watchdog cluster runs.
+RandomizedDelaySec=300
+# If the box was off when the timer fired, run on next boot.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

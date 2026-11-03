@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% from "_macros.html" import approval_form_cell, notification_toggle_row %}
+{% block content %}
+<p class="crumb"><a href="/reports">Reports</a> / New software</p>
+<div class="page-head">
+  <div class="page-head__title">
+    <h1>New software</h1>
+  </div>
+  <p class="meta">Products first seen on your estate since your last review{% if since_basis == 'no_review' %} - no review has been recorded yet, so every product your estate has reported is listed{% endif %}.
+    {%- if truncated %} More was found than is shown below - the total still covers everything in the window.{% endif -%}
+  </p>
+</div>
+
+{% if approval_result %}
+<div class="notice approval-result{% if not approval_result.error %} notice-ok{% endif %}" id="approval-result" role="status" tabindex="-1" data-approval-result>
+  {% if approval_result.error %}
+  <p><strong>{{ approval_result.error }}</strong></p>
+  {% else %}
+  <p><strong>{% if approval_result.changed is not none %}{{ approval_result.changed }} of {{ approval_result.requested }} product{{ '' if approval_result.requested == 1 else 's' }} changed to {{ approval_result.state_label }}.{% else %}Marked {{ approval_result.requested }} product{{ '' if approval_result.requested == 1 else 's' }} {{ approval_result.state_label }}.{% endif %}</strong></p>
+  {% endif %}
+  <button type="button" class="approval-result__close" data-approval-result-close aria-label="Dismiss this notice" hidden>Dismiss</button>
+</div>
+{% endif %}
+
+{% if not coverage.complete %}
+<div class="notice">Coverage is partial. Some devices are stale, retired or have not yet reported an inventory, so this list may not cover the whole estate.</div>
+{% endif %}
+
+<div class="card group-card" id="notifications">
+  <div class="group-card__head card-edge-muted">
+    <h2>New software notifications</h2>
+    <span class="group-card__desc">Independent of the AI tooling first-seen setting on the AI Tooling page.</span>
+  </div>
+  {% if notification_saved %}<div class="notice notice-ok" role="status">Notification setting saved.</div>{% endif %}
+  {% if notifications_error %}
+  <p class="empty">Notification settings are temporarily unavailable. No setting is assumed.</p>
+  {% elif notifications %}
+  <div class="settings-list">
+    {{ notification_toggle_row('new_software_enabled', 'New software first seen', 'new_software', notifications, can_edit, csrf_token, '/reports/new-software') }}
+  </div>
+  {% endif %}
+</div>
+
+<div class="card card-table" aria-labelledby="new-software-table-title">
+  <h2 id="new-software-table-title">{{ total }} new product{{ '' if total == 1 else 's' }}</h2>
+  <a class="btn btn-small" href="{{ csv_url }}">Download CSV</a>
+  {% if products %}
+  <div class="table-scroll">
+  <table class="data-table table-stack" id="new-software-table">
+    <colgroup><col><col><col><col><col><col></colgroup>
+    <thead>
+      <tr>
+        <th>Product</th><th>First seen</th><th>Devices</th><th>First device</th><th>State</th><th>Approval</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in products %}
+      <tr>
+        <td data-label="Product"><strong>{{ p.name }}</strong>{% if p.identifier %}<span class="cell-subtle mono">{{ p.identifier }}</span>{% endif %}</td>
+        <td data-label="First seen" class="mono">{% if p.first_seen_at %}{{ p.first_seen_at | humandate_nowrap(true) }}{% else %}-{% endif %}</td>
+        <td data-label="Devices">{{ p.device_count }}</td>
+        <td data-label="First device">
+          {% if p.first_device and p.first_device.hostname %}
+          {{ p.first_device.hostname }}
+          <span class="cell-subtle">{{ 'still installed' if p.first_device.still_installed else 'since removed' }}</span>
+          {% else %}-{% endif %}
+        </td>
+        <td data-label="State"><span class="pill pill-muted">{{ p.approval_state_label or 'Unknown' }}</span></td>
+        {{ approval_form_cell(p, can_edit, csrf_token, return_to, data_label='Approval') }}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">No new software since your last review. Nothing new has been found.</p>
+  {% endif %}
+</div>
+
+{% if role_unavailable %}
+<p class="toolbar-hint">Approval controls are unavailable right now because your account role could not be checked.</p>
+{% elif not can_edit %}
+<p class="toolbar-hint">Your account can view these products. An administrator on your account can approve or unapprove them.</p>
+{% endif %}
+{% endblock %}

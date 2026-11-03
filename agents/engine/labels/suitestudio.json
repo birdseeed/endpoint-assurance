@@ -1,0 +1,23 @@
+{
+  "label": "suitestudio",
+  "name": "Suite",
+  "type": "pkg",
+  "app_path": "/Applications/Suite.app",
+  "expected_team_id": "58KZ58VMJ8",
+  "download": {
+    "method": "static",
+    "url": "https://saturn-installer-prd-124359286071-bucket.s3.amazonaws.com/suite-installer-osx-arm64.pkg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

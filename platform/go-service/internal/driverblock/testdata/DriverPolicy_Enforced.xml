@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SiPolicy xmlns="urn:schemas-microsoft-com:sipolicy" PolicyType="Base Policy">
+  <VersionEx>10.0.99999.1</VersionEx>
+  <PlatformID>{2E07F7E4-194C-4D20-B7C9-6F44A6C5A234}</PlatformID>
+  <Rules>
+    <Rule>
+      <Option>Enabled:Unsigned System Integrity Policy</Option>
+    </Rule>
+  </Rules>
+  <!--EKUS-->
+  <EKUs />
+  <!--File Rules-->
+  <FileRules>
+    <Allow ID="ID_ALLOW_ALL_1" FriendlyName="" FileName="*" />
+    <Allow ID="ID_ALLOW_ALL_2" FriendlyName="" FileName="*" />
+    <Deny ID="ID_DENY_SYNTH_PE_SHA1" FriendlyName="SynthPe\pe_synthetic Hash Sha1" Hash="49EB0BEA78D9946AC607558732D912E74BB8DADE" />
+    <Deny ID="ID_DENY_SYNTH_PE_SHA256" FriendlyName="SynthPe\pe_synthetic Hash Sha256" Hash="8812F0C849E0E9537B5060DD011057885EAF9047AF11842840B97D8444EFF841" />
+    <Deny ID="ID_DENY_SYNTH_PE_SHA1_PAGE" FriendlyName="SynthPe\pe_synthetic Hash Page Sha1" Hash="1111111111111111111111111111111111111111" />
+    <Deny ID="ID_DENY_SYNTH_PE_SHA256_PAGE" FriendlyName="SynthPe\pe_synthetic Hash Page Sha256" Hash="2222222222222222222222222222222222222222222222222222222222222222" />
+    <Deny ID="ID_DENY_OLDONLY_1" FriendlyName="OldOnly.sys\3333333333333333333333333333333333333333333333333333333333333333" Hash="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" />
+    <Deny ID="ID_DENY_PAGEONLY" FriendlyName="PageOnly.sys Hash Page Sha256" Hash="4444444444444444444444444444444444444444444444444444444444444444" />
+    <Deny ID="ID_DENY_NOTAHASH" FriendlyName="Broken.sys Hash Sha256" Hash="not-a-hash" />
+    <Deny ID="ID_DENY_BYNAME" FriendlyName="ByName.sys FileRule" FileName="gdrv.sys" MinimumFileVersion="0.0.0.0" MaximumFileVersion="65535.65535.65535.65535" />
+    <FileAttrib ID="ID_FILEATTRIB_SYNTH" FriendlyName="Synth.sys FileAttribute" FileName="synth.sys" MinimumFileVersion="0.0.0.0" MaximumFileVersion="1.0.0.0" />
+  </FileRules>
+  <!--Signers-->
+  <Signers>
+    <Signer ID="ID_SIGNER_SYNTH" Name="Synthetic Code Signing CA">
+      <CertRoot Type="TBS" Value="5555555555555555555555555555555555555555555555555555555555555555" />
+      <CertPublisher Value="Synthetic Publisher" />
+      <FileAttribRef RuleID="ID_FILEATTRIB_SYNTH" />
+    </Signer>
+  </Signers>
+  <!--Driver Signing Scenarios-->
+  <SigningScenarios>
+    <SigningScenario Value="131" ID="ID_SIGNINGSCENARIO_DENIED_VULN_MAL_SIGNERS" FriendlyName="Signers of known vulnerable or malicious drivers">
+      <ProductSigners>
+        <DeniedSigners>
+          <DeniedSigner SignerId="ID_SIGNER_SYNTH" />
+        </DeniedSigners>
+        <FileRulesRef>
+          <FileRuleRef RuleID="ID_ALLOW_ALL_1" />
+          <FileRuleRef RuleID="ID_DENY_SYNTH_PE_SHA1" />
+          <FileRuleRef RuleID="ID_DENY_SYNTH_PE_SHA256" />
+          <FileRuleRef RuleID="ID_DENY_SYNTH_PE_SHA1_PAGE" />
+          <FileRuleRef RuleID="ID_DENY_SYNTH_PE_SHA256_PAGE" />
+          <FileRuleRef RuleID="ID_DENY_OLDONLY_1" />
+          <FileRuleRef RuleID="ID_DENY_BYNAME" />
+        </FileRulesRef>
+      </ProductSigners>
+    </SigningScenario>
+    <SigningScenario Value="12" ID="ID_SIGNINGSCENARIO_WINDOWS" FriendlyName="Auto generated policy">
+      <ProductSigners>
+        <FileRulesRef>
+          <FileRuleRef RuleID="ID_ALLOW_ALL_2" />
+        </FileRulesRef>
+      </ProductSigners>
+    </SigningScenario>
+  </SigningScenarios>
+  <UpdatePolicySigners />
+  <CiSigners />
+  <HvciOptions>0</HvciOptions>
+  <PolicyID>{C017F6D6-2021-4204-AA68-F5065969B65E}</PolicyID>
+  <BasePolicyID>{C017F6D6-2021-4204-AA68-F5065969B65E}</BasePolicyID>
+  <Settings>
+    <Setting Provider="PolicyInfo" Key="Information" ValueName="Name">
+      <Value>
+        <String>Microsoft Windows Driver Policy</String>
+      </Value>
+    </Setting>
+    <Setting Provider="PolicyInfo" Key="Information" ValueName="Id">
+      <Value>
+        <String>10.0.99999.1</String>
+      </Value>
+    </Setting>
+  </Settings>
+</SiPolicy>

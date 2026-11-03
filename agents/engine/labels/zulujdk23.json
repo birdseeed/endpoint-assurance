@@ -1,0 +1,27 @@
+{
+  "label": "zulujdk23",
+  "name": "Zulu JDK 23",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "root-unique-pkg"
+  },
+  "app_path": "/Applications/Zulu JDK 23.app",
+  "expected_team_id": "TDTHCUPYFR",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://cdn.azul.com/zulu/bin/"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

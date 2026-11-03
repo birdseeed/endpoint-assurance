@@ -1,0 +1,13 @@
+[Unit]
+Description=Refresh Hetzner Cloud Firewall rules daily (picks up CF range and home-IP changes)
+
+[Timer]
+# Daily at 04:17 UTC. Off-peak, jittered so it doesn't collide with other
+# 04:00-on-the-hour jobs the Jarvis watchdog cluster runs.
+OnCalendar=*-*-* 04:17:00 UTC
+# If the box was off when the timer fired, run on next boot.
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,141 @@
+{
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.2.0",
+  "tenant_id": "44444444-4444-4444-4444-444444444444",
+  "collected_at": "2026-12-01T00:00:00Z",
+  "device": {
+    "serial": "C00000000001",
+    "hw_uuid": "11111111-AAAA-BBBB-CCCC-DDDDDDDDDDDD",
+    "hostname": "minimal-test-host",
+    "hw_model": "Mac14,2",
+    "arch": "arm64",
+    "last_boot": "2026-12-01T00:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M2",
+    "cpu_cores": 8,
+    "ram_gb": 8,
+    "disk_total_gb": 256.0,
+    "disk_free_gb": 128.0
+  },
+  "os": {
+    "name": "macOS",
+    "version": "15.0",
+    "build": "24A335"
+  },
+  "compliance": {},
+  "security_tools": [],
+  "system_extensions": [],
+  "background_items": [],
+  "icloud": {
+    "signed_in": "Unknown"
+  },
+  "apps": [
+    {
+      "name": "Safari",
+      "version": "18.4",
+      "bundle_id": "com.apple.Safari"
+    }
+  ],
+  "local_models": {
+    "collection_status": "complete",
+    "truncated": false,
+    "truncation_reason": null,
+    "runtimes": {
+      "ollama": {
+        "collection_status": "complete",
+        "installation_count": 1,
+        "store_count": 1,
+        "model_count": 2,
+        "total_bytes": 7300000000
+      },
+      "lm_studio": {
+        "collection_status": "not_present",
+        "installation_count": 0,
+        "store_count": 0,
+        "model_count": 0,
+        "total_bytes": 0
+      },
+      "llama_cpp": {
+        "collection_status": "not_present",
+        "installation_count": 0,
+        "store_count": 0,
+        "model_count": 0,
+        "total_bytes": 0
+      }
+    },
+    "totals": {
+      "model_count": 2,
+      "total_bytes": 7300000000
+    },
+    "users": [
+      {
+        "user": "alice",
+        "user_id": "501",
+        "collection_status": "complete",
+        "runtimes": {
+          "ollama": "complete",
+          "lm_studio": "not_present",
+          "llama_cpp": "not_present"
+        }
+      }
+    ],
+    "installations": [
+      {
+        "runtime": "ollama",
+        "scope": "system",
+        "user": null,
+        "user_id": null,
+        "kind": "app_bundle",
+        "path": "/Applications/Ollama.app",
+        "version": "0.12.3",
+        "version_source": "info_plist",
+        "identifier": "com.electron.ollama"
+      }
+    ],
+    "stores": [
+      {
+        "runtime": "ollama",
+        "scope": "user",
+        "user": "alice",
+        "user_id": "501",
+        "path": "/Users/alice/.ollama/models",
+        "collection_status": "complete",
+        "model_count": 2,
+        "total_bytes": 7300000000
+      }
+    ],
+    "issues": [],
+    "models": [
+      {
+        "runtime": "ollama",
+        "user": "alice",
+        "user_id": "501",
+        "store_path": "/Users/alice/.ollama/models",
+        "name": "llama3.2",
+        "tag": "latest",
+        "format": null,
+        "size_bytes": -1,
+        "file_count": null,
+        "size_source": "manifest",
+        "missing_blobs": 0,
+        "metadata_status": "read"
+      },
+      {
+        "runtime": "ollama",
+        "user": "alice",
+        "user_id": "501",
+        "store_path": "/Users/alice/.ollama/models",
+        "name": "qwen3",
+        "tag": "8b",
+        "format": null,
+        "size_bytes": 5225388164,
+        "file_count": null,
+        "size_source": "manifest",
+        "missing_blobs": 0,
+        "metadata_status": "read"
+      }
+    ]
+  }
+}

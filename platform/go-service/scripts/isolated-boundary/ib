@@ -1,0 +1,5 @@
+#!/bin/sh
+# One entry point: ./ib up | seed | run | down | all   (uses the portal checkout's venv for Python)
+HERE="$(cd "$(dirname "$0")" && pwd)"
+PY="${IB_PORTAL_PYTHON:-/Users/andybridson/Development/Patched.im/portal/.venv/bin/python}"
+exec "$PY" "$HERE/ib.py" "$@"

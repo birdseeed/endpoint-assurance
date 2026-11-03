@@ -1,0 +1,24 @@
+Stale Endpoint Digest | {{ tenant_name }}
+{{ period }}
+{{ stale_count }} endpoint(s) not reporting for >{{ threshold_days }} days
+
+The following endpoints in your estate haven't checked in for more than
+{{ threshold_days }} days. Devices that stop reporting may be switched off, off
+the network, or no longer running the agent. Their compliance and patch status
+can't be verified until they check in again.
+
+Stale endpoints
+---------------
+{% for d in devices %}
+[{{ d.days_stale }}d stale] {{ d.hostname }}
+  Last seen: {{ d.last_seen_date }}
+{% endfor %}
+
+Check whether these devices are still in use. If a device has been retired, let
+us know so it can be removed from your estate.
+
+View device health:
+{{ console_url }}
+
+Patched | {{ tenant_name }}
+Sent weekly when one or more endpoints stop reporting. To change these settings, contact Patched.

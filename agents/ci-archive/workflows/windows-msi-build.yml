@@ -1,0 +1,104 @@
+name: windows-msi-build
+
+# PAT-1777: compile the Windows agent MSI on every pull request (and push to
+# main) that could change it, using the SAME build steps a release uses.
+#
+# Why this exists. windows-build.yml builds and tests the .NET solution but
+# never runs WiX, and windows/installer/test_hidden_credentials.py checks
+# Product.wxs attributes rather than WiX validity. updater#600 changed
+# Product.wxs, passed every PR check and merged; the first
+# windows-agent-release build_only dispatch then failed WIX0012 (a
+# RegistrySearch property must be all upper case). An installer defect found
+# only at release time blocks the release that was meant to fix a device.
+#
+# How it cannot drift from the release. Both this workflow and
+# windows-agent-release.yml build through .github/actions/windows-agent-msi
+# (phase prepare, then phase package). The action is loaded from this run's
+# own checkout, so a pull request that edits it is built with its edited copy.
+#
+# Build only. No tag, no GitHub Release, no workflow artifact, no
+# api.patched.im upload and no signing: this workflow references no secret and
+# runs with a read-only token. It uses pull_request, never pull_request_target,
+# so a fork's pull request gets no secrets and no write token.
+#
+# The release workflow's supply-chain controls (artifact trust key gate, HMAC
+# and Ed25519 signing and their assertions) are not repeated here; they stay in
+# windows-agent-release.yml.
+
+on:
+  pull_request:
+    paths:
+      - 'windows/installer/**'
+      - 'windows/src/**'
+      - 'windows/*.props'
+      - 'windows/*.targets'
+      - 'windows/*.sln'
+      # Installed by the shared action's prepare phase.
+      - 'requirements.txt'
+      - '.github/actions/windows-agent-msi/**'
+      - 'ci/test_windows_msi_build_workflow.py'
+      - '.github/workflows/windows-msi-build.yml'
+      - '.github/workflows/windows-agent-release.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'windows/installer/**'
+      - 'windows/src/**'
+      - 'windows/*.props'
+      - 'windows/*.targets'
+      - 'windows/*.sln'
+      - 'requirements.txt'
+      - '.github/actions/windows-agent-msi/**'
+      - 'ci/test_windows_msi_build_workflow.py'
+      - '.github/workflows/windows-msi-build.yml'
+      - '.github/workflows/windows-agent-release.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  msi-build:
+    name: Build Windows agent MSI (${{ matrix.version }}, build only)
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['0.0.0', '0.15.1-beta.1']
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Exercise both stable/build-only and beta identities through the real
+      # resolver and both action phases (PAT-2350). A stable-only check missed
+      # the action rejecting the resolver's four-part beta version.
+      - name: Resolve build-only version
+        id: ver
+        shell: bash
+        env:
+          BUILD_VERSION: ${{ matrix.version }}
+        run: |
+          windows/installer/resolve-release-version.sh "$BUILD_VERSION" "$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo "Resolved build-only version $BUILD_VERSION for $GITHUB_SHA"
+
+      - name: Build headless Service
+        uses: ./.github/actions/windows-agent-msi
+        with:
+          phase: prepare
+          version: ${{ steps.ver.outputs.version }}
+          file_version: ${{ steps.ver.outputs.file_version }}
+          informational_version: ${{ steps.ver.outputs.informational_version }}
+          msi_product_version: ${{ steps.ver.outputs.msi_product_version }}
+
+      - name: Build and verify MSI
+        uses: ./.github/actions/windows-agent-msi
+        with:
+          phase: package
+          version: ${{ steps.ver.outputs.version }}
+          file_version: ${{ steps.ver.outputs.file_version }}
+          informational_version: ${{ steps.ver.outputs.informational_version }}
+          msi_product_version: ${{ steps.ver.outputs.msi_product_version }}
+
+      - name: Report build-only result in job summary
+        shell: bash
+        run: echo "**Build-only MSI check:** the MSI compiled and its File table passed. Nothing was signed, uploaded or published." >> "$GITHUB_STEP_SUMMARY"

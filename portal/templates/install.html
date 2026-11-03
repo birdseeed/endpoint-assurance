@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% from "_macros.html" import install_result_notice %}
+{% block page_class %} page--narrow{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Install the agent</h1>
+  <p class="meta">Deploy the Patched agent to this estate's devices via your MDM</p>
+  <p class="meta">See also: <a href="https://docs.patched.im/getting-started">the full deployment guide</a> (covers Intune/MDM and direct-install paths).</p>
+</div>
+
+<div class="notice">
+  The agent package itself is provided by Patched during onboarding and deployed
+  through your MDM (Intune, Jamf, or your RMM of choice) alongside the enrolment
+  credentials below. If you don't have the package yet, or need it resent, contact
+  <a href="mailto:{{ support_email }}">{{ support_email }}</a>.
+</div>
+
+{{ install_result_notice(install_result) }}
+
+<!-- ── Estate enrolment keys (PAT-2251) ──────────────────────────────── -->
+<div class="page-head" style="margin-top: 32px">
+  <h2>Estate enrolment keys</h2>
+  <p class="meta">A reusable key for rolling the agent out across many devices at once. Unlike
+    the one-off token below, one key can enrol up to its own device cap, until it expires or
+    you revoke it.</p>
+</div>
+
+{% if key_reveal %}
+<div class="notice notice-ok" id="key-reveal" role="status" tabindex="-1">
+  <p><strong>Estate enrolment key created: {{ key_reveal.label }}.</strong> Copy it now, it will not be shown again.</p>
+  <div class="code-block">
+    <div class="code-block__head">
+      <span class="field-label">Enrolment key</span>
+      <button type="button" class="code-block__copy" data-copy-target="key-reveal-value">Copy</button>
+    </div>
+    <pre><code id="key-reveal-value">{{ key_reveal.enrollment_key }}</code></pre>
+  </div>
+  <p class="meta">Up to {{ key_reveal.max_devices }} device{{ '' if key_reveal.max_devices == 1 else 's' }},
+    expires {{ key_reveal.expires_at | humandate(true) }} (UTC). Key hint
+    <span class="mono">{{ key_reveal.key_hint }}</span>, for matching a leaked key to this row.</p>
+</div>
+{% endif %}
+
+<div class="card group-card gap-card" id="estate-keys">
+  <div class="gap-card__body">
+    {% if enrolment_keys_unavailable %}
+    <p class="empty">Estate enrolment keys are temporarily unavailable. Try refreshing the page.</p>
+    {% elif not enrolment_keys %}
+    <p class="empty">No estate enrolment keys yet.</p>
+    {% else %}
+    <div class="table-scroll">
+    <table class="data-table table-stack">
+      <thead>
+        <tr>
+          <th>Label</th><th>Key</th><th>Devices</th><th>Expires</th><th>Status</th><th>Created</th>
+          {% if can_edit %}<th></th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in enrolment_keys %}
+        <tr>
+          <td>{{ row.label }}</td>
+          <td class="mono">{{ row.key_hint }}</td>
+          <td>{{ row.devices_enrolled }} / {{ row.max_devices }}</td>
+          <td><span class="nowrap">{{ row.expires_at | humandate }}</span></td>
+          <td><span class="pill {{ row.status_pill_class }}">{{ row.status_label }}</span></td>
+          <td class="meta"><span class="nowrap">{{ row.created_at | humandate }}</span>{% if row.created_by %} by {{ row.created_by }}{% endif %}</td>
+          {% if can_edit %}
+          <td class="cell-actions">
+            {% if row.status != 'revoked' %}
+            <details class="retire-panel">
+              <summary class="ask-link">Revoke &rarr;</summary>
+              <form method="post" action="/install/enrolment-keys/{{ row.key_id }}/revoke">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <p class="meta"><strong>Revoking stops new enrolments with this key immediately.</strong>
+                  Devices already enrolled keep their credentials.</p>
+                <button type="submit" class="btn btn-small">Revoke key</button>
+              </form>
+            </details>
+            {% endif %}
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% endif %}
+
+    {% if can_edit %}
+    <details class="retire-panel" style="margin-top: 16px">
+      <summary class="ask-link">Create an estate enrolment key &rarr;</summary>
+      <form method="post" action="/install/enrolment-keys" class="sched-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="sched-fields">
+          <label class="field">
+            <span class="field-label">Label</span>
+            <input type="text" name="label" maxlength="100" required placeholder="e.g. Intune rollout">
+          </label>
+          <label class="field">
+            <span class="field-label">Device cap</span>
+            <input type="number" name="max_devices" min="1" max="100000" required value="50">
+          </label>
+          <label class="field">
+            <span class="field-label">Expires in (days)</span>
+            <input type="number" name="expires_in_days" min="1" max="365" placeholder="30">
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary">Create key</button>
+      </form>
+    </details>
+    {% elif role_unavailable %}
+    <p class="toolbar-hint">Estate enrolment key controls are unavailable right now because your account role could not be checked.</p>
+    {% else %}
+    <p class="toolbar-hint">An administrator on your account manages estate enrolment keys - creating and revoking them.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <h2>Deploying with an estate enrolment key</h2>
+  <p>Use the key in place of <span class="mono">&lt;your-key&gt;</span> below. Never paste a real
+    key into a script that gets logged, committed or cached - these examples use a placeholder
+    on purpose.</p>
+  <h3>Windows</h3>
+  <p>Install command, for an Intune Win32 app or an RMM's install command field:</p>
+  <div class="code-block">
+    <pre><code>msiexec /qn /i PatchedAgent-&lt;version&gt;.msi ENROLLMENT_TOKEN="&lt;your-key&gt;"</code></pre>
+  </div>
+  <p class="meta">Intune Win32 app: package the MSI with the Win32 Content Prep Tool, add it as a
+    Win32 app, and set the command above as its install command. Use a file-based detection rule
+    (the installed agent binary) so Intune reports success correctly.</p>
+  <h3>macOS</h3>
+  <p>Before running the installer, write the key to <code class="mono">/etc/patched/enrollment-token</code>
+    as root - this is what the agent reads on enrolment:</p>
+  <div class="code-block">
+    <pre><code>sudo mkdir -p /etc/patched
+sudo chmod 700 /etc/patched
+sudo bash -c 'printf "%s" "&lt;your-key&gt;" > /etc/patched/enrollment-token'
+sudo chmod 600 /etc/patched/enrollment-token
+sudo chown root:wheel /etc/patched/enrollment-token</code></pre>
+  </div>
+  <p class="meta">Run this as a Jamf Pro policy script, an Intune shell script, or an RMM script
+    step, before the installer runs. Some MDMs prefer dropping a file instead of running a
+    script: place a file named <span class="mono">enrollment.json</span> containing
+    <span class="mono">{"enrollment_token": "&lt;your-key&gt;"}</span> next to the installer and
+    it is picked up automatically.</p>
+</div>
+
+<!-- ── One-off install token (existing single-use flow, PAT-453) ────────── -->
+<div class="page-head" style="margin-top: 32px">
+  <h2>One-off install token</h2>
+  <p class="meta">A single-use token for one device at a time, if you don't need a reusable
+    estate key.</p>
+</div>
+
+{% if token %}
+<div class="card">
+  <h2>Token created</h2>
+  <p>Single-use and expires {{ expires_at | humandate(true) }} (UTC). It is shown once here -
+    copy it, or the artifacts below, before leaving this page.</p>
+  <div class="code-block">
+    <div class="code-block__head">
+      <span class="field-label">Token</span>
+      <button type="button" class="code-block__copy" data-copy-target="enrolment-token">Copy</button>
+    </div>
+    <pre><code id="enrolment-token">{{ token }}</code></pre>
+  </div>
+  <form method="post" action="/install/enrolment">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit" class="btn btn-small">Generate a new one</button>
+  </form>
+  <p class="meta">Generation is rate-limited per estate; if you've just made one, wait a few minutes before making another.</p>
+</div>
+
+<div class="card">
+  <h2>macOS</h2>
+  <p>Upload as an Intune Platform Script (shell, run as root). It writes the token to
+    <code class="mono">/etc/patched/enrollment-token</code>, which the agent reads on first run.</p>
+  <div class="code-block">
+    <div class="code-block__head">
+      <span class="field-label">Enrolment script</span>
+      <button type="button" class="code-block__copy" data-copy-target="cmd-macos">Copy</button>
+    </div>
+    <pre><code id="cmd-macos">{{ macos_script }}</code></pre>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Windows</h2>
+  <p>Run via Intune Win32 app install command, or paste into your RMM's install command field.</p>
+  <div class="code-block">
+    <div class="code-block__head">
+      <span class="field-label">Install command</span>
+      <button type="button" class="code-block__copy" data-copy-target="cmd-windows">Copy</button>
+    </div>
+    <pre><code id="cmd-windows">{{ windows_cmd }}</code></pre>
+  </div>
+</div>
+
+{% else %}
+<div class="card">
+  <h2>Generate a one-off install token</h2>
+  <p>Deploying the agent to a single device needs a one-time install token, delivered via your
+    MDM alongside the agent package. Generate a token below, then use the macOS and
+    Windows artifacts it produces to roll it out.</p>
+  {% if can_edit %}
+  <form method="post" action="/install/enrolment">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit" class="btn btn-primary">Generate a one-off install token</button>
+  </form>
+  <p class="meta">Each token is single-use and expires after about 24 hours. Generation is
+    rate-limited, so you won't be able to mint a fresh one every few seconds.</p>
+  {% elif role_unavailable %}
+  <p class="toolbar-hint">Install token generation is unavailable right now because your account role could not be checked.</p>
+  {% else %}
+  <p class="toolbar-hint">Only an administrator on your account can generate install tokens. Ask an administrator to generate one for you.</p>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  document.querySelectorAll(".code-block__copy").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var target = document.getElementById(btn.getAttribute("data-copy-target"));
+      if (!target || !navigator.clipboard) return;
+      navigator.clipboard.writeText(target.textContent).then(function () {
+        var original = btn.textContent;
+        btn.textContent = "Copied";
+        btn.classList.add("is-copied");
+        setTimeout(function () {
+          btn.textContent = original;
+          btn.classList.remove("is-copied");
+        }, 1500);
+      });
+    });
+  });
+})();
+</script>
+{% endblock %}

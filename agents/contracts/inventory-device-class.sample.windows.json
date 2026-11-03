@@ -1,0 +1,15 @@
+{
+  "$comment": "PAT-1959 sample: the three device-class fields as the Windows agent sends them, shown in place at the top level of a POST /v1/inventory payload. The surrounding keys are abridged; only the three fields below are in scope for inventory-device-class.schema.json.",
+  "schema_version": 3,
+  "platform": "windows",
+  "agent": "patched-agent-win",
+  "agent_version": "0.15.0",
+  "device_class": "domain_controller",
+  "installation_type": "Server Core",
+  "os_caption": "Microsoft Windows Server 2022 Datacenter",
+  "os": {
+    "name": "Windows",
+    "version": "10.0.20348.2582",
+    "build": "20348"
+  }
+}

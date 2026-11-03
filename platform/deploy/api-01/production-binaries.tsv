@@ -1,0 +1,7 @@
+# command	deployment_class	deploy_symbol	reason
+patched-api	deploy-api-01	API	Long-running public and internal API service on patched-api-01.
+patched-extractor	deploy-api-01	EXTRACTOR	Long-running inventory extraction service on patched-api-01.
+patched-cve-sync	deploy-api-01	CVE_SYNC	Timer-owned production oneshot; deploy binary without starting the service.
+patched-import-scan	separate	-	Operator-invoked import utility; not installed as a production service.
+patched-kek-backfill	separate	-	One-time operator migration utility; not installed as a production service.
+patched-rules	separate	-	Rule authoring and validation utility; not installed as a production service.

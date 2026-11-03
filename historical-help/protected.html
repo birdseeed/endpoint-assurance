@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Configuration assurance - Patched documentation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="How Patched measures compliance: the CIS Level 1 benchmark, how a control is scored, what a passing result proves, and how it maps to NIST, ISO 27001 and Cyber Essentials." />
+  <link rel="icon" href="/favicon.ico?v=20260926-brand-v3" sizes="32x32" />
+  <link rel="icon" href="/favicon.svg?v=20260926-brand-v3" type="image/svg+xml" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=20260926-brand-v3" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=20260926-brand-v3" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20260926-brand-v3" />
+  <link rel="mask-icon" href="/mask-icon.svg?v=20260926-brand-v3" color="#2563eb" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=20260926-brand-v3" />
+</head>
+<body>
+
+  <!-- ── Nav ─────────────────────────────────────────────── -->
+  <header class="nav">
+    <div class="nav__inner">
+      <a class="nav__logo" href="https://patched.im" aria-label="Patched.im home"><img src="/patched-lockup-horizontal.svg" width="132" height="27" alt="Patched" /></a>
+      <nav class="nav__links" aria-label="Primary">
+        <a href="/getting-started.html">Getting started</a>
+        <a href="/faq.html">FAQ</a>
+        <div class="nav__dropdown">
+          <button type="button" class="nav__dropdown-trigger" aria-haspopup="true" aria-expanded="false">Guides <svg class="nav__dropdown-chevron" width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="nav__dropdown-menu" role="menu">
+            <a role="menuitem" href="/agent-updater.html">Endpoint agent</a>
+            <a role="menuitem" href="/protected.html">Configuration assurance</a>
+            <a role="menuitem" href="/read-your-report.html">Reports and evidence</a>
+            <a role="menuitem" href="/remediation-guide.html">Remediation guide</a>
+            <a role="menuitem" href="/using-your-portal.html">Customer portal</a>
+            <a role="menuitem" href="/security.html">Security</a>
+            <a role="menuitem" href="/privacy.html">Data and privacy</a>
+          </div>
+        </div>
+      </nav>
+      <div class="nav__spacer"></div>
+      <div class="nav__cta"><a class="btn btn--primary" href="https://patched.im/pricing">Become a design partner</a></div>
+      <button class="nav__burger" type="button" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+
+  <main class="doc">
+    <div class="wrap">
+      <div class="doc__inner">
+        <a class="doc__back" href="/">&larr; All guides</a>
+
+        <article class="article">
+          <header>
+            <p class="kicker">Guide 03</p>
+            <h1>Configuration assurance</h1>
+            <p class="lead">
+              When Patched reports a control result, that is a specific, checkable claim,
+              not a vibe. It means the device passed the controls in the CIS Level&nbsp;1
+              benchmark that apply to it. Here's exactly what's measured and what a passing
+              result proves.
+            </p>
+          </header>
+
+          <h2>The benchmark</h2>
+          <p>
+            We score against the <strong>CIS Level&nbsp;1 (L1) Benchmark</strong>: the
+            Center for Internet Security's consensus baseline of essential, low-friction
+            hardening settings, published separately for macOS and Windows. Level&nbsp;1 is
+            deliberately the "sensible defaults every organisation should meet" tier: it
+            raises the security floor without breaking the way people work. (Level&nbsp;2,
+            the stricter high-security tier, is out of scope for standard scoring.)
+          </p>
+          <p>
+            Concretely that's things like: disk encryption on, the firewall enabled,
+            Gatekeeper enforcing signed software, the screen locking on idle, automatic
+            security updates turned on, remote access surfaces switched off, and a sane
+            password policy and admin-account count.
+          </p>
+
+          <h2>How a control is scored</h2>
+          <p>
+            Each control compares one observed signal from the device against an expected
+            value. Every device control gets one of four results:
+          </p>
+          <table>
+            <tr><th>Result</th><th>Meaning</th></tr>
+            <tr><td><strong>Pass</strong></td><td>The observed value satisfies the control.</td></tr>
+            <tr><td><strong>Fail</strong></td><td>The observed value does not satisfy the control. This is what shows up as a finding to fix.</td></tr>
+            <tr><td><strong>Not applicable</strong></td><td>The control doesn't apply to this device (e.g. an Apple-silicon-only check on an Intel Mac).</td></tr>
+            <tr><td><strong>Unknown</strong></td><td>The signal couldn't be read. We treat unknowns conservatively per control, rather than silently assuming "pass".</td></tr>
+          </table>
+          <p>
+            That last point matters: a control we couldn't verify is never quietly counted
+            as compliant. Where the safe assumption is "not secure", we say so.
+          </p>
+
+          <h2>What's always checked vs. tunable</h2>
+          <p>
+            Not every organisation wants every control scored identically, so the rule set
+            is tiered:
+          </p>
+          <ul>
+            <li><strong>Always-on controls</strong>: the core CIS L1 essentials. These are
+              evaluated on every device, every time.</li>
+            <li><strong>Per-policy controls</strong>: the wider CIS L1 surface, collected
+              on every device but scored according to your organisation's policy, so you
+              can match the benchmark to how you actually operate. Exemptions are explicit
+              and recorded, not buried.</li>
+          </ul>
+          <p>
+            Rules are data, not buried code, so adding a control, adjusting your policy,
+            or recording an exemption is a configuration change with an audit trail, and it
+            can be re-applied to your existing history.
+          </p>
+
+          <h2>Compliance score, honestly</h2>
+          <p>
+            At the estate level your score is the average compliance across devices, not a
+            single global pass/fail ratio, so one badly-configured laptop in an estate of a
+            hundred reads as roughly one percent of impact, not as estate-wide failure. The
+            point is to show you where to act, in priority order, rather than to produce a
+            scary headline number.
+          </p>
+
+          <h2>How it maps to the frameworks auditors ask about</h2>
+          <p>
+            CIS L1 isn't an island. Each control we score carries mappings to the control
+            frameworks you're likely to be assessed against, so the same evidence answers
+            several questions at once:
+          </p>
+          <table>
+            <tr><th>Framework</th><th>What the mapping gives you</th></tr>
+            <tr><td>NIST SP 800-53 r5</td><td>The corresponding US federal control IDs.</td></tr>
+            <tr><td>ISO/IEC 27001:2022</td><td>The relevant Annex&nbsp;A control references.</td></tr>
+            <tr><td>UK Cyber Essentials</td><td>The Cyber Essentials category each control supports.</td></tr>
+          </table>
+          <p>
+            So a passing Patched report is evidence you can hand to an auditor, not just an
+            internal dashboard number.
+          </p>
+
+          <h2>What it does (and doesn't) prove</h2>
+          <p>
+            A compliant device means: at the time of its most recent
+            snapshot, it passed the CIS L1 controls that apply to it, scored against your
+            policy, with unknowns handled conservatively. It is a strong, evidenced
+            baseline of endpoint hygiene.
+          </p>
+          <p>
+            It is not a claim that the device is un-hackable, nor a substitute for the rest
+            of a security programme (identity, network, backup, training). CIS L1 is the
+            floor done properly and proven continuously. For most SME estates, that's
+            exactly the gap that was open.
+          </p>
+
+          <nav class="pager">
+            <a href="/agent-updater.html">&larr; Endpoint agent</a>
+            <a href="/faq.html">FAQ &rarr;</a>
+          </nav>
+        </article>
+      </div>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__logo"><img src="/patched-lockup-horizontal-white.svg" width="132" height="27" alt="Patched" /></div>
+      <nav class="footer__links" aria-label="Footer"><a href="https://patched.im/cyber-essentials">Cyber Essentials</a><a href="https://patched.im/msp">For MSPs</a><a href="https://patched.im/pricing">Pricing</a><a href="https://patched.im/security.html">Security</a><a href="https://patched.im/about.html">About</a><a href="https://patched.im/blog">Blog</a><a href="https://docs.patched.im">Docs</a><a href="https://status.patched.im">Status</a><a href="https://patched.im/privacy.html">Privacy</a><a href="https://patched.im/cookies.html">Cookies</a><a href="mailto:hello@patched.im">Contact</a></nav>
+      <div class="footer__meta">&copy; <span data-year>2026</span> Patched.im Ltd · Isle of Man · Company No. 139269C</div>
+    </div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

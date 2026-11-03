@@ -1,0 +1,11 @@
+/* PAT-2374: uses the pinned Brand v3 and shared operator shell tokens. */
+.tenant-source-note { color: var(--muted); font-size: var(--fs-xs); line-height: 1.6; margin: 12px 0; }
+.tenant-evidence-note { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 18px; background: var(--surface); }
+.tenant-evidence-note p { color: var(--muted); font-size: var(--fs-sm); line-height: 1.6; margin: 8px 0; }
+.cl-reporting { display: block; color: var(--muted); font-size: var(--fs-xs); margin-top: 4px; }
+.tenant-head-meta { flex-wrap: wrap; }
+
+#tab-account .acct-view-tabs button[aria-selected="true"] { color: var(--primary); border-bottom-color: var(--primary); }
+#tab-account .acct-view-tabs button:focus-visible { outline-color: var(--focus-ring); }
+#section-customers-list .tenant-tier-badge, #section-tenant-workspace .ctx-badge, #ctxnav-cust-tier.ctx-badge { color: var(--primary); border-color: var(--primary); }
+#section-customers-list .view-as-btn:disabled, .tenant-evidence-note button:disabled { opacity: 1; color: var(--muted); cursor: not-allowed; }

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="crumb"><a href="/reports">Reports</a> / <a href="{{ report_url }}">Unsupported software</a> / Devices</p>
+<div class="page-head">
+  <div class="page-head__title">
+    <h1>Unsupported software &middot; devices</h1>
+    <a class="btn btn-small" href="{{ pdf_url }}">Download PDF</a> <a class="btn btn-small" href="{{ csv_url }}">Download CSV</a>
+  </div>
+  <p class="meta">{% if product_key %}Devices with this product installed, one row per device.{% else %}Every unsupported-software installation, one row per device.{% endif %}</p>
+</div>
+
+{% if not basis.complete %}
+<div class="notice">Coverage is partial. {{ basis.statement }}</div>
+{% endif %}
+
+<div class="card card-table">
+  {% if rows %}
+  <div class="table-scroll">
+  <table class="data-table table-stack" id="sam-devices-table">
+    <colgroup>
+      <col><col><col><col class="col-secondary"><col><col><col class="col-secondary"><col>
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Device</th><th>Product</th><th>Version</th><th class="col-secondary">Platform</th><th>State</th>
+        <th>End of support</th><th class="col-secondary">Source</th><th>Last checked</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td data-label="Device">
+          {% if r.device_id %}<a class="cell-anywrap" href="/devices/{{ r.device_id }}">{{ r.hostname }}</a>{% else %}{{ r.hostname }}{% endif %}
+          {% if r.device_stale %}<span class="cell-subtle">Stale</span>{% endif %}
+        </td>
+        <td data-label="Product">{{ r.name }}{% if r.edition %} <span class="cell-subtle">{{ r.edition }}</span>{% endif %}</td>
+        <td class="mono" data-label="Version">{{ r.version or '-' }}</td>
+        <td class="col-secondary" data-label="Platform">{{ r.platform | platform_display if r.platform else '-' }}</td>
+        <td data-label="State"><span class="pill {{ r.pill_class }}">{{ r.state_label }}</span></td>
+        <td class="mono" data-label="End of support">{{ r.eol_date or '-' }}</td>
+        <td class="col-secondary" data-label="Source">{{ r.source_name or '-' }}</td>
+        <td class="mono cell-evidence" data-label="Last checked">
+          {%- if r.last_checked_at -%}
+          <span class="cell-evidence__main nowrap">{{ r.last_checked_at | humandate }}</span><span class="cell-subtle">{{ r.last_checked_at | humantime }} UTC</span>
+          {%- else -%}-{%- endif -%}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">No devices match this filter.</p>
+  {% endif %}
+</div>
+
+{% if total_pages > 1 %}
+<nav class="pager" aria-label="Device pages">
+  {% if page > 1 %}
+  <a class="btn btn-small" href="{{ prev_url }}">&larr; Previous</a>
+  {% else %}
+  <span class="btn btn-small btn-disabled" aria-disabled="true">&larr; Previous</span>
+  {% endif %}
+  <span class="pager-status">Page {{ page }} of {{ total_pages }}</span>
+  {% if page < total_pages %}
+  <a class="btn btn-small" href="{{ next_url }}">Next &rarr;</a>
+  {% else %}
+  <span class="btn btn-small btn-disabled" aria-disabled="true">Next &rarr;</span>
+  {% endif %}
+</nav>
+{% endif %}
+{% endblock %}

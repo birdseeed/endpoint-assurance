@@ -1,0 +1,24 @@
+{
+  "label": "todoist",
+  "name": "Todoist",
+  "type": "dmg",
+  "app_path": "/Applications/Todoist.app",
+  "expected_team_id": "S3DD273774",
+  "download": {
+    "method": "resolved",
+    "strategy": "http-redirect",
+    "source": "https://todoist.com/mac_app?arch=arm"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

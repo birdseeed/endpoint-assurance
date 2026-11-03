@@ -1,0 +1,23 @@
+{
+  "label": "daisydisk",
+  "name": "DaisyDisk",
+  "type": "zip",
+  "app_path": "/Applications/DaisyDisk.app",
+  "expected_team_id": "4CBU3JHV97",
+  "download": {
+    "method": "static",
+    "url": "https://daisydiskapp.com/downloads/DaisyDisk.zip"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true. PAT-1380 (2026-08-15): alerted under catalogue-scope verification (PAT-1296) on 'VirusTotal: 1 malicious, 0 suspicious (of 75 engines)' for sha256 45ef4639f2b4dc6a206f8129d62b54266eb42fde2abc67d7823aa92e0f064257. Everything else about this artifact checks out: expected_team_id 4CBU3JHV97 matched observed, notarization passed, https_ok, no redirect games. This agent's VT check (PAT-503) alerts unconditionally on any malicious>0, correctly -- one AV engine flagging a legitimately signed, notarized macOS binary is a common false-positive shape, but 'common false-positive shape' is not confirmation, and this session had no VT_API_KEY to see which engine flagged it or why. Left alerting: do not clear this without pulling the actual VT engine-level report (needs VT_API_KEY, a GitHub Actions secret this session does not have) to see whether the flag is a known-noisy heuristic engine or something worth taking seriously."
+  }
+}

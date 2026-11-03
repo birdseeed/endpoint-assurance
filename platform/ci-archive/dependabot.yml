@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /go-service
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [dependencies, security]
+
+  - package-ecosystem: gomod
+    directory: /api-vps-artefacts/alerting/selector-liveness
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [dependencies, security]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [dependencies, ci]

@@ -1,0 +1,11 @@
+{{ report_label }} | {{ tenant_name }}
+{{ period }}
+
+Your security report for {{ tenant_name }} ({{ period_start }} to {{ period_end }}) is ready.
+Report: {{ schedule_name }}
+
+Download: {{ download_url }}
+
+This link expires in 30 days and can only be used once.
+
+Patched | {{ tenant_name }}

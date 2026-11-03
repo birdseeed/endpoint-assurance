@@ -1,0 +1,8 @@
+{
+  "_note": "Trimmed representative fixture from the CISA KEV catalogue schema (cisa.gov known_exploited_vulnerabilities.json).",
+  "title": "CISA Catalog of Known Exploited Vulnerabilities",
+  "vulnerabilities": [
+    {"cveID": "CVE-2024-23296", "vendorProject": "Apple", "product": "Multiple Products"},
+    {"cveID": "CVE-2024-30080", "vendorProject": "Microsoft", "product": "Windows"}
+  ]
+}

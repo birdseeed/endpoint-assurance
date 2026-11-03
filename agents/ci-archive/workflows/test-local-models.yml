@@ -1,0 +1,34 @@
+name: test-local-models
+
+# PAT-2019: the local model runtime and model store collector's contract
+# tests, including the static guard that fails if the collector gains a
+# process launch, a network client or a loopback address, the privacy guard
+# that fails if it opens anything but a manifest or an Info.plist, the guard
+# that pins the block on the wire (PAT-2225) while still exercising the off
+# path, and its byte budget. The helper drift guard runs in
+# test-package-managers.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/local_models.sh'
+      - 'macos/lib/test-local-models.zsh'
+      - 'macos/patched-collect.sh'
+      - '.github/workflows/test-local-models.yml'
+  pull_request:
+    paths:
+      - 'macos/lib/local_models.sh'
+      - 'macos/lib/test-local-models.zsh'
+      - 'macos/patched-collect.sh'
+      - '.github/workflows/test-local-models.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh (the collector and its tests are zsh)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run local model collector tests
+        run: zsh macos/lib/test-local-models.zsh

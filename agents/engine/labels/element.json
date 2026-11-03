@@ -1,0 +1,23 @@
+{
+  "label": "element",
+  "name": "Element",
+  "type": "dmg",
+  "app_path": "/Applications/Element.app",
+  "expected_team_id": "7J4U792NQT",
+  "download": {
+    "method": "static",
+    "url": "https://packages.element.io/desktop/install/macos/Element.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

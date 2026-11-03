@@ -1,0 +1,24 @@
+{
+  "label": "iina",
+  "name": "IINA",
+  "type": "dmg",
+  "app_path": "/Applications/IINA.app",
+  "expected_team_id": "67CQ77V27R",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/iina/iina/releases/latest"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

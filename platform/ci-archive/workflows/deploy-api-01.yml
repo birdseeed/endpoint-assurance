@@ -1,0 +1,698 @@
+name: deploy-api-01
+
+# Builds patched-api + patched-extractor + patched-cve-sync in CI (the box has
+# no Go toolchain) and ships the resulting binaries + pending migrations + the
+# box-side deploy script to api-01 over Tailscale. Mirrors deploy-prod01-backup.yml's
+# connection pattern (same org secrets, same tailscale/github-action).
+#
+# MANUAL TRIGGER ONLY. This workflow does not run on push (PAT-1970). It used
+# to: `build-test` ran on every push to main while the sibling `deploy` job was
+# gated on workflow_dispatch, so a push built, tested, skipped the deploy and
+# still reported the whole run green under the name `deploy-api-01`. A workflow
+# named as a promise to deploy reported success when it deliberately did not
+# deploy, and on 2026-09-21 such a run was nearly recorded as a completed
+# production deploy of a security fix while the binary on the box was untouched.
+#
+# The Andy-gate is unchanged and is still the point: shipping to api-01 is a
+# deliberate `gh workflow run deploy-api-01.yml`. What changed is that the
+# eager push build now lives in its own honestly named workflow, `api-build`,
+# which this one calls via `workflow_call` so the build steps are defined once
+# and the artifact hand-off still happens inside a single run. The Actions run
+# list therefore reads:
+#   `api-build`     -> built and tested, nothing shipped
+#   `deploy-api-01` -> a deploy was actually asked for; run-name below says
+#                      whether it shipped or was an artifact-only build
+#
+# Required GitHub secrets (all set as org-level secrets):
+#   TS_OAUTH_CLIENT_ID  — Tailscale OAuth client ID (tag:ci, ephemeral)
+#   TS_OAUTH_SECRET     — Tailscale OAuth client secret
+#   DEPLOY_SSH_KEY       — ed25519 private key authorised as root on api-01
+#
+# One-time setup so this can reach api-01 (done in PAT-1072):
+#   1. DEPLOY_SSH_KEY public key added to /root/.ssh/authorized_keys on api-01.
+#   2. Tailscale tag:ci ACL extended to api-01 (tag:api) — see PAT-84.
+# No environment/required-reviewer setup is needed: this repo is private on a
+# Team plan, where that protection is unavailable, so the gate is the manual
+# workflow_dispatch trigger instead.
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy after building; set false to produce a 14-day artifact only
+        required: false
+        type: boolean
+        default: true
+
+# The run list shows this string, not the workflow name, so the one place
+# someone glances at says what the run did. Evaluated before any job starts,
+# from exactly the same two facts the `deploy` job's `if:` below tests, so the
+# title cannot disagree with what the run went on to do. `deploy=false`, or a
+# dispatch against a non-main ref, is the documented artifact-only path
+# (see AGENTS.md "Deployment model") and is labelled as such rather than
+# failed: a red run on a supported, deliberate path teaches people to wave
+# red runs through.
+run-name: >-
+  ${{ (inputs.deploy && github.ref == 'refs/heads/main')
+      && format('deploy-api-01: SHIPPING to patched-api-01 ({0})', github.ref_name)
+      || format('deploy-api-01: BUILD ONLY, nothing shipped ({0})', github.ref_name) }}
+
+permissions:
+  contents: read
+
+# One deploy at a time. A single staging dir and live binary paths are shared
+# across runs, so overlapping deploys could clobber each other's staged files,
+# apply migrations concurrently, or restore the wrong backup. Do NOT cancel an
+# in-flight deploy mid-restart — queue the next one behind it.
+concurrency:
+  group: deploy-api-01
+  cancel-in-progress: false
+
+jobs:
+  build-test:
+    # The single definition of the build lives in api-build.yml, which is also
+    # what a push to main runs on its own. Calling it here keeps one copy of the
+    # build steps and, because a called workflow runs inside this same run, the
+    # `api-01-binaries` artifact it uploads is downloadable by the `deploy` job
+    # below exactly as it was when both jobs were inlined in this file.
+    uses: ./.github/workflows/api-build.yml
+    permissions:
+      contents: read
+
+  deploy:
+    needs: build-test
+    runs-on: ubuntu-latest
+    # Production deploys are Andy-gated by requiring a MANUAL trigger: this job
+    # only runs on workflow_dispatch, never on push. A normal merge runs the
+    # separate `api-build` workflow (CI validation) and never reaches this file
+    # at all; shipping to the box is always a deliberate
+    # `gh workflow run deploy-api-01.yml` (or the Actions "Run workflow"
+    # button). The `github.event_name` test below is redundant today, since
+    # workflow_dispatch is this workflow's only trigger, and is kept
+    # deliberately: if a push trigger is ever re-added to the `on:` block above,
+    # its absence would silently turn every merge into a production deploy.
+    # This is the enforceable gate on a private repo on a Team plan, where
+    # `environment` required-reviewer protection is unavailable (Enterprise/public
+    # only). The `environment: production` below is kept for provenance + so the
+    # gate upgrades automatically to a review prompt if the org ever moves to a
+    # plan that enforces it; today it does not gate on its own.
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy && github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download built binaries
+        uses: actions/download-artifact@v8
+        with:
+          name: api-01-binaries
+          path: go-service/dist
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          # Ephemeral — node is removed from the tailnet when the job ends.
+
+      - name: Write deploy key
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -m 600 <(printf '%s' "$SSH_KEY") /tmp/api01_key
+
+      - name: Stage binaries, migrations and deploy script on api-01
+        run: |
+          chmod +x \
+            go-service/dist/patched-api \
+            go-service/dist/patched-extractor \
+            go-service/dist/patched-cve-sync
+          rsync -av --delete --chown=root:root \
+            -e "ssh -i /tmp/api01_key -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15" \
+            go-service/dist/patched-api \
+            go-service/dist/patched-extractor \
+            go-service/dist/patched-cve-sync \
+            go-service/dist/BINARY_MANIFEST \
+            go-service/dist/SCHEMA_FINGERPRINT_JOURNAL \
+            go-service/dist/schema_drift.py \
+            go-service/dist/schema_fingerprint.sql \
+            go-service/dist/schema-drift-check.sh \
+            go-service/dist/schema-drift-allowlist.txt \
+            go-service/migrations \
+            deploy/api-01/deploy.sh \
+            deploy/api-01/verify-systemd-hardening-floor.sh \
+            root@patched-api-01:/opt/patched-deploy-staging/
+        # NOTE: go-service/migrations has NO trailing slash deliberately —
+        # with multiple rsync sources, a trailing slash on a directory source
+        # copies its CONTENTS into the destination root, losing the
+        # migrations/ subdirectory deploy.sh expects. No trailing slash
+        # preserves it as /opt/patched-deploy-staging/migrations/*.sql.
+        # chmod restores the +x bit that upload/download-artifact drops.
+
+      - name: Stage Prometheus rules on api-01
+        # Deliberately a SEPARATE staging directory from the Go binaries.
+        # deploy.sh removes its own staging dir as its last action (see its
+        # "Cleaning up staging directory" block, guarded by
+        # PATCHED_DEPLOY_KEEP_STAGING), so anything sharing that directory is
+        # gone by the time the next step runs. PAT-1423 originally rode the
+        # same rsync and failed with exit 127 "No such file or directory" on
+        # its first real run — the script had been deleted by the deploy it
+        # was sequenced after. Ordering matters here and cannot be swapped:
+        # the rules reference metrics the new binaries emit, so binaries must
+        # land first (PAT-1423 item 4's reasoning), which means the rules
+        # payload has to outlive deploy.sh rather than run before it.
+        #
+        # PAT-2310: --chown=root:root, like every other rsync to the box.
+        # Without it `rsync -a` gives each file the runner's uid (1001),
+        # which has no passwd entry on api-01, so the next account created
+        # there could rewrite a script root runs and a rules file root
+        # installs. With -a, rsync resets owner and group even on a file
+        # whose content has not changed (itemized `.f....og...`, checked
+        # against rsync 3.2.7 on the box), so the files already sitting
+        # here as 1001 are fixed by the next run of this step.
+        run: |
+          rsync -av --delete --chown=root:root \
+            -e "ssh -i /tmp/api01_key -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15" \
+            deploy/api-01/deploy-prometheus-rules.sh \
+            api-vps-artefacts/alerting/prometheus-rules-patched.yml \
+            api-vps-artefacts/alerting/prometheus-rules-patched.test.yml \
+            root@patched-api-01:/opt/patched-prometheus-staging/
+
+      - name: Reclaim files earlier deploys left runner-owned on api-01
+        # PAT-2310: the rsyncs that ship patched-maintenance-facts.sh and
+        # 52-automatic-reboot.conf used to run without --chown, so both
+        # files landed owned by the runner's uid (1001), which has no passwd
+        # entry on api-01. Root runs the first hourly and apt reads the
+        # second as root. Their rsyncs now pass --chown=root:root, but both
+        # run near the end of this job, AFTER the ownership check below, so
+        # without this step the first deploy after PAT-2310 would fail that
+        # check on the very files it is about to fix. Exact paths only,
+        # never a glob, and `chown -h` so a symlink at either path cannot
+        # redirect it (a symlink is left alone for the check to fail on).
+        # Silent once both are root-owned; any change it makes is announced
+        # as a warning, because after PAT-2310 a non-root owner here means
+        # something outside this workflow wrote the file. The content is
+        # rewritten from this checkout by the same file's rsync later on.
+        run: |
+          ssh -i /tmp/api01_key \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            'set -u
+             rc=0
+             for f in /opt/patched-api/bin/patched-maintenance-facts.sh /etc/apt/apt.conf.d/52-automatic-reboot.conf; do
+               if [ -L "$f" ]; then
+                 echo "$f is a symlink; left alone. The ownership check below fails on it."
+               elif [ -f "$f" ]; then
+                 owner="$(stat -c %u:%g "$f")"
+                 if [ "$owner" != 0:0 ]; then
+                   if chown -h root:root "$f"; then
+                     echo "::warning::PAT-2310: $f was owned by $owner and is now root:root. Its rsync later in this run rewrites it from the checkout."
+                   else
+                     echo "::error::PAT-2310: could not chown $f (owned by $owner) to root:root."
+                     rc=1
+                   fi
+                 fi
+               fi
+             done
+             exit "$rc"'
+
+      - name: Check root-run paths on api-01 are root-owned before anything runs
+        # PAT-2310: fails the deploy, before root runs anything the steps
+        # above placed, if anything under /opt/patched-api,
+        # /opt/patched-extractor or the staging directories (or the
+        # reboot policy file) is a symlink, owned by a uid with no passwd
+        # entry, owned by anyone but root outside the script's narrow,
+        # commented exceptions, or writable by group or other. It pipes the
+        # RUNNER's copy of the check to the box (`bash -s < file`) rather
+        # than running a copy on the box, so nothing on the box can edit it
+        # into passing; there is no box copy. `env -i` with a fixed PATH,
+        # same as the deploy.sh step.
+        # ssh itself exits 255 on a connection failure, which the check
+        # never does, so that case is named as what it is.
+        run: |
+          rc=0
+          ssh -i /tmp/api01_key \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            '/usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --noprofile --norc -s -- check' \
+            < deploy/api-01/deploy-ownership-guard.sh || rc=$?
+          if [ "$rc" -eq 255 ]; then
+            echo "::error::Could not reach api-01 to run the ownership check. This is an SSH/network failure, NOT an ownership finding."
+          fi
+          exit "$rc"
+
+      - name: Preflight current systemd hardening floor on api-01
+        # Bootstrap-safe: score only relevant units already installed. Strict
+        # post-install gates below require every newly installed service.
+        run: |
+          ssh -i /tmp/api01_key \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            'set -eu
+             staging=/opt/patched-deploy-staging
+             [ ! -L "$staging" ] && [ -d "$staging" ]
+             [ "$(stat -c "%U:%G %a" "$staging")" = "root:root 755" ]
+             guard="$staging/verify-systemd-hardening-floor.sh"
+             [ -f "$guard" ] && [ ! -L "$guard" ] && [ -x "$guard" ]
+             [ "$(stat -c "%U:%G" "$guard")" = "root:root" ]
+             "$guard" patched-api.service patched-extractor.service patched-cve-sync.service
+             "$guard" --existing patched-maintenance-facts.service'
+
+      - name: Run deploy.sh on api-01
+        run: |
+          ssh -i /tmp/api01_key \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            '/usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --noprofile --norc /opt/patched-deploy-staging/deploy.sh'
+
+      - name: Preflight and activate serial CVE pipeline units
+        run: |
+          ssh -i /tmp/api01_key \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            'rm -rf /opt/patched-cve-systemd-staging && install -d -o root -g root -m 0700 /opt/patched-cve-systemd-staging'
+          rsync -av --chown=root:root \
+            -e "ssh -i /tmp/api01_key -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15" \
+            api-vps-artefacts/patched-cve-sync.service \
+            api-vps-artefacts/patched-cve-sync.timer \
+            api-vps-artefacts/patched-tooling-cve-refresh.service \
+            api-vps-artefacts/patched-tooling-cve-refresh.timer \
+            deploy/api-01/verify-systemd-hardening-floor.sh \
+            deploy/api-01/install-cve-sync-systemd-units.sh \
+            deploy/api-01/install-tooling-cve-refresh-units.sh \
+            root@patched-api-01:/opt/patched-cve-systemd-staging/
+          ssh -i /tmp/api01_key \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            "chmod 0755 /opt/patched-cve-systemd-staging/verify-systemd-hardening-floor.sh /opt/patched-cve-systemd-staging/install-cve-sync-systemd-units.sh && /usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --noprofile --norc /opt/patched-cve-systemd-staging/install-cve-sync-systemd-units.sh /opt/patched-cve-systemd-staging '$GITHUB_SHA'"
+
+      - name: Install prompt tooling vulnerability refresh timer
+        run: |
+          ssh -i /tmp/api01_key \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            'chmod 0755 /opt/patched-cve-systemd-staging/install-tooling-cve-refresh-units.sh && /usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --noprofile --norc /opt/patched-cve-systemd-staging/install-tooling-cve-refresh-units.sh /opt/patched-cve-systemd-staging'
+
+      - name: Verify serial CVE pipeline activation receipt
+        run: |
+          ssh -i /tmp/api01_key \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            "cat /opt/patched-api/CVE_PIPELINE_ACTIVATED && grep -qx 'DEPLOYED_SHA=$GITHUB_SHA' /opt/patched-api/CVE_PIPELINE_ACTIVATED && systemctl is-enabled patched-cve-sync.timer && systemctl is-active patched-cve-sync.timer && systemctl is-enabled patched-tooling-cve-refresh.timer && systemctl is-active patched-tooling-cve-refresh.timer && test \"\$(systemctl show patched-cve-sync.service --property=Result --value)\" = success"
+
+      - name: Deploy Prometheus alerting rules on api-01
+        # PAT-1423: prometheus-rules-patched.yml previously had no deploy path
+        # at all — it only reached the box when a person remembered to scp it
+        # (see api-vps-artefacts/alerting/README.md's superseded manual
+        # "Deploy" section). That gap let a merged fix (PAT-1377) sit
+        # unshipped for days. deploy-prometheus-rules.sh gates the install on
+        # `promtool check rules`, backs up the previous file, installs
+        # atomically, writes a sidecar hash for drift detection (PAT-1423
+        # item 3), and reloads Prometheus via `systemctl reload prometheus`
+        # (SIGHUP) — the HTTP /-/reload endpoint is disabled on this box
+        # (no --web.enable-lifecycle, returns 403) — verifying the reload
+        # actually took before this step is allowed to succeed.
+        run: |
+          ssh -i /tmp/api01_key \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            "/usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --noprofile --norc /opt/patched-prometheus-staging/deploy-prometheus-rules.sh '$GITHUB_SHA'"
+
+      - name: Deploy maintenance facts emitter on api-01
+        # PAT-1436: patched-maintenance-facts.sh (the hourly patch/reboot/
+        # timer-drift facts snapshot; patched-maintenance-facts.timer already
+        # runs it via `ExecStart=/opt/patched-api/bin/patched-maintenance-facts.sh`
+        # directly, not through `bash <path>`) previously had NO deploy path
+        # at all -- it only reached the box when a person copied it by hand.
+        # That gap is why, after a successful deploy run, portal-01's copy of
+        # this script (shipped whole via portal's own deploy/ directory)
+        # reports stray_config_backups and the prometheus_rules_* fields
+        # while api-01's never has: the script simply was never there to run.
+        #
+        # Deliberately NOT staged into /opt/patched-deploy-staging/ (the
+        # directory deploy.sh deletes as its last action -- see the
+        # "Stage Prometheus rules on api-01" step above, and PAT-1423's
+        # exit-127 failure the first time that bug shipped) and deliberately
+        # NOT given its own staging directory either. Unlike the Go binaries
+        # (need a coordinated restart + auto-rollback via deploy.sh) or the
+        # Prometheus rules (need a promtool gate, a backup, and a reload
+        # before going live), this is a single static, self-contained script
+        # with nothing to validate or activate -- the next hourly timer
+        # firing just runs whatever is on disk. rsync's own default
+        # behaviour (write to a hidden temp file in the destination
+        # directory, then rename into place) already makes a single-file
+        # transfer atomic, so a bespoke staging-plus-install step would add
+        # process without adding safety. Ships straight to its final path
+        # in one step, same target directory deploy.sh already trusts for
+        # patched-cve-sync ($CVE_SYNC_BIN is /opt/patched-api/bin/patched-
+        # cve-sync).
+        #
+        # PAT-2310: --chown=root:root. Root runs this file hourly, and
+        # without --chown `rsync -a` gave it the runner's uid (1001), which
+        # has no passwd entry on api-01: the next account created there
+        # could have rewritten a script root runs. The "Reclaim files
+        # earlier deploys left runner-owned" step above fixes the copy
+        # already on the box before the ownership check; this keeps it so.
+        run: |
+          rsync -av --chown=root:root \
+            -e "ssh -i /tmp/api01_key -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15" \
+            api-vps-artefacts/patched-maintenance-facts.sh \
+            root@patched-api-01:/opt/patched-api/bin/patched-maintenance-facts.sh
+        # No --delete (a single file, not a directory sync) and no chmod
+        # here. git tracks this file as mode 100755 (unlike deploy-
+        # prometheus-rules.sh, which is invoked as `bash <path>` and so does
+        # not need +x, this script is systemd ExecStart='d directly and
+        # genuinely needs it), and rsync -a preserves that bit from the
+        # checkout. This step ships straight from actions/checkout -- never
+        # through actions/upload-artifact + actions/download-artifact, which
+        # is the only thing in this workflow that drops permissions (see the
+        # "chmod restores the +x bit" note on the binaries rsync above).
+
+      - name: Verify the maintenance facts emitter landed executable
+        # Non-author review (PAT-1436): the rsync step above relies on git
+        # mode + `rsync -a` preserving +x, but this whole ticket exists
+        # because a file this box needed was silently not there -- shipping
+        # this one and only ASSUMING it arrived correctly repeats that same
+        # shape one level down. Verify it for real, over the same SSH
+        # channel, and fail loudly (not silently) if it did not land
+        # executable: patched-maintenance-facts.timer invokes this file via
+        # `ExecStart=` directly, so a lost +x bit means the timer fails on
+        # EVERY hourly firing from then on, with journald the only place
+        # that shows it -- while this deploy would otherwise report success.
+        run: |
+          # `test -x` alone cannot distinguish "not executable" from "ssh
+          # never got there" -- both are non-zero, and reporting an auth or
+          # network failure as a lost +x bit would send whoever hits it to
+          # debug the wrong thing entirely. Ask the box a question whose
+          # answer separates them, and branch on that.
+          REMOTE_STATE="$(ssh -i /tmp/api01_key \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            'if [ ! -e /opt/patched-api/bin/patched-maintenance-facts.sh ]; then echo missing;
+              elif [ -x /opt/patched-api/bin/patched-maintenance-facts.sh ]; then echo executable;
+              else echo not-executable; fi')" || {
+            # Note: ::error:: is a workflow command and is only parsed from
+            # STDOUT. Sending it to stderr puts it in the raw log but NOT in
+            # the Actions UI as an annotation -- which would make this step
+            # quieter than the thing it exists to shout about.
+            echo "::error::Could not reach api-01 to verify the maintenance facts emitter. This is an SSH/network failure, NOT a lost executable bit -- do not go looking for a chmod problem."
+            exit 1
+          }
+
+          case "$REMOTE_STATE" in
+            executable) echo "patched-maintenance-facts.sh is present and executable on api-01." ;;
+            not-executable)
+              echo "::error::patched-maintenance-facts.sh landed on api-01 but is NOT executable. patched-maintenance-facts.timer runs it via ExecStart=, not via 'bash <path>', so the hourly snapshot will fail on every firing until this is re-deployed with the +x bit intact."
+              exit 1 ;;
+            missing)
+              echo "::error::patched-maintenance-facts.sh is not on api-01 at all after the transfer step reported success. That is the exact failure PAT-1436 exists to prevent."
+              exit 1 ;;
+            *)
+              echo "::error::Could not determine the state of patched-maintenance-facts.sh on api-01 (got: '$REMOTE_STATE'). Treating an unreadable answer as a failure rather than assuming it landed."
+              exit 1 ;;
+          esac
+
+      - name: Deploy maintenance facts systemd units on api-01
+        # PAT-1439/PAT-1438: patched-maintenance-facts.service and .timer
+        # (hardened under PAT-1439 -- see docs/systemd-hardening-floor.md)
+        # previously had NO deploy path at all, same gap PAT-1436 closed for
+        # the emitter script itself above -- they only reached the box when
+        # a person copied them by hand, which is exactly how they went 12
+        # days over their own hardening ceiling unnoticed. Unlike the
+        # emitter script, a unit file is not live just because it lands on
+        # disk: systemd must be told to reread it (`daemon-reload`), and the
+        # TIMER must be re-enabled/restarted to pick up the new unit
+        # definition -- never `systemctl restart` the oneshot .service,
+        # which would just fire an off-schedule run instead of activating
+        # anything.
+        run: |
+          ssh -i /tmp/api01_key \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            'rm -rf /opt/patched-systemd-staging && install -d -o root -g root -m 0700 /opt/patched-systemd-staging'
+          rsync -av --chown=root:root \
+            -e "ssh -i /tmp/api01_key -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15" \
+            api-vps-artefacts/patched-maintenance-facts.service \
+            api-vps-artefacts/patched-maintenance-facts.timer \
+            deploy/api-01/verify-systemd-hardening-floor.sh \
+            deploy/api-01/install-maintenance-systemd-units.sh \
+            root@patched-api-01:/opt/patched-systemd-staging/
+          ssh -i /tmp/api01_key \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            'chmod 0755 /opt/patched-systemd-staging/verify-systemd-hardening-floor.sh /opt/patched-systemd-staging/install-maintenance-systemd-units.sh && /opt/patched-systemd-staging/install-maintenance-systemd-units.sh'
+
+      - name: Verify the maintenance facts timer is enabled and active
+        # Verify the result rather than trusting the copy (same discipline
+        # as "Verify the maintenance facts emitter landed executable"
+        # above): a daemon-reload or enable that silently no-op'd would
+        # leave the box running a stale in-memory unit definition while
+        # this deploy still reported success.
+        run: |
+          REMOTE_STATE="$(ssh -i /tmp/api01_key \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            'if [ "$(systemctl show patched-maintenance-facts.service -p LoadState --value)" != loaded ]; then
+              echo service-not-loaded;
+            elif ! systemctl is-enabled --quiet patched-maintenance-facts.timer; then
+              echo not-enabled;
+            elif ! systemctl is-active --quiet patched-maintenance-facts.timer; then
+              echo not-active;
+            else
+              echo enabled-and-active;
+            fi')" || {
+            echo "::error::Could not reach api-01 to verify patched-maintenance-facts.timer. This is an SSH/network failure, NOT a broken timer -- do not go looking for a systemd problem."
+            exit 1
+          }
+
+          case "$REMOTE_STATE" in
+            enabled-and-active) echo "patched-maintenance-facts.timer is enabled and active on api-01." ;;
+            service-not-loaded)
+              echo "::error::patched-maintenance-facts.service did not load on api-01 after daemon-reload. The timer is a separate unit and can be enabled and active while the .service it fires is unparseable, so a green timer here would have proved nothing -- the failure would only have surfaced in journald on the next hourly firing."
+              exit 1 ;;
+            not-enabled)
+              echo "::error::patched-maintenance-facts.timer is NOT enabled on api-01 after deploying its unit files. The hourly facts snapshot will not run until this is fixed."
+              exit 1 ;;
+            not-active)
+              echo "::error::patched-maintenance-facts.timer is enabled but NOT active on api-01 after deploying its unit files. The hourly facts snapshot will not fire until this is fixed."
+              exit 1 ;;
+            *)
+              echo "::error::Could not determine the state of patched-maintenance-facts.timer on api-01 (got: '$REMOTE_STATE'). Treating an unreadable answer as a failure rather than assuming it is fine."
+              exit 1 ;;
+          esac
+
+      - name: Deploy automatic reboot policy on api-01
+        # PAT-1438: 52-automatic-reboot.conf (PAT-990's Sunday 03:00 local,
+        # security-only unattended-upgrades reboot policy) previously had NO
+        # deploy path at all -- same gap PAT-1436 closed for the maintenance
+        # facts emitter above. It only reached the box when a person copied
+        # it by hand, and although the live file happened to still match
+        # this checkout byte-for-byte when this ticket was filed, that was
+        # luck, not a guarantee: nothing installed it, so the next edit to
+        # the reboot policy would merge to main and never reach api-01. The
+        # maintenance facts emitter's own automatic_reboot_configured field
+        # is computed by reading this exact file on the box, so silent drift
+        # here would make a real policy change invisible while the emitter
+        # kept reporting the stale value as current.
+        #
+        # Unlike the maintenance facts unit pair, this is a plain apt
+        # config drop-in, not a systemd unit -- unattended-upgrades reads
+        # every file under /etc/apt/apt.conf.d/ fresh on each run, so there
+        # is nothing to reload or restart here. Deliberately NO
+        # `daemon-reload` and NO service restart: doing either would be
+        # copying the unit-file activation sequence onto a file that isn't
+        # a unit and doesn't need one. Ships straight to its final path in
+        # one step, same rationale as the maintenance facts emitter above
+        # (a single static file with nothing to validate or activate, and
+        # rsync's default temp-file-then-rename behaviour already makes a
+        # single-file transfer atomic).
+        #
+        # PAT-2310: --chown=root:root. apt reads every file in
+        # /etc/apt/apt.conf.d as root, and a drop-in can set hooks such as
+        # DPkg::Pre-Invoke that apt runs as root. Without --chown this file
+        # landed owned by the runner's uid (1001), which has no passwd entry
+        # on api-01, so the next account created there could have given
+        # itself root through it.
+        run: |
+          rsync -av --chown=root:root \
+            -e "ssh -i /tmp/api01_key -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15" \
+            api-vps-artefacts/52-automatic-reboot.conf \
+            root@patched-api-01:/etc/apt/apt.conf.d/52-automatic-reboot.conf
+        # No --delete (a single file), no chmod (this is config, never
+        # executed -- unlike patched-maintenance-facts.sh, +x would be
+        # actively wrong here) and no daemon-reload/restart (see above).
+
+      - name: Verify the automatic reboot policy landed on api-01
+        # Non-author review discipline (same as the maintenance facts steps
+        # above): don't just trust the transfer, ask the box for real over
+        # the same SSH channel. Compares content, not just presence, so a
+        # partial transfer or an unrelated file at that path is caught too.
+        run: |
+          LOCAL_SHA="$(sha256sum api-vps-artefacts/52-automatic-reboot.conf | cut -d' ' -f1)"
+          REMOTE_STATE="$(ssh -i /tmp/api01_key \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            'if [ ! -e /etc/apt/apt.conf.d/52-automatic-reboot.conf ]; then echo missing;
+              else sha256sum /etc/apt/apt.conf.d/52-automatic-reboot.conf | cut -d" " -f1; fi')" || {
+            echo "::error::Could not reach api-01 to verify 52-automatic-reboot.conf. This is an SSH/network failure, NOT a bad deploy -- do not go looking for a config problem."
+            exit 1
+          }
+
+          case "$REMOTE_STATE" in
+            missing)
+              echo "::error::52-automatic-reboot.conf is not on api-01 at all after the transfer step reported success. That is the exact failure PAT-1438 exists to prevent."
+              exit 1 ;;
+            "$LOCAL_SHA")
+              echo "52-automatic-reboot.conf is present on api-01 and matches this checkout (sha256 $LOCAL_SHA)." ;;
+            *)
+              echo "::error::52-automatic-reboot.conf landed on api-01 but its sha256 ($REMOTE_STATE) does not match this checkout ($LOCAL_SHA). The reboot policy on the box does not match what CI just shipped."
+              exit 1 ;;
+          esac
+
+      - name: Re-check root-run paths on api-01 after every file is placed
+        # PAT-2310: the same check as "Check root-run paths on api-01 are
+        # root-owned before anything runs", run again now that every step
+        # above has placed its files. The first run could not see what the
+        # later steps shipped (the maintenance facts emitter, both systemd
+        # staging directories, the reboot policy), and the hourly timer runs
+        # the emitter as root from here on, so the result is verified rather
+        # than assumed from the rsync flags. Same runner copy, same pipe.
+        run: |
+          rc=0
+          ssh -i /tmp/api01_key \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            '/usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --noprofile --norc -s -- check' \
+            < deploy/api-01/deploy-ownership-guard.sh || rc=$?
+          if [ "$rc" -eq 255 ]; then
+            echo "::error::Could not reach api-01 to re-run the ownership check. This is an SSH/network failure, NOT an ownership finding."
+          fi
+          exit "$rc"
+
+      - name: Keep the patched service account without login or sudo on api-01
+        # PAT-2312: `patched` is the User= of every Patched service on api-01
+        # and nothing else. Provisioning also made it an admin login (a
+        # NOPASSWD sudo rule, the sudo group, /bin/bash, an SSH key), and
+        # ad-hoc sessions left files in its home. `apply` removes all of that
+        # idempotently and logs each change; `check` then fails the run if it
+        # can still log in or use sudo. Neither touches a service, so the
+        # units keep running as `patched` exactly as before.
+        #
+        # Placement. Every step above has finished and verified its part:
+        # the binaries are swapped and smoke-tested, the CVE and maintenance
+        # units are active, the rules and reboot policy are installed, and
+        # the ownership re-check has passed. Nothing above reads the account
+        # database, sudoers or /home/patched, so running this last cannot
+        # change their outcome, and a failure here turns the run red without
+        # leaving any of that half-done. Earlier, a sudoers or account
+        # problem would block or interrupt a binary deploy it has nothing to
+        # do with. The readback below is `if: always()`, so it still prints
+        # what the box is running if this step fails.
+        #
+        # Same channel as the ownership check: the RUNNER's copy piped in,
+        # `env -i` with a fixed PATH, no box copy. `check` runs even when
+        # `apply` failed, so the log shows everything still wrong. ssh exits
+        # 255 on a connection failure, which the script never does.
+        run: |
+          apply_rc=0
+          ssh -i /tmp/api01_key \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            '/usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --noprofile --norc -s -- apply' \
+            < deploy/api-01/service-account-hygiene.sh || apply_rc=$?
+          if [ "$apply_rc" -eq 255 ]; then
+            echo "::error::Could not reach api-01 to apply the service account hygiene. This is an SSH/network failure, NOT a finding."
+            exit "$apply_rc"
+          fi
+          check_rc=0
+          ssh -i /tmp/api01_key \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            '/usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --noprofile --norc -s -- check' \
+            < deploy/api-01/service-account-hygiene.sh || check_rc=$?
+          if [ "$check_rc" -eq 255 ]; then
+            echo "::error::Could not reach api-01 to check the service account hygiene. This is an SSH/network failure, NOT a finding."
+            exit "$check_rc"
+          fi
+          if [ "$apply_rc" -ne 0 ]; then
+            echo "::error::service-account-hygiene apply exited $apply_rc; its errors are above."
+            exit "$apply_rc"
+          fi
+          exit "$check_rc"
+
+      - name: Read back three-binary provenance and timer state
+        if: always()
+        run: |
+          ssh -i /tmp/api01_key \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            'cat /opt/patched-api/DEPLOYED_BINARIES && systemctl is-enabled patched-cve-sync.timer && systemctl is-active patched-cve-sync.timer && systemctl is-enabled patched-tooling-cve-refresh.timer && systemctl is-active patched-tooling-cve-refresh.timer && systemctl list-timers --all patched-cve-sync.timer patched-tooling-cve-refresh.timer --no-pager'
+
+  no-deploy-notice:
+    # The artifact-only path (deploy=false, or a dispatch against a non-main
+    # ref) leaves `deploy` skipped and the run green. That is correct — it is a
+    # supported, deliberately requested build — but "green run named
+    # deploy-api-01" is the exact shape that was nearly mistaken for a shipped
+    # security fix on 2026-09-21, so it has to say so out loud rather than
+    # leaving the reader to notice one skipped job. The run-name above already
+    # carries it in the run list; this puts it on the run's own page too, as a
+    # warning annotation and a summary block.
+    #
+    # The condition is the negation of the `deploy` job's `if:`, minus the
+    # event_name test that is constant here, so exactly one of the two runs.
+    needs: build-test
+    if: ${{ !(inputs.deploy && github.ref == 'refs/heads/main') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say plainly that nothing was shipped
+        # Both values go through env, never straight into the script body: a
+        # git ref may legally contain quotes, and interpolating one into a
+        # shell string is a script-injection hole in a workflow that holds the
+        # production deploy key.
+        env:
+          DEPLOY_REQUESTED: ${{ inputs.deploy }}
+          RUN_REF: ${{ github.ref }}
+        run: |
+          REASON='deploy=false was requested, so this run was an artifact-only build.'
+          if [ "$DEPLOY_REQUESTED" = "true" ]; then
+            REASON="deploy=true was requested, but this run is on ${RUN_REF}, not refs/heads/main. Non-main refs cannot deploy, so nothing was shipped."
+          fi
+          # ::warning:: is a workflow command parsed only from STDOUT, and it
+          # surfaces on the run page where a skipped job does not.
+          echo "::warning::NOTHING WAS DEPLOYED. $REASON patched-api-01 is running whatever it was running before this run started."
+          printf '## Nothing was deployed\n\n%s\n\n' "$REASON" >> "$GITHUB_STEP_SUMMARY"
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          `patched-api-01` is still running whatever it was running before this run started.
+          Do not record this run as a production deploy. Confirm what the box is actually
+          running by reading `/opt/patched-api/DEPLOYED_BINARIES` on the box.
+          SUMMARY

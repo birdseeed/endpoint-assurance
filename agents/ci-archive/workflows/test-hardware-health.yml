@@ -1,0 +1,22 @@
+name: test-hardware-health
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/hardware_health.sh'
+      - 'macos/lib/test-hardware-health.zsh'
+  pull_request:
+    paths:
+      - 'macos/lib/hardware_health.sh'
+      - 'macos/lib/test-hardware-health.zsh'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh (hardware health collector tests exercise a real zsh script)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run hardware health collector tests
+        run: zsh macos/lib/test-hardware-health.zsh

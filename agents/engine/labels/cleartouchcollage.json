@@ -1,0 +1,24 @@
+{
+  "label": "cleartouchcollage",
+  "name": "Collage",
+  "type": "pkginzip",
+  "app_path": "/Applications/Collage.app",
+  "expected_team_id": "P76M9BE8DQ",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.getcleartouch.com/download/collage-for-mac/"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

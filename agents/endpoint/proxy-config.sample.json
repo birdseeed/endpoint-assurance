@@ -1,0 +1,24 @@
+{
+  "_comment": "Sample proxy stanza for agent-config.json (PAT-278). The full agent-config is fetched and verified by patched-fetch-config.sh; this shows only the proxy sub-object.",
+
+  "proxy": {
+    "mode": "system",
+
+    "_comment_mode": "system = honour the STATIC proxy in macOS System Settings via `scutil --proxy` (default); manual = use host/port below; off = force direct (no proxy). NOTE: PAC (proxy auto-config) files are NOT evaluated — a configured PAC is logged as a warning and the agent falls back to static settings or direct. PAC sites should pin a static proxy via manual mode.",
+
+    "type": "http",
+    "_comment_type": "http or socks5. Prefer type \"https\" (TLS to the proxy) when using auth_ref, so the proxy credentials are not sent in cleartext; basic-auth over an \"http\" proxy is logged as a warning.",
+    "host": "proxy.corp.example.com",
+    "port": 8080,
+
+    "_comment_auth": "auth_ref is a macOS Keychain service name. The daemon reads username + password at runtime via `security find-generic-password` and passes them only via the proxy env vars (never argv/logs). Never put plaintext credentials in this file.",
+    "auth_ref": "patched-proxy-creds",
+
+    "_comment_no_proxy": "Hosts that bypass the proxy. curl matches exact hostnames, domain suffixes (\"corp.example.com\" covers *.corp.example.com), and individual IPs — it does NOT honour CIDR ranges, so a CIDR entry silently never matches and is logged as a warning. Use a domain suffix instead.",
+    "no_proxy": ["localhost", "127.0.0.1", "corp.example.com", ".internal"],
+
+    "_comment_bypass": "bypass_when_off_corp: the daemon always probes the proxy before use. When true and the proxy is unreachable (off-corp), it falls back to direct; when false it keeps using the proxy (egress fails closed) and logs a warning. Set probe_url to a URL reachable only on-corp; leave empty to TCP-probe host:port.",
+    "bypass_when_off_corp": false,
+    "probe_url": ""
+  }
+}

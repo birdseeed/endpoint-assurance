@@ -1,0 +1,146 @@
+{
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.2.0",
+  "tenant_id": "44444444-4444-4444-4444-444444444444",
+  "collected_at": "2026-12-01T00:00:00Z",
+  "device": {
+    "serial": "PAT2013MAC01",
+    "hw_uuid": "11111111-AAAA-BBBB-CCCC-DDDDDDDDDDDD",
+    "hostname": "pat2013-mac-complete",
+    "hw_model": "Mac14,2",
+    "arch": "arm64",
+    "last_boot": "2026-12-01T00:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M2",
+    "cpu_cores": 8,
+    "ram_gb": 8,
+    "disk_total_gb": 256.0,
+    "disk_free_gb": 128.0
+  },
+  "os": {
+    "name": "macOS",
+    "version": "15.0",
+    "build": "24A335"
+  },
+  "compliance": {},
+  "security_tools": [],
+  "system_extensions": [],
+  "background_items": [],
+  "icloud": {
+    "signed_in": "Unknown"
+  },
+  "apps": [
+    {
+      "name": "Safari",
+      "version": "18.4",
+      "bundle_id": "com.apple.Safari"
+    }
+  ],
+  "homebrew": {
+    "collection_status": "complete",
+    "truncated": false,
+    "truncation_reason": null,
+    "prefixes": [
+      {
+        "path": "/opt/homebrew",
+        "owner": "alice",
+        "owner_uid": 501,
+        "collection_status": "complete",
+        "formulae": 3,
+        "casks": 1,
+        "taps": 2
+      }
+    ],
+    "formulae": [
+      {
+        "prefix": "/opt/homebrew",
+        "name": "acme-cli",
+        "version": "2.1.0",
+        "receipt_status": "read",
+        "formula_file_status": "read",
+        "homepage": "https://github.com/acme/acme-cli",
+        "source_url": "https://github.com/acme/acme-cli/archive/refs/tags/v2.1.0.tar.gz",
+        "opt_linked": true,
+        "tap": "acme/tools",
+        "installed_on_request": true,
+        "installed_as_dependency": false,
+        "installed_at": "2027-03-01T10:00:00Z",
+        "runtime_dependencies": [
+          "openssl@3"
+        ]
+      },
+      {
+        "prefix": "/opt/homebrew",
+        "name": "ca-certificates",
+        "version": "2027-01-15",
+        "receipt_status": "read",
+        "formula_file_status": "read",
+        "homepage": "https://curl.se/docs/caextract.html",
+        "source_url": "https://curl.se/ca/cacert-2027-01-15.pem",
+        "opt_linked": true,
+        "tap": "homebrew/core",
+        "installed_on_request": false,
+        "installed_as_dependency": true,
+        "installed_at": "2027-02-01T09:00:00Z",
+        "runtime_dependencies": []
+      },
+      {
+        "prefix": "/opt/homebrew",
+        "name": "openssl@3",
+        "version": "3.5.2",
+        "receipt_status": "read",
+        "formula_file_status": "read",
+        "homepage": "https://openssl-library.org",
+        "source_url": "https://github.com/openssl/openssl/releases/download/openssl-3.5.2/openssl-3.5.2.tar.gz",
+        "opt_linked": true,
+        "tap": "homebrew/core",
+        "installed_on_request": true,
+        "installed_as_dependency": false,
+        "installed_at": "2027-02-01T09:00:05Z",
+        "runtime_dependencies": [
+          "ca-certificates"
+        ]
+      }
+    ],
+    "casks": [
+      {
+        "prefix": "/opt/homebrew",
+        "token": "firefox",
+        "version": "143.0",
+        "versions_on_disk": [
+          "143.0"
+        ],
+        "tap": "homebrew/cask",
+        "installed_on_request": true,
+        "installed_at": "2027-03-10T08:00:00Z",
+        "receipt_status": "read",
+        "apps": [
+          {
+            "name": "Firefox.app",
+            "path": null,
+            "exists": null
+          }
+        ]
+      }
+    ],
+    "taps": [
+      {
+        "prefix": "/opt/homebrew",
+        "name": "acme/tools",
+        "directory": "acme/homebrew-tools",
+        "remote_url": "https://github.com/acme/homebrew-tools",
+        "config_status": "read"
+      },
+      {
+        "prefix": "/opt/homebrew",
+        "name": "homebrew/core",
+        "directory": "homebrew/homebrew-core",
+        "remote_url": "https://github.com/Homebrew/homebrew-core",
+        "config_status": "read"
+      }
+    ],
+    "issues": []
+  }
+}

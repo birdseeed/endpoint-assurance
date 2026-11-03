@@ -1,0 +1,17 @@
+{
+  "observed_at": "2026-10-02T19:43:58.361630+00:00",
+  "isolated_local_source_reproduction": true,
+  "production_failure_or_installed_hash_claimed": false,
+  "source_sha256": "b436f8e916f6b2d196d4464ace40e0be63e22e1913bc4d3b1bf7e96974d66174",
+  "first_query_success": true,
+  "second_query_exit": 1,
+  "script_exit": 0,
+  "emitted_metrics": {
+    "patched_db_up": "1",
+    "patched_db_dead_letter_rows": "0",
+    "patched_db_extractor_lag_rows": "0",
+    "patched_api_health_up": "1",
+    "patched_api_ready_up": "1"
+  },
+  "temporary_fixtures_removed": true
+}

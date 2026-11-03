@@ -1,0 +1,29 @@
+{
+  "label": "fontagent10",
+  "name": "FontAgent",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "root-unique-pkg"
+  },
+  "app_path": "/Applications/FontAgent.app",
+  "expected_team_id": "936VDEB3YQ",
+  "download": {
+    "method": "static",
+    "url": "https://store.insidersoftware.com/_downloads/FontAgent10.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "FontAgent",
+    "FontAgent Activator"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

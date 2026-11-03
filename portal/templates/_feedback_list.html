@@ -1,0 +1,21 @@
+<section class="card card-table feedback-requests" aria-label="{{ 'Support requests' if nav == 'support' else 'Feedback requests' }}">
+  <div class="table-scroll">
+    <table class="data-table table-stack">
+      <thead>
+        <tr><th>Reference</th><th>Type</th><th>Title</th><th>Status</th><th>Received</th><th>Last update</th></tr>
+      </thead>
+      <tbody>
+      {% for item in feedback_rows %}
+        <tr>
+          <td data-label="Reference" class="mono">{{ item.reference }}</td>
+          <td data-label="Type">{{ item.type }}</td>
+          <td data-label="Title">{{ item.title }}</td>
+          <td data-label="Status"><span class="pill pill-info">{{ item.status }}</span></td>
+          <td data-label="Received" class="mono">{{ item.created_at | humandate_nowrap(true) }}</td>
+          <td data-label="Last update" class="mono">{{ item.last_status_change | humandate_nowrap(true) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>

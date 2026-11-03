@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Patched customer portal &mdash; Customer portal, one finding</title>
+<!-- Design reference for the customer portal (PAT-1602). Static mockup, invented data.
+     Ruling 12 Sept 2026: the customer detail screens are designed for the customer, not
+     the staff console tables with staff-only columns hidden. The customer is asked a
+     different question from the operator, so the shape differs.
+     The customer needs four things from a finding and the console shows none of them in
+     this shape: what it is in plain words, whether it breaches the 14 day obligation, the
+     configuration that fixes it for the platform they already run, and a way to say they
+     are not going to fix it that is recorded by a specialist rather than self accepted. -->
+<style>
+    body { margin:0; font-family:system-ui,-apple-system,'Segoe UI',sans-serif; font-size:14px; color:#0f1115; background:#f5f5f3; -webkit-font-smoothing:antialiased; }
+    .lbl { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:#7d8089; }
+    .mono { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; }
+    .num { font-weight:700; letter-spacing:-.02em; }
+    .pill { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; padding:2px 6px; border-radius:4px; white-space:nowrap; }
+    .card { background:#fff; border:1px solid rgba(15,17,21,.12); border-radius:6px; }
+    .navitem { display:flex; align-items:center; gap:10px; padding:7px 14px; color:rgba(255,255,255,.72); font-size:13px; border-left:2px solid transparent; }
+    .navitem--on { background:rgba(255,255,255,.07); color:#fff; border-left-color:#f5530a; font-weight:500; }
+    .th { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#7d8089; padding:9px 14px; text-align:left; }
+    .td { padding:10px 14px; border-top:1px solid rgba(15,17,21,.07); font-size:13px; }
+    .grp { display:flex; align-items:center; gap:10px; padding:11px 16px; background:#fafaf8; border-bottom:1px solid rgba(15,17,21,.07); }
+    .ask { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:11px; font-weight:600; color:#c93f04; white-space:nowrap; }
+  </style>
+</head>
+<body>
+<div style="display:flex; width:1440px; height:900px; overflow:hidden; background:#f5f5f3;">
+
+  <div style="width:216px; flex-shrink:0; background:#0f1115; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:center; gap:9px; padding:18px 16px 22px;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="#f5530a" stroke-width="2.4"/><circle cx="10" cy="10" r="2.2" fill="#ffffff"/></svg>
+      <span style="font-weight:700; font-size:15px; color:#fff;">Patched</span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:1px;">
+      <div class="navitem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>Your estate</div>
+      <div class="navitem navitem--on"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/></svg>Findings</div>
+      <div class="navitem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v11H4z"/><path d="M9 20h6"/></svg>Devices</div>
+      <div class="navitem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 10h8M8 14h5"/></svg>Software</div>
+      <div class="navitem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l5 5v13H6z"/><path d="M14 3v6h6"/></svg>Reports</div>
+    </div>
+    <div style="margin-top:auto; padding:14px 16px; border-top:1px solid rgba(255,255,255,.09);">
+      <div class="lbl" style="color:rgba(255,255,255,.34);">Your specialist</div>
+      <div style="display:flex; align-items:center; gap:9px; margin-top:9px;">
+        <div style="width:26px; height:26px; border-radius:50%; background:#2a2d33; color:#fff; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center;">AB</div>
+        <div><div style="font-size:12px; color:#fff;">Example specialist</div><div class="mono" style="font-size:10px; color:rgba(255,255,255,.5);">specialist@example.invalid</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex-grow:1; display:flex; flex-direction:column; min-width:0;">
+    <div style="height:56px; flex-shrink:0; background:#fff; border-bottom:1px solid rgba(15,17,21,.12); display:flex; align-items:center; padding:0 24px; gap:11px;">
+      <span class="mono" style="font-size:11px; color:#7d8089;">FINDINGS /</span>
+      <h1 style="margin:0; font-size:18px; font-weight:700; letter-spacing:-.015em;">Google Chrome</h1>
+      <span class="mono" style="font-size:10px; color:#7d8089; background:#f5f5f3; border:1px solid rgba(15,17,21,.07); padding:3px 7px; border-radius:4px;">SAMPLE DATA</span>
+      <span class="mono" style="font-size:10px; color:#c93f04; background:#fff4ed; border:1px solid rgba(201,63,4,.22); padding:3px 7px; border-radius:4px;">MANAGED</span>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:11px;">
+        <div style="display:flex; border:1px solid rgba(15,17,21,.12); border-radius:6px; overflow:hidden;"><span class="mono" style="font-size:10px; font-weight:600; padding:5px 9px; background:#0f1115; color:#fff;">LIGHT</span><span class="mono" style="font-size:10px; font-weight:600; padding:5px 9px; color:#7d8089;">DARK</span></div>
+        <div style="border:1px solid rgba(15,17,21,.12); border-radius:6px; padding:6px 11px; font-size:12px; font-weight:500;">Ask Andy a question</div>
+      </div>
+    </div>
+
+    <div style="padding:20px 24px; display:flex; flex-direction:column; gap:14px; overflow:hidden;">
+
+      <div class="card" style="padding:18px 20px; border-left:3px solid #b91c1c;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:28px;">
+          <div style="max-width:720px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <h2 style="margin:0; font-size:20px; font-weight:700; letter-spacing:-.015em;">Google Chrome is four versions behind</h2>
+              <span class="pill" style="background:#fef2f2; color:#b91c1c;">HIGH</span>
+            </div>
+            <div style="font-size:13px; color:#2a2d33; line-height:1.6; margin-top:10px;">
+              61 of your 203 Chrome installs are on 138.0.7204.101 or older. The current stable build is 142.0.7444.60. Four of the versions in between carried fixes for flaws that are being exploited in the wild, so this is the finding on your estate most likely to matter to an insurer or an assessor.
+            </div>
+            <div style="display:flex; gap:26px; margin-top:14px;">
+              <div><div class="lbl">Devices affected</div><div class="num" style="font-size:19px; margin-top:3px;">61</div></div>
+              <div><div class="lbl">Oldest install</div><div class="mono" style="font-size:13px; margin-top:6px;">129.0.6668.58</div></div>
+              <div><div class="lbl">First seen</div><div class="mono" style="font-size:13px; margin-top:6px;">21 AUG 2026</div></div>
+              <div><div class="lbl">How we know</div><div style="margin-top:4px;"><span class="pill" style="background:#f0fdf4; color:#15803d;">VERSION CONFIRMED</span></div></div>
+            </div>
+          </div>
+          <div style="flex-shrink:0; width:260px;">
+            <div style="background:#fef2f2; border:1px solid rgba(185,28,28,.2); border-radius:6px; padding:13px 15px;">
+              <div class="lbl" style="color:#b91c1c;">Cyber Essentials</div>
+              <div style="font-size:13px; color:#2a2d33; line-height:1.5; margin-top:7px;">
+                <strong>6 of these 61</strong> have been behind for more than 14 days, which is an automatic failure if you are assessed today.
+              </div>
+              <div class="mono" style="font-size:11px; color:#b91c1c; margin-top:9px;">OLDEST IS 22 DAYS BEHIND</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:14px; align-items:start;">
+
+        <div class="card" style="overflow:hidden;">
+          <div class="grp">
+            <span style="font-size:13px; font-weight:600;">Which devices</span>
+            <span class="pill" style="background:#f5f5f3; color:#7d8089;">61 DEVICES</span>
+            <span class="ask" style="margin-left:auto;">MOST BEHIND FIRST &rarr;</span>
+          </div>
+          <table style="width:100%; border-collapse:collapse;">
+            <thead><tr><th class="th">Device</th><th class="th">Who uses it</th><th class="th">Version</th><th class="th">Behind since</th><th class="th">Deadline</th></tr></thead>
+            <tbody>
+              <tr><td class="td mono">MT-LP-0198</td><td class="td">T. Cardoso</td><td class="td mono" style="color:#7d8089;">129.0.6668.58</td><td class="td mono">21 AUG</td><td class="td"><span class="pill" style="background:#fef2f2; color:#b91c1c;">8 DAYS OVER</span></td></tr>
+              <tr><td class="td mono">MT-LP-0122</td><td class="td">M. Ollerenshaw</td><td class="td mono" style="color:#7d8089;">131.0.6778.86</td><td class="td mono">24 AUG</td><td class="td"><span class="pill" style="background:#fef2f2; color:#b91c1c;">5 DAYS OVER</span></td></tr>
+              <tr><td class="td mono">MT-LP-0077</td><td class="td">K. Ferreira</td><td class="td mono" style="color:#7d8089;">134.0.6998.35</td><td class="td mono">31 AUG</td><td class="td"><span class="pill" style="background:#fff7ed; color:#c2410c;">2 DAYS LEFT</span></td></tr>
+              <tr><td class="td mono">MT-LP-0214</td><td class="td">L. Craine</td><td class="td mono" style="color:#7d8089;">138.0.7204.101</td><td class="td mono">5 SEP</td><td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">7 DAYS LEFT</span></td></tr>
+              <tr><td class="td mono">MT-DT-0042</td><td class="td">Shared, reception</td><td class="td mono" style="color:#7d8089;">138.0.7204.101</td><td class="td mono">5 SEP</td><td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">7 DAYS LEFT</span></td></tr>
+              <tr><td class="td mono">MT-LP-0166</td><td class="td">B. Quilliam</td><td class="td mono" style="color:#7d8089;">138.0.7204.101</td><td class="td mono">5 SEP</td><td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">7 DAYS LEFT</span></td></tr>
+              <tr><td class="td mono">MT-LP-0102</td><td class="td">N. Kelly</td><td class="td mono" style="color:#7d8089;">138.0.7204.101</td><td class="td mono">5 SEP</td><td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">7 DAYS LEFT</span></td></tr>
+              <tr><td class="td mono">MT-LP-0189</td><td class="td">G. Teare</td><td class="td mono" style="color:#7d8089;">140.0.7339.12</td><td class="td mono">8 SEP</td><td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">10 DAYS LEFT</span></td></tr>
+            </tbody>
+          </table>
+          <div style="padding:10px 16px; border-top:1px solid rgba(15,17,21,.07); font-size:12px; color:#7d8089;">53 more. <span class="ask">SHOW ALL SIXTY ONE &nbsp;&middot;&nbsp; DOWNLOAD THE LIST &rarr;</span></div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:14px;">
+
+          <div class="card" style="padding:16px 18px;">
+            <div class="lbl" style="color:#0f1115; font-size:11px;">How to fix it</div>
+            <div style="font-size:13px; color:#2a2d33; line-height:1.6; margin-top:9px;">
+              We have generated the configuration that fixes this, for the management platform you already run. You apply it, on your own change control, and we verify it afterwards from the evidence.
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px; margin-top:13px;">
+              <div style="display:flex; align-items:center; gap:10px; border:1px solid rgba(15,17,21,.12); border-radius:6px; padding:10px 12px;">
+                <span style="font-size:13px; font-weight:500;">Intune configuration profile</span>
+                <span class="mono" style="font-size:10px; color:#7d8089;">42 WINDOWS DEVICES</span>
+                <span class="ask" style="margin-left:auto;">DOWNLOAD &rarr;</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; border:1px solid rgba(15,17,21,.12); border-radius:6px; padding:10px 12px;">
+                <span style="font-size:13px; font-weight:500;">Jamf policy and smart group</span>
+                <span class="mono" style="font-size:10px; color:#7d8089;">19 MACS</span>
+                <span class="ask" style="margin-left:auto;">DOWNLOAD &rarr;</span>
+              </div>
+            </div>
+            <div style="margin-top:13px; padding-top:12px; border-top:1px solid rgba(15,17,21,.07); display:flex; align-items:center; gap:10px;">
+              <span style="font-size:13px;">Would rather we did it?</span>
+              <span class="ask" style="margin-left:auto;">ASK ANDY TO RUN IT &rarr;</span>
+            </div>
+          </div>
+
+          <div class="card" style="padding:16px 18px;">
+            <div class="lbl" style="color:#0f1115; font-size:11px;">Not going to fix it?</div>
+            <div style="font-size:13px; color:#2a2d33; line-height:1.6; margin-top:9px;">
+              Tell us why and we record it against the finding with your name and the date. It then reads as an accepted risk in your reports rather than an open failure, and it comes back to you for review in 90 days.
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; margin-top:12px;">
+              <div style="border:1px solid rgba(15,17,21,.12); border-radius:6px; padding:8px 12px; font-size:12px; font-weight:500;">Tell us your view</div>
+              <span class="mono" style="font-size:11px; color:#7d8089; line-height:1.4;">RECORDED BY YOUR<br>SPECIALIST, NOT HERE</span>
+            </div>
+          </div>
+
+          <div class="card" style="padding:16px 18px;">
+            <div class="lbl" style="color:#0f1115; font-size:11px;">What has happened so far</div>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:11px;">
+              <div style="display:flex; gap:10px;"><span class="mono" style="font-size:10px; color:#7d8089; width:38px; flex-shrink:0; padding-top:2px;">11 SEP</span><span style="font-size:12px; line-height:1.5;">Down from 74 devices to 61 after your Tuesday update run.</span></div>
+              <div style="display:flex; gap:10px;"><span class="mono" style="font-size:10px; color:#7d8089; width:38px; flex-shrink:0; padding-top:2px;">4 SEP</span><span style="font-size:12px; line-height:1.5;">Andy sent the Intune profile to Rachel and walked her team through it.</span></div>
+              <div style="display:flex; gap:10px;"><span class="mono" style="font-size:10px; color:#7d8089; width:38px; flex-shrink:0; padding-top:2px;">21 AUG</span><span style="font-size:12px; line-height:1.5;">Finding raised. 74 devices behind at the time.</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

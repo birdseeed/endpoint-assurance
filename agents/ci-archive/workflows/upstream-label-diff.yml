@@ -1,0 +1,214 @@
+name: upstream-label-diff
+
+# Quarantined legacy diagnostic. It fetches public Installomator upstream label
+# fragments and diffs
+# them against the Patched label manifest. Surfaces divergences as proposals
+# for human review — no changes are auto-applied. Tracks PAT-53.
+#
+# It no longer runs automatically or writes reports/issues. A manual run keeps
+# the comparison available when legacy compatibility work requires it.
+#
+# Runner: ubuntu-latest (fetch + parse only; no codesign/spctl needed).
+#
+# Exit codes from upstream-diff.py:
+#   0 — no actionable divergences
+#   1 — script error
+#   2 — divergences found (proposals surfaced in report)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  diff:
+    name: Diff upstream Installomator labels
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Record run start time
+        run: echo "UPSTREAM_DIFF_START=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+
+      # Needed only so the "Record run in automations API" step (end of job)
+      # can reach patched-prod-01 to relay the run result. Mirrors
+      # mirror-pipeline.yml / daily-vendor-verify.yml's identical setup —
+      # see mirror-pipeline.yml for the token-safety rationale (PR #291):
+      # the admin token never reaches this runner, only an SSH-relayed curl
+      # dereferences it, on prod-01.
+      - name: Setup Tailscale
+        # continue-on-error: this Tailscale/SSH plumbing exists ONLY so the
+        # run can be reported to the automations API. It must never be able
+        # to fail — or worse, abort — the job it is instrumenting. If it
+        # fails, the Record step below degrades to "could not resolve
+        # patched-prod-01 ... skipping automations record".
+        if: github.event_name == 'schedule'
+        continue-on-error: true
+        uses: tailscale/github-action@780049a30b6ff5c378a9e7b389d15ece7a204888 # v4.1.3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret:    ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Configure SSH key
+        if: github.event_name == 'schedule'
+        continue-on-error: true   # monitoring plumbing only — see above
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/box_key
+          chmod 600 ~/.ssh/box_key
+
+      - name: Run upstream label diff
+        id: diff
+        env:
+          # Authenticated API calls — the unauthenticated 60/hr limit is
+          # shared across the runner IP pool and rate-limits the run (PAT-925)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # exit 2 means divergences found; that is not a workflow failure —
+        # the report is the output. Only exit 1 (script error) fails the run.
+        # Capture the code with `|| code=$?`: under the default `bash -e` a
+        # bare non-zero exit kills the step before the echo, leaving the
+        # output empty — which the outcome step treats as an error (PAT-925).
+        run: |
+          code=0
+          python3 verifier/upstream-diff.py \
+            --labels-dir engine/labels \
+            --report-dir verifier/upstream-diff || code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve diff outcome
+        id: outcome
+        run: |
+          code="${{ steps.diff.outputs.exit_code }}"
+          # If continue-on-error swallowed a real failure, exit_code may be empty.
+          # Re-run to get the actual code in that case is not needed; treat empty as 1.
+          if [ -z "$code" ]; then code=1; fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" -eq 1 ]; then
+            echo "::error::upstream-diff.py exited with error — check logs"
+            exit 1
+          fi
+          if [ "$code" -eq 2 ]; then
+            echo "has_divergences=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_divergences=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload diff report artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: upstream-diff-report-${{ github.run_id }}
+          path: verifier/upstream-diff/
+          if-no-files-found: warn
+
+      - name: Commit updated diff report
+        # PAT-1474: dormant compatibility code. Manual diagnostics retain the
+        # report as an artifact and do not mutate verifier-state.
+        if: github.event_name == 'schedule'
+        run: |
+          git config user.name "Patched Diff Bot"
+          git config user.email "bot@patched.im"
+
+          # main is ruleset-protected (PR-only, GitHub-Non-Author-Review) — a direct push is
+          # rejected (GH013). Persist the dated reports on the unprotected
+          # verifier-state branch instead, mirroring daily-vendor-verify
+          # (PAT-925).
+          TMPFILES=$(mktemp -d)
+          cp -r verifier/upstream-diff "$TMPFILES/"
+          # Drop the untracked fresh reports before switching branches: if a
+          # same-named dated report already exists on verifier-state (same-day
+          # rerun), checkout refuses to overwrite untracked files.
+          rm -rf verifier/upstream-diff
+
+          if git ls-remote --exit-code origin refs/heads/verifier-state >/dev/null 2>&1; then
+            git fetch origin verifier-state
+            git checkout -B verifier-state origin/verifier-state
+          else
+            git checkout --orphan verifier-state
+            git rm -rf --quiet .
+          fi
+
+          mkdir -p verifier/upstream-diff
+          cp -r "$TMPFILES/upstream-diff/." verifier/upstream-diff/
+
+          git add verifier/upstream-diff/
+          if git diff --cached --quiet; then
+            echo "No new report to commit (content unchanged)"
+          else
+            git commit -m "upstream-diff: daily run $(date -u +%Y-%m-%d)"
+            git push origin verifier-state
+          fi
+
+      - name: Open GitHub issue for divergences
+        # PAT-1474: manual diagnostics report divergences in the workflow
+        # artifact only. They do not create maintenance work automatically.
+        if: github.event_name == 'schedule' && steps.outcome.outputs.has_divergences == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TODAY=$(date -u +%Y-%m-%d)
+          REPORT_PATH="verifier/upstream-diff/${TODAY}.md"
+          TITLE="[upstream-diff] Label divergences found ${TODAY}"
+
+          # Idempotent while divergences persist: skip if ANY open
+          # upstream-diff issue exists — dedup on today's title alone opens
+          # a fresh issue every day until the backlog is reviewed (PAT-925).
+          # The dated reports still land in verifier/upstream-diff/ daily.
+          EXISTING=$(gh issue list --label "upstream-diff" --state open \
+            --json number --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -n "$EXISTING" ]; then
+            echo "Open upstream-diff issue #${EXISTING} exists — skipping create"
+            exit 0
+          fi
+
+          # Build issue body from the report markdown (truncate if very large)
+          BODY=$(head -c 60000 "$REPORT_PATH" 2>/dev/null || echo "Report not found at $REPORT_PATH")
+
+          gh issue create \
+            --title "$TITLE" \
+            --label "upstream-diff" \
+            --body "$(printf '%s\n\n---\n_Opened automatically by the upstream-label-diff workflow. These are proposals for human review — never auto-applied._' "$BODY")"
+
+      # STATUS is derived from job.status, not steps.diff.outcome, because
+      # "Run upstream label diff" deliberately never lets a non-zero
+      # upstream-diff.py exit fail the step itself (it captures the code via
+      # `|| code=$?` into an output instead) — divergences found (exit 2) is
+      # expected, everyday output, not a failure. The real pass/fail signal
+      # only exists after "Resolve diff outcome" turns a genuine script
+      # error (exit 1) into a hard step failure, and after the commit/issue
+      # steps have had a chance to fail on their own. job.status aggregates
+      # all of that correctly by this point in the job.
+      - name: Record run in automations API
+        if: github.event_name == 'schedule'
+        run: |
+          FINISHED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          if [[ "${{ job.status }}" == "success" ]]; then
+            STATUS="success"
+          else
+            STATUS="failed"
+          fi
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          PROD01_IP=$(tailscale ip -4 patched-prod-01 2>/dev/null || true)
+          if [[ -z "$PROD01_IP" ]]; then
+            echo "WARN: could not resolve patched-prod-01 Tailscale IP — skipping automations record"
+          else
+            JSON=$(printf '{"started_at":"%s","finished_at":"%s","status":"%s","output":"%s"}' \
+              "$UPSTREAM_DIFF_START" "$FINISHED_AT" "$STATUS" "$RUN_URL")
+            echo "$JSON" | ssh -i ~/.ssh/box_key \
+              -o StrictHostKeyChecking=accept-new \
+              -o IdentitiesOnly=yes \
+              root@"$PROD01_IP" \
+              'TOKEN=$(grep -m1 "^ADMIN_API_TOKEN=" /etc/patched-dashboard/dashboard.env | cut -d= -f2-); \
+               curl -skf -X POST https://patched-api-01.example-tailnet.ts.net:8443/admin/automations/upstream_label_diff/record \
+                -H "Authorization: Bearer $TOKEN" \
+                -H "Content-Type: application/json" -d @-' \
+              || echo "WARN: automations record POST failed — non-fatal"
+            # -k: port 8443 serves Caddy's internal-CA cert by design; transport
+            # security is the Tailscale bind + ACL, matching every other call
+            # against this same endpoint in this repo (PAT-718).
+            # Bearer token: required by the H1 admin-surface auth (PAT-687);
+            # sourced on prod-01 from the dashboard's env so no extra GH secret.
+          fi

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card card-narrow card-center">
+  <h1>Your session has expired</h1>
+  <p>For your security, portal sessions are time-limited. Sign in again to continue; you will be returned to the page you were on.</p>
+  <p><a class="btn btn-primary" href="{{ sign_in_url }}">Sign in again</a></p>
+  <p class="meta">If you keep seeing this page, contact <a href="mailto:{{ support_email }}">{{ support_email }}</a>.</p>
+</div>
+{% endblock %}

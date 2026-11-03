@@ -1,0 +1,24 @@
+{
+  "label": "paretosecurity",
+  "name": "Pareto Security",
+  "type": "dmg",
+  "app_path": "/Applications/Pareto Security.app",
+  "expected_team_id": "PM784W7B8X",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/ParetoSecurity/pareto-mac/releases/latest"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,116 @@
+<Window x:Class="Patched.Tray.StatusWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Patched.Tray"
+        Title="Patched"
+        Width="480" Height="600"
+        MinWidth="400" MinHeight="480"
+        ResizeMode="CanResize"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        AllowsTransparency="True"
+        WindowStyle="None">
+
+    <!-- Mica/backdrop effect is applied in code-behind via DwmSetWindowAttribute -->
+
+    <Window.Resources>
+        <!-- System font stack — Segoe UI Variable on Win11, Segoe UI on Win10 -->
+        <FontFamily x:Key="SystemFont">Segoe UI Variable Display, Segoe UI, sans-serif</FontFamily>
+        <!-- Brand palette — 04b Pivot / Quiet -->
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#F5F5F3"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#E0E0DE"/>
+        <SolidColorBrush x:Key="GreenBrush" Color="#107C10"/>
+        <SolidColorBrush x:Key="AmberBrush" Color="#CA5010"/>
+    </Window.Resources>
+
+    <Border CornerRadius="8" Background="{StaticResource SurfaceBrush}"
+            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>   <!-- Title bar -->
+                <RowDefinition Height="Auto"/>   <!-- Status summary -->
+                <RowDefinition Height="*"/>      <!-- App list / catalog -->
+                <RowDefinition Height="Auto"/>   <!-- Actions -->
+                <RowDefinition Height="Auto"/>   <!-- Brand strip -->
+            </Grid.RowDefinitions>
+
+            <!-- Custom title bar -->
+            <Grid Grid.Row="0" Background="Transparent" Height="40"
+                  MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
+                    <TextBlock Text="Patched" FontSize="14" FontWeight="SemiBold"
+                               FontFamily="{StaticResource SystemFont}"
+                               Foreground="#1E1E1E"/>
+                </StackPanel>
+                <Button x:Name="CloseButton" Content="✕" HorizontalAlignment="Right"
+                        Width="40" Height="40" Background="Transparent" BorderThickness="0"
+                        FontSize="12" Click="CloseButton_Click"/>
+            </Grid>
+
+            <!-- Status summary -->
+            <Border Grid.Row="1" Margin="16,0,16,12" Padding="16"
+                    CornerRadius="6" Background="#F0F0F0">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <Ellipse x:Name="StatusDot" Width="10" Height="10"
+                                 Fill="{StaticResource GreenBrush}"
+                                 VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock x:Name="StatusSummary" Text="All apps up to date"
+                                   FontSize="14" FontWeight="SemiBold"
+                                   FontFamily="{StaticResource SystemFont}"
+                                   Foreground="#1E1E1E"/>
+                    </StackPanel>
+                    <TextBlock x:Name="LastRunText" Text="" FontSize="12"
+                               Foreground="#666666" FontFamily="{StaticResource SystemFont}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- App list -->
+            <ScrollViewer Grid.Row="2" Margin="16,0,16,0" VerticalScrollBarVisibility="Auto">
+                <ItemsControl x:Name="AppList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type local:AppViewModel}">
+                            <Border Margin="0,0,0,6" Padding="12"
+                                    CornerRadius="6" Background="#F7F7F7"
+                                    BorderBrush="{StaticResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="{Binding Name}" FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   FontFamily="{StaticResource SystemFont}"/>
+                                        <TextBlock Text="{Binding VersionLine}" FontSize="12"
+                                                   Foreground="#666666"
+                                                   FontFamily="{StaticResource SystemFont}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                        <TextBlock Text="{Binding StateLabel}"
+                                                   Foreground="{Binding StateBrush}"
+                                                   FontSize="12" VerticalAlignment="Center"
+                                                   FontFamily="{StaticResource SystemFont}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Actions footer: intentionally empty — assurance-only, no local install trigger -->
+            <Border Grid.Row="3"/>
+            <!-- Brand strip — pixel-matrix wordmark, right-aligned, slate bg -->
+            <Border Grid.Row="4" Background="#0F1115" Padding="16,8">
+                <Image Source="/Resources/patched-wordmark-matrix-white.png"
+                       Width="86" Height="18"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Center"
+                       RenderOptions.BitmapScalingMode="NearestNeighbor"
+                       SnapsToDevicePixels="True"/>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

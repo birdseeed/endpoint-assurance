@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.patched.uninstall-check.plist — LaunchDaemon for patched-uninstall.sh (PAT-376).
+
+  Runs every 15 minutes (900 s) as root. The script gates itself on:
+    1. Agent tier is managed; assurance and every other value fail closed.
+    2. Platform 24-hour hold window (enforced server-side; the script will
+       exit cleanly with no removals until the window expires).
+
+  Install:
+    sudo cp com.patched.uninstall-check.plist /Library/LaunchDaemons/
+    sudo launchctl bootstrap system /Library/LaunchDaemons/com.patched.uninstall-check.plist
+
+  Uninstall:
+    sudo launchctl bootout system /Library/LaunchDaemons/com.patched.uninstall-check.plist
+    sudo rm /Library/LaunchDaemons/com.patched.uninstall-check.plist
+
+  ⚠️  GitHub-Non-Author-Review gate: this daemon is destructive. Do not ship to customer
+  endpoints until the GitHub-Non-Author-Review security review is complete.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.patched.uninstall-check</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>/usr/local/patched-updater/patched-uninstall.sh</string>
+  </array>
+
+  <key>StartInterval</key>
+  <integer>900</integer>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <!-- Root is required for pkgutil --forget and bundle removal. -->
+  <key>UserName</key>
+  <string>root</string>
+
+  <key>StandardOutPath</key>
+  <string>/var/log/patched-uninstall.log</string>
+  <key>StandardErrorPath</key>
+  <string>/var/log/patched-uninstall.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin</string>
+  </dict>
+
+  <!-- Throttle restarts on repeated crashes. -->
+  <key>ThrottleInterval</key>
+  <integer>60</integer>
+</dict>
+</plist>

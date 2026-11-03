@@ -1,0 +1,23 @@
+{
+  "label": "zeplin",
+  "name": "Zeplin",
+  "type": "zip",
+  "app_path": "/Applications/Zeplin.app",
+  "expected_team_id": "8U3Y4X5WDQ",
+  "download": {
+    "method": "static",
+    "url": "https://zpl.io/download-mac"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

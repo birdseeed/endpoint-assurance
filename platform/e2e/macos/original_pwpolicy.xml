@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>policyCategoryAuthentication</key>
+	<array>
+		<dict>
+			<key>policyContent</key>
+			<string>policyAttributeFailedAuthentications &lt; policyAttributeMaximumFailedAuthentications</string>
+			<key>policyIdentifier</key>
+			<string>com.patched.e2e.lockout</string>
+			<key>policyParameters</key>
+			<dict>
+				<key>autoEnableInSeconds</key>
+				<integer>900</integer>
+				<key>policyAttributeMaximumFailedAuthentications</key>
+				<integer>5</integer>
+			</dict>
+		</dict>
+	</array>
+	<key>policyCategoryPasswordContent</key>
+	<array>
+		<dict>
+			<key>policyContent</key>
+			<string>policyAttributePassword matches '.{15,}'</string>
+			<key>policyIdentifier</key>
+			<string>com.patched.e2e.minlength</string>
+			<key>policyParameters</key>
+			<dict>
+				<key>policyAttributeMinimumLength</key>
+				<integer>15</integer>
+			</dict>
+		</dict>
+		<dict>
+			<key>policyContent</key>
+			<string>none policyAttributePasswordHashes in policyAttributePasswordHistory</string>
+			<key>policyIdentifier</key>
+			<string>com.patched.e2e.history</string>
+			<key>policyParameters</key>
+			<dict>
+				<key>policyAttributePasswordHistoryDepth</key>
+				<integer>15</integer>
+			</dict>
+		</dict>
+	</array>
+</dict>
+</plist>
+

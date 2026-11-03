@@ -1,0 +1,30 @@
+{
+  "label": "archiwareb2go",
+  "name": "P5 Workstation",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "relative-path-version-digits",
+    "template": "P5-Workstation-{version_digits}-Install.pkg"
+  },
+  "app_path": "/Applications/P5 Workstation.app",
+  "expected_team_id": "5H5EU6F965",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.archiware.com/download-p5"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "nsd"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true. PAT-1385 P1 fix (round 8, 2026-08-15): download.source was previously the S3 bucket prefix the shell EMITS a downloadURL into (https://p5-downloads.s3.amazonaws.com/awpst), not a queryable resolution endpoint -- resolve strategy vendor-api had no per-vendor implementation for this label, so it was always 'unsupported', never actually verified, while pkg_in_dmg still declared a version-digits template that would ValueError the moment anyone wired up resolution without also wiring up a version (the exact false-alert-on-every-run gap a non-author review found). Fixed by pointing source at the real page Installomator.sh's own archiwareb2go case scrapes for appNewVersion (archiware.com/download-p5, 'ARCHIWARE P5 Version X.X.X - ...') and implementing _resolve_vendor_api_archiware() to read it the same way, hand-verified against the live page and the live S3 object 2026-08-15."
+  }
+}

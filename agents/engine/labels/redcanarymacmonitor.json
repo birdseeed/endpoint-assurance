@@ -1,0 +1,24 @@
+{
+  "label": "redcanarymacmonitor",
+  "name": "Red Canary Mac Monitor",
+  "type": "pkg",
+  "app_path": "/Applications/Red Canary Mac Monitor.app",
+  "expected_team_id": "UA6JCQGF3F",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/redcanaryco/mac-monitor/releases/latest"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

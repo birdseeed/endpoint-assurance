@@ -1,0 +1,59 @@
+{
+  "schema_version": 3,
+  "platform": "windows",
+  "agent": "patched-collect-win",
+  "agent_version": "0.1.0",
+  "tenant_id": "77777777-7777-7777-7777-777777777777",
+  "collected_at": "2026-09-23T00:00:00Z",
+  "device": {
+    "serial": "PAT2059WIN01",
+    "hw_uuid": "77777777-DDDD-EEEE-FFFF-AAAAAAAAAAAA",
+    "hostname": "PAT2059-BITLOCKER-OFF",
+    "hw_model": "Dell OptiPlex 7090",
+    "arch": "x86_64",
+    "last_boot": "2026-09-22T08:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Intel(R) Core(TM) i7-10700",
+    "cpu_cores": 8,
+    "ram_gb": 16,
+    "disk_total_gb": 476.9,
+    "disk_free_gb": 210.3
+  },
+  "os": {
+    "name": "Windows",
+    "version": "11.0.22631",
+    "build": "22631.3593"
+  },
+  "compliance": {
+    "bitlocker_os_drive": "Off",
+    "windows_firewall_domain": "enabled",
+    "windows_firewall_private": "enabled",
+    "windows_firewall_public": "enabled",
+    "defender_realtime": "enabled",
+    "uac_enabled": "Yes",
+    "pending_updates_count": 0,
+    "pwpolicy_min_length": 12
+  },
+  "security_tools": [
+    { "id": "defender-for-endpoint", "name": "Microsoft Defender for Endpoint" }
+  ],
+  "compliance_findings": [
+    {
+      "id": "disk_encryption_off",
+      "severity": "critical"
+    }
+  ],
+  "compliance_assessments": {
+    "controls_assessed": ["disk_encryption_off"]
+  },
+  "apps": [
+    {
+      "name": "Microsoft Edge",
+      "version": "124.0.2478.97",
+      "identifier": "Microsoft Edge",
+      "publisher": "Microsoft Corporation",
+      "architecture": "x86_64"
+    }
+  ]
+}

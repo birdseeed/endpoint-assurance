@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verify your email | Patched.im</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="icon" type="image/svg+xml" href="{{ static_url('favicon.svg') }}">
+<link rel="stylesheet" href="{{ static_url('css/public-brand.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/site.css') }}">
+</head>
+<body>
+<div class="pub-page">
+{% include "_site_nav.html" %}
+  <main class="scan-main">
+    <div class="scan-wrap">
+    <h1 class="pub-page-title">Check your inbox</h1>
+    <p class="pub-lede">We've sent a 6-digit code to <b>{{ email_masked }}</b>.</p>
+
+    <div class="pub-card">
+      <form method="post" action="/public/scan/verify/{{ scan_id }}">
+        <label class="pub-label" for="otp">Verification code</label>
+        <input class="pub-otp" type="text" id="otp" name="otp" inputmode="numeric" pattern="[0-9]{6}"
+               maxlength="6" autocomplete="one-time-code" required autofocus>
+        <button class="pub-btn" type="submit">Verify and start scan</button>
+      </form>
+      <div class="pub-hint-center">Code expires in 15 minutes. Didn't get it? Check spam, or start over.</div>
+    </div>
+    </div>
+  </main>
+{% include "_site_footer.html" %}
+</div>
+<script>document.querySelectorAll('[data-year]').forEach(function(e){e.textContent=new Date().getFullYear();});</script>
+</body>
+</html>

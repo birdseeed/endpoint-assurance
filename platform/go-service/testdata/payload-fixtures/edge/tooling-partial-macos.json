@@ -1,0 +1,291 @@
+{
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.2.0",
+  "tenant_id": "44444444-4444-4444-4444-444444444444",
+  "collected_at": "2026-12-01T00:00:00Z",
+  "device": {
+    "serial": "C00000000001",
+    "hw_uuid": "11111111-AAAA-BBBB-CCCC-DDDDDDDDDDDD",
+    "hostname": "minimal-test-host",
+    "hw_model": "Mac14,2",
+    "arch": "arm64",
+    "last_boot": "2026-12-01T00:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M2",
+    "cpu_cores": 8,
+    "ram_gb": 8,
+    "disk_total_gb": 256.0,
+    "disk_free_gb": 128.0
+  },
+  "os": {
+    "name": "macOS",
+    "version": "15.0",
+    "build": "24A335"
+  },
+  "compliance": {},
+  "security_tools": [],
+  "system_extensions": [],
+  "background_items": [],
+  "icloud": {
+    "signed_in": "Unknown"
+  },
+  "apps": [
+    {
+      "name": "Safari",
+      "version": "18.4",
+      "bundle_id": "com.apple.Safari"
+    }
+  ],
+  "ide_extensions": {
+    "collection_status": "partial",
+    "truncated": true,
+    "truncation_reason": "time_limit",
+    "users": [
+      {
+        "user": "alice",
+        "user_id": "501",
+        "collection_status": "partial",
+        "profiles": 3
+      }
+    ],
+    "profiles": [
+      {
+        "user": "alice",
+        "user_id": "501",
+        "family": "vscode",
+        "editor": "vscode",
+        "editor_version": null,
+        "collection_status": "complete",
+        "manifest_source": "extensions_json",
+        "extension_count": 2
+      },
+      {
+        "user": "alice",
+        "user_id": "501",
+        "family": "vscode",
+        "editor": "cursor",
+        "editor_version": null,
+        "collection_status": "complete",
+        "manifest_source": "extensions_json",
+        "extension_count": 1
+      },
+      {
+        "user": "alice",
+        "user_id": "501",
+        "family": "jetbrains",
+        "editor": "PyCharm",
+        "editor_version": "2025.2",
+        "collection_status": "partial",
+        "manifest_source": "plugin_xml",
+        "extension_count": 1
+      }
+    ],
+    "issues": [
+      {
+        "code": "plugin_xml_unreadable",
+        "path": "/Users/alice/Library/Application Support/JetBrains/PyCharm2025.2/plugins/github-copilot-intellij"
+      }
+    ],
+    "extensions": [
+      {
+        "user": "alice",
+        "user_id": "501",
+        "family": "vscode",
+        "editor": "vscode",
+        "editor_version": null,
+        "id": "github.copilot",
+        "name": "copilot",
+        "publisher": "GitHub",
+        "publisher_display_name": "GitHub",
+        "version": "1.372.0",
+        "installed_at": "2027-03-01T09:14:02Z",
+        "source": "gallery",
+        "pre_release": false,
+        "target_platform": null,
+        "disabled": null,
+        "directory": "github.copilot-1.372.0",
+        "manifest_source": "extensions_json",
+        "manifest_status": "read"
+      },
+      {
+        "user": "alice",
+        "user_id": "501",
+        "family": "vscode",
+        "editor": "vscode",
+        "editor_version": null,
+        "id": "ms-python.python",
+        "name": "python",
+        "publisher": "ms-python",
+        "publisher_display_name": "Microsoft",
+        "version": "2026.14.0",
+        "installed_at": "2027-02-20T11:00:00Z",
+        "source": "gallery",
+        "pre_release": false,
+        "target_platform": "darwin-arm64",
+        "disabled": null,
+        "directory": "ms-python.python-2026.14.0-darwin-arm64",
+        "manifest_source": "extensions_json",
+        "manifest_status": "read"
+      },
+      {
+        "user": "alice",
+        "user_id": "501",
+        "family": "vscode",
+        "editor": "cursor",
+        "editor_version": null,
+        "id": "saoudrizwan.claude-dev",
+        "name": "claude-dev",
+        "publisher": "saoudrizwan",
+        "publisher_display_name": null,
+        "version": "3.30.0",
+        "installed_at": "2027-03-10T08:00:00Z",
+        "source": "gallery",
+        "pre_release": false,
+        "target_platform": null,
+        "disabled": null,
+        "directory": "saoudrizwan.claude-dev-3.30.0",
+        "manifest_source": "extensions_json",
+        "manifest_status": "read"
+      },
+      {
+        "user": "alice",
+        "user_id": "501",
+        "family": "jetbrains",
+        "editor": "PyCharm",
+        "editor_version": "2025.2",
+        "id": null,
+        "name": null,
+        "publisher": null,
+        "publisher_display_name": null,
+        "version": null,
+        "installed_at": null,
+        "source": null,
+        "pre_release": null,
+        "target_platform": null,
+        "disabled": null,
+        "directory": "github-copilot-intellij",
+        "manifest_source": "directory_name",
+        "manifest_status": "unreadable"
+      }
+    ]
+  },
+  "package_managers": {
+    "collection_status": "partial",
+    "truncated": false,
+    "truncation_reason": null,
+    "sources": {
+      "npm_global": {
+        "collection_status": "complete",
+        "truncated": false,
+        "package_count": 2,
+        "location_count": 2
+      },
+      "pip_user": {
+        "collection_status": "failed",
+        "truncated": false,
+        "package_count": 0,
+        "location_count": 1
+      },
+      "pipx": {
+        "collection_status": "not_present",
+        "truncated": false,
+        "package_count": 0,
+        "location_count": 0
+      }
+    },
+    "users": [
+      {
+        "user": "alice",
+        "user_id": "501",
+        "collection_status": "partial",
+        "sources": {
+          "npm_global": "complete",
+          "pip_user": "failed",
+          "pipx": "not_present"
+        }
+      }
+    ],
+    "locations": [
+      {
+        "source": "npm_global",
+        "manager": "homebrew",
+        "scope": "system",
+        "user": null,
+        "user_id": null,
+        "path": "/opt/homebrew",
+        "runtime_version": null,
+        "interpreters": [],
+        "collection_status": "complete",
+        "package_count": 1
+      },
+      {
+        "source": "npm_global",
+        "manager": "nvm",
+        "scope": "user",
+        "user": "alice",
+        "user_id": "501",
+        "path": "/Users/alice/.nvm/versions/node/v22.19.0",
+        "runtime_version": "22.19.0",
+        "interpreters": [],
+        "collection_status": "complete",
+        "package_count": 1
+      },
+      {
+        "source": "pip_user",
+        "manager": "library_python",
+        "scope": "user",
+        "user": "alice",
+        "user_id": "501",
+        "path": "/Users/alice/Library/Python/3.13/lib/python/site-packages",
+        "runtime_version": "3.13",
+        "interpreters": [
+          "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13"
+        ],
+        "collection_status": "failed",
+        "package_count": 0
+      }
+    ],
+    "issues": [
+      {
+        "code": "unreadable",
+        "path": "/Users/alice/Library/Python/3.13/lib/python/site-packages"
+      }
+    ],
+    "packages": [
+      {
+        "source": "npm_global",
+        "manager": "homebrew",
+        "scope": "system",
+        "user": null,
+        "user_id": null,
+        "name": "@anthropic-ai/claude-code",
+        "version": "2.0.14",
+        "prefix": "/opt/homebrew",
+        "runtime_version": null,
+        "interpreter": null,
+        "directory": "@anthropic-ai/claude-code",
+        "metadata_status": "read",
+        "pipx_app": null,
+        "pipx_main": null
+      },
+      {
+        "source": "npm_global",
+        "manager": "nvm",
+        "scope": "user",
+        "user": "alice",
+        "user_id": "501",
+        "name": "@openai/codex",
+        "version": "0.40.0",
+        "prefix": "/Users/alice/.nvm/versions/node/v22.19.0",
+        "runtime_version": "22.19.0",
+        "interpreter": null,
+        "directory": "@openai/codex",
+        "metadata_status": "read",
+        "pipx_app": null,
+        "pipx_main": null
+      }
+    ]
+  }
+}

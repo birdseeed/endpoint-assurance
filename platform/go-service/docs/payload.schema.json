@@ -1,0 +1,2914 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patched.im/schemas/inventory-payload.schema.json",
+  "title": "patched.im inventory payload",
+  "description": "JSON shape posted to POST /v1/inventory by the patched-collect agent.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "agent",
+    "agent_version",
+    "tenant_id",
+    "collected_at",
+    "device",
+    "hardware",
+    "os",
+    "compliance",
+    "security_tools",
+    "apps"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "enum": [2, 3],
+      "description": "Payload schema version. 2 = macOS-only production shape (collector 0.2.0+, bundle_id in apps, system_extensions/background_items/icloud required). 3 = Windows-compatible shape: adds top-level platform field, identifier in apps (replaces bundle_id as the primary identifier), macOS-only sections optional."
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["macos", "windows"],
+      "description": "Normalised platform discriminator. Required for schema_version 3+. Absent in v2 payloads — the extractor defaults absent platform to 'macos'."
+    },
+    "device_class": {
+      "type": "string",
+      "enum": ["workstation", "server", "domain_controller", "unknown"],
+      "description": "PAT-1960. Optional and additive, top level (a property of the machine, not of the OS); Windows agent side ships under PAT-1959, macOS never sends this. The literal 'unknown' is a genuine report (source absent, unreadable or contradictory) distinct from omitting the field entirely — both leave devices.device_class at its 'unknown' default and are matched against every enabled rule for the platform, but only an omitted field preserves an already-known classification on a later ingest (see upsertDevice). Never guessed server-side. Agent-derived from installation_type plus domain role."
+    },
+    "installation_type": {
+      "type": "string",
+      "description": "PAT-1960. Optional, top level. Verbatim Windows registry InstallationType value (e.g. 'Client', 'Server', 'Server Core'). Informational only — device_class, not this field, drives rule matching."
+    },
+    "os_caption": {
+      "type": "string",
+      "description": "PAT-1960. Optional, top level. Verbatim WMI Win32_OperatingSystem.Caption string, e.g. 'Microsoft Windows Server 2022 Standard'. Informational only."
+    },
+    "agent": {
+      "type": "string",
+      "description": "Collector agent identifier.",
+      "examples": ["patched-collect"]
+    },
+    "agent_version": {
+      "type": "string",
+      "description": "Semver of the collector.",
+      "examples": ["0.3.0"]
+    },
+    "tenant_id": {
+      "type": "string",
+      "description": "Tenant UUID from /etc/patched/tenant-id, or 'UNKNOWN' if absent.",
+      "examples": ["11111111-1111-1111-1111-111111111111", "UNKNOWN"]
+    },
+    "collected_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp of when the collection ran."
+    },
+    "metering_status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "spotlight_disabled",
+        "no_user_session",
+        "userassist_unavailable",
+        "unavailable"
+      ],
+      "description": "Platform-neutral software metering collection status. ok requires readable usage records on Windows. A null app usage value never proves non-use. userassist_unavailable/spotlight_disabled/unavailable/no_user_session are reduced or unavailable coverage; absent = not reported."
+    },
+    "metering_user_hive_count": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 2147483647,
+      "description": "Windows loaded user hives inspected; absent/null = not reported."
+    },
+    "metering_record_count": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 2147483647,
+      "description": "Usage records read by the collector; absent/null = not reported, never inferred as zero."
+    },
+    "inventory_capabilities": {
+      "type": "object",
+      "description": "Versioned authenticated inventory completeness declaration. PAT-1399 accepts Windows app absence only when schema_version=1 and windows_winget_inventory_complete=true. Missing, false, partial, unsupported, and non-Windows declarations remain valid inventory but confer no absence authority. Existing agents omit this and fail closed until PAT-1401.",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": { "type": "integer", "minimum": 1 },
+        "windows_winget_inventory_complete": { "type": "boolean" }
+      }
+    },
+    "device": {
+      "type": "object",
+      "description": "Hardware identity fields.",
+      "required": [
+        "serial",
+        "hw_uuid",
+        "hostname",
+        "hw_model",
+        "arch",
+        "last_boot"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "serial": {
+          "type": "string",
+          "description": "IOPlatformSerialNumber (macOS) or BIOS serial (Windows). 'Unknown' if unreadable."
+        },
+        "hw_uuid": {
+          "type": "string",
+          "description": "IOPlatformUUID (macOS) or SMBIOS UUID (Windows). 'Unknown' if unreadable."
+        },
+        "hostname": {
+          "type": "string",
+          "description": "LocalHostName (macOS) or NetBIOS hostname (Windows)."
+        },
+        "computer_name": {
+          "type": "string",
+          "description": "ComputerName (macOS only) — the human-friendly display name. Absent on Windows."
+        },
+        "hw_model": {
+          "type": "string",
+          "description": "hw.model sysctl value (macOS, e.g. 'Mac14,2') or WMI ComputerSystemProduct.Name (Windows)."
+        },
+        "arch": {
+          "type": "string",
+          "description": "CPU architecture: 'arm64' or 'x86_64'."
+        },
+        "last_boot": {
+          "type": "string",
+          "description": "ISO 8601 UTC timestamp of last boot, or 'Unknown'."
+        }
+      }
+    },
+    "hardware": {
+      "type": "object",
+      "description": "Hardware specification snapshot. Stored verbatim as JSONB in devices.hardware.",
+      "required": [
+        "cpu_model",
+        "cpu_cores",
+        "ram_gb",
+        "disk_total_gb",
+        "disk_free_gb"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "cpu_model": {
+          "type": "string",
+          "examples": ["Apple M2", "Intel(R) Core(TM) i7-9750H"]
+        },
+        "cpu_cores": {
+          "type": "integer"
+        },
+        "ram_gb": {
+          "type": "integer"
+        },
+        "disk_total_gb": {
+          "type": "number"
+        },
+        "disk_free_gb": {
+          "type": "number"
+        }
+      }
+    },
+    "os": {
+      "type": "object",
+      "required": ["name", "version", "build"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "examples": ["macOS", "Windows"]
+        },
+        "version": {
+          "type": "string",
+          "examples": ["15.4.1", "11.0.22631"]
+        },
+        "build": {
+          "type": "string",
+          "examples": ["24E263", "22631.3593"]
+        }
+      }
+    },
+    "compliance": {
+      "type": "object",
+      "description": "Flat bag of compliance signal key→value pairs. All extracted values become strings in compliance_signals; numeric fields (pending_updates_count, screensaver_delay_seconds, local_admin_count) are integers in the JSON but stored as their string representation. additionalProperties:true — Windows CIS signals drop in as new keys with no schema change. RESERVED NAMESPACE (PAT-913): the finding-control IDs (the compliance_assessments.controls_assessed enum) may NEVER appear as bag keys — ValidatePayload rejects them, and buildSignalsMap skips them on re-extraction. Violations arrive only via compliance_findings; Pass attestation arrives only via compliance_assessments.controls_assessed. Otherwise compliance:{\"disk_encryption_off\":\"Pass\"} could forge a Pass on a critical rule with no attestation. SIGNAL VALUE CONTRACT (PAT-1767, see PAYLOAD_SCHEMA.md 'Signal value contract'): every non-reserved bag value is exactly one of (1) a real value, (2) the exact string \"NotConfigured\" — the read succeeded and the setting is genuinely absent, the rule decides what the OS default means for compliance, or (3) JSON null or the exact string \"Unknown\" — the read itself failed. Both null and \"Unknown\" stay accepted and are evaluated through treat_unknown_as. Most established macOS signals use null and Windows signals use \"Unknown\"; PAT-1752's neutral macOS MDM fields deliberately use the shared Yes/No/Unknown enum.",
+      "additionalProperties": true,
+      "properties": {
+        "filevault": { "type": "string", "examples": ["On", "Off", "NotConfigured", "Unknown"] },
+        "sip": {
+          "type": "string",
+          "examples": ["enabled", "disabled", "NotConfigured", "Unknown"]
+        },
+        "gatekeeper": {
+          "type": "string",
+          "examples": ["enabled", "assessments", "disabled"]
+        },
+        "firewall": {
+          "type": "string",
+          "examples": ["enabled", "disabled", "NotConfigured", "Unknown"]
+        },
+        "xprotect_version": { "type": "string" },
+        "mrt_version": { "type": "string" },
+        "pending_updates_count": { "type": "integer", "minimum": 0 },
+        "mdm_enrolled": {
+          "type": "string",
+          "enum": ["Yes", "No", "Unknown"],
+          "description": "Platform-neutral MDM enrolment fact. Unknown means the endpoint could not determine enrolment; it never passes an MDM compliance rule."
+        },
+        "mdm_enrolled_via_dep": {
+          "type": "string",
+          "enum": ["Yes", "No", "Unknown"],
+          "description": "macOS-only DEP/Automated Device Enrolment detail, separate from the neutral MDM fact and never required for the MDM rule."
+        },
+        "mdm_enrolment": {
+          "type": "string",
+          "examples": ["dep=Yes mdm=Yes", "dep=No mdm=No"],
+          "description": "Deprecated macOS combined value retained for one PAT-1752 compatibility release. New consumers use mdm_enrolled and mdm_enrolled_via_dep."
+        },
+        "secure_boot": {
+          "type": "string",
+          "examples": ["Full Security", "Valid", "NotConfigured", "Unknown"]
+        },
+        "auto_security_updates": {
+          "type": "string",
+          "examples": ["On", "Off", "NotConfigured", "Unknown"]
+        },
+        "audit_logging": {
+          "type": "string",
+          "examples": ["enabled", "disabled", "NotConfigured", "Unknown"]
+        },
+        "remote_apple_events": {
+          "type": "string",
+          "examples": ["On", "Off", "NotConfigured", "Unknown"]
+        },
+        "remote_login": {
+          "type": "string",
+          "examples": ["On", "Off", "NotConfigured", "Unknown"]
+        },
+        "screen_sharing": { "type": "string", "examples": ["On", "Off"] },
+        "sealed_system_volume": {
+          "type": "string",
+          "examples": ["enabled", "NotConfigured", "Unknown"]
+        },
+        "screensaver_password": {
+          "type": "string",
+          "examples": ["Yes", "No", "DefaultAssumed"]
+        },
+        "screensaver_delay_seconds": { "type": "integer" },
+        "screensaver_idle_seconds": {
+          "type": ["integer", "string", "null"],
+          "minimum": 1,
+          "description": "Seconds when read; the string \"NotConfigured\" (PAT-1775) when the read succeeded and no idle time is set; null when the read itself failed."
+        },
+        "screensaver_idle_seconds_enforced_by_profile": {
+          "type": ["boolean", "string", "null"],
+          "description": "true/false when read; the string \"NotConfigured\" (PAT-1767) when objectIsForcedForKey succeeded but no profile forces the key; null when the read itself failed."
+        },
+        "auto_login_user": { "type": "string", "examples": ["None"] },
+        "local_admin_count": {
+          "type": ["integer", "string", "null"],
+          "minimum": 0,
+          "description": "A real count when the read succeeded. The string \"Unknown\" (Windows, PAT-1974) or JSON null (macOS) when the enumeration itself failed — never a fabricated 0. See the top-level local_admins object for the roster of names behind this count."
+        },
+        "password_policy_present": {
+          "type": "string",
+          "examples": ["Yes", "No"]
+        },
+        "password_policy_is_default": {
+          "type": "string",
+          "examples": ["Yes", "No", "NotConfigured", "Unknown"]
+        },
+        "password_policy_raw": { "type": "string" }
+      }
+    },
+    "security_tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "examples": [
+              "crowdstrike-falcon",
+              "sentinelone",
+              "defender-for-endpoint"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "examples": [
+              "CrowdStrike Falcon",
+              "SentinelOne",
+              "Microsoft Defender for Endpoint"
+            ]
+          }
+        }
+      }
+    },
+    "system_extensions": {
+      "type": "array",
+      "description": "macOS-only. Required for schema_version 2; optional for v3+.",
+      "items": {
+        "type": "object",
+        "required": [
+          "enabled",
+          "active",
+          "team_id",
+          "bundle_id",
+          "version",
+          "name",
+          "state"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "active": { "type": "boolean" },
+          "team_id": { "type": "string" },
+          "bundle_id": { "type": "string" },
+          "version": { "type": "string" },
+          "name": { "type": "string" },
+          "state": { "type": "string" }
+        }
+      }
+    },
+    "background_items": {
+      "type": "array",
+      "description": "macOS-only (BTM login items). Required for schema_version 2; optional for v3+.",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "identifier",
+          "team_id",
+          "url",
+          "type",
+          "disposition"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "identifier": { "type": "string" },
+          "team_id": { "type": "string" },
+          "url": { "type": "string" },
+          "type": { "type": "integer" },
+          "disposition": { "type": "integer" }
+        }
+      }
+    },
+    "icloud": {
+      "type": "object",
+      "description": "macOS-only. Required for schema_version 2; optional for v3+.",
+      "required": ["signed_in"],
+      "additionalProperties": false,
+      "properties": {
+        "signed_in": {
+          "type": "string",
+          "examples": ["Yes", "No", "Unknown"]
+        }
+      }
+    },
+    "pending_updates": {
+      "type": "array",
+      "description": "Outstanding software updates. Optional. macOS: added in collector 0.3.0.",
+      "items": {
+        "type": "object",
+        "required": ["label", "title", "version", "recommended"],
+        "additionalProperties": false,
+        "properties": {
+          "label": { "type": "string" },
+          "title": { "type": "string" },
+          "version": { "type": "string" },
+          "action": { "type": ["string", "null"] },
+          "recommended": { "type": "boolean" }
+        }
+      }
+    },
+    "patches": {
+      "type": "array",
+      "description": "Software update install history. Optional. macOS: from softwareupdate --history (collector 0.3.0+).",
+      "items": {
+        "type": "object",
+        "required": ["name", "version", "date_raw"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "installed_at": {
+            "type": ["string", "null"],
+            "description": "ISO 8601 UTC, or null when date parsing failed."
+          },
+          "date_raw": {
+            "type": "string",
+            "description": "Original locale-formatted date string, for diagnostics."
+          }
+        }
+      }
+    },
+    "hardware_health": {
+      "type": "object",
+      "description": "Battery, storage volume, and physical disk health. Optional — absent in payloads from agents that predate PAT-251 (collector 0.8.0). Ingested into device_hardware / device_storage_volume / device_disk tables. collection_status (PAT-1720) is optional and, when absent entirely or absent per key, means the section was collected in full (old agents keep working unchanged) — the server never lets a failed source command on the endpoint read as an authoritative absence: it never deletes previously stored storage or disk rows for a partial/unavailable section, and never overwrites stored battery values with a partial/unavailable battery reading.",
+      "required": ["battery", "storage", "disks"],
+      "additionalProperties": false,
+      "properties": {
+        "battery": {
+          "type": "object",
+          "description": "Battery health from system_profiler SPPowerDataType. present=false when no battery is detected or the tool failed.",
+          "required": ["present"],
+          "additionalProperties": false,
+          "properties": {
+            "present": { "type": "boolean" },
+            "cycle_count": {
+              "type": ["integer", "null"],
+              "description": "Charge cycle count. null when battery is absent or value could not be read."
+            },
+            "condition": {
+              "type": ["string", "null"],
+              "description": "Battery condition string (e.g. 'Normal', 'Service Recommended'). null when absent."
+            },
+            "max_capacity_pct": {
+              "type": ["integer", "null"],
+              "description": "Maximum capacity as an integer percentage (e.g. 94 means 94 %). The collector strips the % sign and casts to int — no float values permitted. null when battery absent or value unreadable."
+            }
+          }
+        },
+        "storage": {
+          "type": "array",
+          "description": "Real mounted volumes from df -k. Excludes pseudo filesystems (devfs, map auto*).",
+          "items": {
+            "type": "object",
+            "required": ["mount", "total_bytes", "free_bytes", "used_pct"],
+            "additionalProperties": false,
+            "properties": {
+              "mount": {
+                "type": "string",
+                "description": "Mount point path, e.g. '/' or '/Volumes/Data'."
+              },
+              "total_bytes": {
+                "type": "integer",
+                "description": "Total volume size in bytes."
+              },
+              "free_bytes": {
+                "type": "integer",
+                "description": "Available bytes."
+              },
+              "used_pct": {
+                "type": "integer",
+                "description": "Used percentage (0–100)."
+              }
+            }
+          }
+        },
+        "disks": {
+          "type": "array",
+          "description": "Physical disks from diskutil list (physical). Only disks listed as '(physical)' are included.",
+          "items": {
+            "type": "object",
+            "required": ["device", "smart_status", "internal", "solid_state"],
+            "additionalProperties": false,
+            "properties": {
+              "device": {
+                "type": "string",
+                "description": "Device node, e.g. 'disk0'."
+              },
+              "smart_status": {
+                "type": "string",
+                "description": "SMART status from diskutil info, e.g. 'Verified', 'Not Supported'. The agent sends 'Undetermined' when the diskutil call itself failed and the SMART line could not be read at all — distinct from a real 'Not Supported' response, which means the drive answered and does not implement SMART."
+              },
+              "internal": {
+                "type": "boolean",
+                "description": "True when diskutil reports the disk as internal."
+              },
+              "solid_state": {
+                "type": "boolean",
+                "description": "True when diskutil reports 'Solid State: Yes'."
+              }
+            }
+          }
+        },
+        "collection_status": {
+          "type": "object",
+          "description": "Optional, per-section verdict on whether this run actually collected real state for battery/storage/disks (PAT-1720). Absent object, or an absent key within it, means that section was collected in full — old agents that never send this key keep working unchanged. A non-'complete' section tells the server a source command failed on the endpoint: the server must never read that as authoritative absence, so it never deletes previously stored storage or disk rows for a 'partial'/'unavailable' section and never overwrites stored battery values with a 'partial'/'unavailable' battery reading. An unrecognised value is treated as 'unavailable', the same conservative default applied_configuration.collection_status uses, never as 'complete'.",
+          "additionalProperties": false,
+          "properties": {
+            "battery": {
+              "type": "string",
+              "enum": ["complete", "partial", "unavailable"],
+              "description": "'complete' (or absent) = today's replace-on-write behaviour. 'partial'/'unavailable' = do not overwrite the stored battery columns on device_hardware and do not record a battery change into device_hardware_history from this payload."
+            },
+            "storage": {
+              "type": "string",
+              "enum": ["complete", "partial", "unavailable"],
+              "description": "'complete' (or absent) = replace the stored storage snapshot in full, including pruning volumes not sent. 'partial' = upsert only the sent volumes (matched by mount) and delete nothing. 'unavailable' = write nothing; the sent storage array (if any) is ignored."
+            },
+            "disks": {
+              "type": "string",
+              "enum": ["complete", "partial", "unavailable"],
+              "description": "'complete' (or absent) = replace the stored disk snapshot in full, including pruning disks not sent. 'partial' = upsert only the sent disks (matched by device node) and delete nothing. 'unavailable' = write nothing; the sent disks array (if any) is ignored."
+            }
+          }
+        }
+      }
+    },
+    "local_admins": {
+      "type": "object",
+      "description": "PAT-1974: the standing local-administrator roster behind the local_admin_count compliance signal. local_admin_count itself is unchanged — a scalar in the flat compliance bag; this object carries the structured account names with their own collection_status, the same pattern certificates/collection_status.certificates and hardware_health's own nested collection_status already establish. Unlike hardware_health, which has three independent sub-sections and therefore its own per-key collection_status object, local_admins has exactly one section, so collection_status here is a single string directly on the object. Optional at the schema level for backward compatibility with an agent that predates PAT-1974 (the extractor treats the whole key's absence as a no-op); every current Windows and macOS agent sends it unconditionally.",
+      "required": ["collection_status"],
+      "additionalProperties": false,
+      "properties": {
+        "collection_status": {
+          "type": "string",
+          "enum": ["complete", "partial", "unavailable"],
+          "description": "Required whenever local_admins is present — both agents always send it explicitly. 'complete' = replace the stored roster in full (local_admin_accounts), even when accounts is empty. 'partial' = upsert only the accounts sent (matched by name), delete nothing. 'unavailable' = write nothing at all; a failed enumeration must never be read as authority that the roster shrank or is empty."
+        },
+        "accounts": {
+          "type": "array",
+          "description": "Omitted entirely (never []) unless collection_status is 'complete': an empty array under a degraded read would claim 'this device has zero standing admins', the exact absence-requires-authority violation this ticket exists to close.",
+          "items": {
+            "type": "object",
+            "required": ["name", "principal_type", "builtin"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The principal as the OS names it — 'MACHINE\\\\alice' or 'CONTOSO\\\\Domain Admins' on Windows, the account short name on macOS. For a principal_type 'unresolved' entry this is the raw SID string, because that is the only name the device has for it."
+              },
+              "principal_type": {
+                "type": "string",
+                "enum": ["user", "group", "unresolved"],
+                "description": "'user' = an individual account, local or directory-sourced. 'group' = a directory-sourced group principal (e.g. a domain admins group); its own membership is opaque to the device and is never counted in local_admin_count. 'unresolved' = a SID that could not be resolved to a name or kind; IS counted, so an unknown principal never lets a device pass a threshold it might actually fail. Every macOS entry is 'user'."
+              },
+              "builtin": {
+                "type": "boolean",
+                "description": "True for the platform's built-in administrator identity (the Windows RID-500 Administrator account), reported rather than silently excluded. macOS filters its own equivalent (root) out of the roster entirely, so every macOS entry is false."
+              },
+              "sid": {
+                "type": "string",
+                "description": "Windows only — the stable key for a principal whose name can change or fail to resolve. macOS has no equivalent and omits this key."
+              },
+              "account_state": {
+                "type": ["string", "null"],
+                "enum": ["enabled", "disabled", "unknown", null],
+                "description": "PAT-1992. Windows only: the enabled state of the built-in RID-500 Administrator as the agent read it (Patched-LTD/updater PAT-1988). Optional. An absent key, or an explicit null (treated identically), means an agent that predates the field, or an entry that was never read (every entry that is not the built-in account, and every macOS entry, since macOS leaves root out of the roster). 'unknown' means a read was attempted and did not establish the state; it must never be treated as 'disabled'. Stored in local_admin_accounts.account_state (migration 0162); a 'partial' collection that omits the key keeps the stored value."
+              }
+            }
+          }
+        }
+      },
+      "if": {
+        "properties": { "collection_status": { "const": "complete" } }
+      },
+      "then": {
+        "required": ["accounts"]
+      }
+    },
+    "firmware": {
+      "type": "object",
+      "description": "PAT-2262 (first slice of PAT-1863): BIOS, system and baseboard identity as the firmware reports it (Windows: Win32_BIOS, Win32_ComputerSystem, Win32_BaseBoard). Observation only: no field states whether a firmware version is current, outdated or vulnerable. Absent means not reported (an agent older than PAT-2262, or macOS, which does not collect it in this slice) and is a strict no-op; a present block whose collection_status is unavailable is an agent that tried and read nothing, and carries no sections. complete and partial carry all three sections, each with its own collection_status. Strings are trimmed, printable and at most 128 characters (release_date_raw 64); an agent drops a value over a bound rather than truncating it. errors are fixed codes, never exception text. See PAYLOAD_SCHEMA.md 'Firmware object'.",
+      "required": ["schema_version", "collection_status", "errors"],
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": { "type": "integer", "const": 1 },
+        "collection_status": { "type": "string", "enum": ["complete", "partial", "unavailable"] },
+        "errors": { "type": "array", "maxItems": 16, "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" } },
+        "bios": {
+          "type": "object",
+          "required": ["collection_status"],
+          "additionalProperties": false,
+          "properties": {
+            "collection_status": { "type": "string", "enum": ["complete", "partial", "unavailable"] },
+            "manufacturer": { "type": ["string", "null"], "minLength": 1, "maxLength": 128 },
+            "version": { "type": ["string", "null"], "minLength": 1, "maxLength": 128, "description": "Win32_BIOS.SMBIOSBIOSVersion." },
+            "smbios_version": { "type": ["string", "null"], "pattern": "^[0-9]{1,5}\\.[0-9]{1,5}$" },
+            "release_date": { "type": ["string", "null"], "format": "date", "description": "YYYY-MM-DD: the date part of the firmware's CIM datetime, no time-zone conversion." },
+            "release_date_raw": { "type": ["string", "null"], "minLength": 1, "maxLength": 64, "description": "Sent only when the agent could not parse the release date; the section is then partial." }
+          }
+        },
+        "system": {
+          "type": "object",
+          "required": ["collection_status"],
+          "additionalProperties": false,
+          "properties": {
+            "collection_status": { "type": "string", "enum": ["complete", "partial", "unavailable"] },
+            "manufacturer": { "type": ["string", "null"], "minLength": 1, "maxLength": 128 },
+            "model": { "type": ["string", "null"], "minLength": 1, "maxLength": 128 }
+          }
+        },
+        "baseboard": {
+          "type": "object",
+          "required": ["collection_status"],
+          "additionalProperties": false,
+          "properties": {
+            "collection_status": { "type": "string", "enum": ["complete", "partial", "unavailable"] },
+            "manufacturer": { "type": ["string", "null"], "minLength": 1, "maxLength": 128 },
+            "product": { "type": ["string", "null"], "minLength": 1, "maxLength": 128 }
+          }
+        }
+      }
+    },
+    "kernel_drivers": {
+      "type": "object",
+      "description": "PAT-2263: installed and loaded kernel and file-system drivers identified by hash, plus the Microsoft vulnerable driver blocklist enforcement state (Windows). The agent makes no vulnerability claim; the platform matches the hashes against Microsoft's recommended driver block rules and loldrivers.io by hash only, never by file name. Absent means not reported (an agent older than PAT-2263, or macOS) and is a strict no-op. collection_status describes the driver list only: complete when every source was read and every file found was hashed or is genuinely missing (file_missing), partial when a source failed, an entry was unusable, a bound cut the list or any row is unhashed for another reason (such a row stays in the list, never dropped), unavailable when no source could be read, in which case drivers is omitted. enforcement is always present; each value has its own unknown. A hashed row carries lowercase flat sha256 and sha1 and, for a PE whose headers hold together, the Authenticode sha256 and sha1; an unhashed row carries no hash and an unhashed_reason. See PAYLOAD_SCHEMA.md 'Kernel drivers object'.",
+      "required": ["schema_version", "collection_status", "errors", "enforcement"],
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": { "type": "integer", "const": 1 },
+        "collection_status": { "type": "string", "enum": ["complete", "partial", "unavailable"] },
+        "errors": { "type": "array", "maxItems": 16, "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" } },
+        "enforcement": {
+          "type": "object",
+          "required": ["vulnerable_driver_blocklist", "hvci", "smart_app_control", "code_integrity_policy", "blocklist_enforced"],
+          "additionalProperties": false,
+          "properties": {
+            "vulnerable_driver_blocklist": { "type": "string", "enum": ["enabled", "disabled", "not_set", "unknown"], "description": "HKLM\\SYSTEM\\CurrentControlSet\\Control\\CI\\Config VulnerableDriverBlocklistEnable: 1, 0, absent, anything else or a failed read. not_set is not inferred to the Windows default." },
+            "hvci": { "type": "string", "enum": ["running", "configured", "off", "unknown"], "description": "Win32_DeviceGuard HypervisorEnforcedCodeIntegrityStatus 2, 1, 0." },
+            "smart_app_control": { "type": "string", "enum": ["on", "evaluation", "off", "not_present", "unknown"], "description": "CI\\Policy VerifiedAndReputablePolicyState 1, 2, 0, absent." },
+            "code_integrity_policy": { "type": "string", "enum": ["enforced", "audit", "off", "unknown"], "description": "Win32_DeviceGuard CodeIntegrityPolicyEnforcementStatus 2, 1, 0." },
+            "blocklist_enforced": { "type": "string", "enum": ["yes", "no", "unknown"], "description": "yes when the blocklist is enabled, HVCI is running or Smart App Control is on; no when the blocklist is disabled, HVCI is off or configured and Smart App Control is off or not present; otherwise unknown." }
+          }
+        },
+        "drivers": {
+          "type": "array",
+          "maxItems": 1500,
+          "items": {
+            "type": "object",
+            "required": ["sources", "hash_status"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string", "maxLength": 512, "pattern": "^[A-Za-z]:\\\\", "description": "Resolved drive-letter path; omitted only when a service's ImagePath could not be resolved (unhashed_reason path_unsupported), when service_name identifies the row." },
+              "sources": { "type": "array", "minItems": 1, "maxItems": 3, "uniqueItems": true, "items": { "type": "string", "enum": ["drivers_directory", "service", "loaded"] } },
+              "service_name": { "type": "string", "maxLength": 256 },
+              "service_type": { "type": "string", "enum": ["kernel", "file_system"] },
+              "start_type": { "type": "string", "enum": ["boot", "system", "auto", "demand", "disabled"] },
+              "loaded": { "type": "boolean", "description": "Omitted when the loaded-module list could not be read." },
+              "hash_status": { "type": "string", "enum": ["hashed", "unhashed"] },
+              "unhashed_reason": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "file_missing, reparse_point, not_regular_file, read_failed, size_limit, time_budget, byte_budget, path_unsupported; a newer agent may add codes." },
+              "size_bytes": { "type": "integer", "minimum": 0 },
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "sha1": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+              "authenticode_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "authenticode_sha1": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+              "version": { "type": "string", "pattern": "^[0-9]{1,5}\\.[0-9]{1,5}\\.[0-9]{1,5}\\.[0-9]{1,5}$", "description": "VS_FIXEDFILEINFO file version." }
+            }
+          }
+        }
+      }
+    },
+    "homebrew": {
+      "type": "object",
+      "description": "PAT-2012 (macOS agent, updater macos/lib/homebrew.sh) and PAT-2013 (platform). Homebrew formulae, casks and taps read from disk under /opt/homebrew and /usr/local; the agent never runs brew. Optional: an agent that predates the collector, or holds it off the wire, omits the key, and the extractor treats that as a no-op. macOS only; ignored on any other platform. Strict at every level (additionalProperties false). Status rules: 'failed' omits formulae, casks and taps (never []); every other status sends all of truncated, truncation_reason, prefixes, formulae, casks, taps and issues; 'not_present' sends the three lists and prefixes empty and is never truncated; 'complete' is never truncated, has at least one prefix row and every prefix row is 'complete' (PAT-2032: both statuses grant absence authority, so neither may describe an incomplete read). Bounds (PAT-2013 size policy) equal the agent's own: 5,000 formulae, 5,000 casks, 1,000 taps, 50 issues. The agent stops, sets truncated and reports 'partial' before reaching them, so a block over a bound is a contract violation and rejects the payload.",
+      "required": [
+        "collection_status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "collection_status": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "partial",
+            "not_present",
+            "failed"
+          ],
+          "description": "'complete' = every prefix with a Homebrew layout was read in full: replace the device's Homebrew state and close anything no longer present. 'partial' = something could not be read (a receipt, a symlink not followed, a bound hit): store what was sent, never close or prune anything. 'not_present' = both prefixes were checked and neither has a Homebrew layout: a genuine reading that clears the device's Homebrew state. 'failed' = nothing trustworthy was read: write no package rows at all, record only the status."
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "truncation_reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "time_limit",
+            "formula_limit",
+            "cask_limit",
+            "tap_limit",
+            "size_limit",
+            null
+          ],
+          "description": "Why a truncated read stopped. size_limit (PAT-2032) = the agent's serialised byte budget for the block was reached. Every reason means truncated, so the block is 'partial'."
+        },
+        "prefixes": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "owner",
+              "owner_uid",
+              "collection_status",
+              "formulae",
+              "casks",
+              "taps"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "owner": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Account that owns the Cellar or Caskroom (lstat, never through a symlink)."
+              },
+              "owner_uid": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "collection_status": {
+                "type": "string",
+                "enum": [
+                  "complete",
+                  "partial",
+                  "failed"
+                ]
+              },
+              "formulae": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "casks": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "taps": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "formulae": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "prefix",
+              "name",
+              "version",
+              "tap",
+              "installed_on_request",
+              "installed_as_dependency",
+              "installed_at",
+              "runtime_dependencies",
+              "homepage",
+              "source_url",
+              "opt_linked",
+              "receipt_status",
+              "formula_file_status"
+            ],
+            "properties": {
+              "prefix": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The Homebrew prefix this keg lives under, e.g. /opt/homebrew or /usr/local."
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Formula name, the Cellar directory name (e.g. openssl@3)."
+              },
+              "version": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Keg version directory name, including any Homebrew revision suffix (e.g. 1.2.3_1). Every keg on disk is one entry, current or not."
+              },
+              "tap": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "source.tap from INSTALL_RECEIPT.json (e.g. homebrew/core). null when the receipt is missing, unreadable or silent."
+              },
+              "installed_on_request": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "installed_as_dependency": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "installed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "Receipt install time, RFC3339 UTC."
+              },
+              "runtime_dependencies": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "string"
+                },
+                "description": "full_name of each runtime dependency from the receipt. null when the receipt carried no list."
+              },
+              "homepage": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "homepage from the keg's .brew/<name>.rb, read as text, credentials stripped."
+              },
+              "source_url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Main source url from the keg's .brew/<name>.rb, read as text, credentials stripped."
+              },
+              "opt_linked": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "True when opt/<name> points at this keg. null when that cannot be determined."
+              },
+              "receipt_status": {
+                "type": "string",
+                "enum": [
+                  "read",
+                  "missing",
+                  "unreadable",
+                  "unparseable"
+                ]
+              },
+              "formula_file_status": {
+                "type": "string",
+                "enum": [
+                  "read",
+                  "missing",
+                  "unreadable"
+                ]
+              }
+            }
+          }
+        },
+        "casks": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "prefix",
+              "token",
+              "version",
+              "versions_on_disk",
+              "tap",
+              "installed_on_request",
+              "installed_at",
+              "receipt_status",
+              "apps"
+            ],
+            "properties": {
+              "prefix": {
+                "type": "string",
+                "minLength": 1
+              },
+              "token": {
+                "type": "string",
+                "minLength": 1
+              },
+              "version": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "source.version from the cask receipt, else the only version directory on disk, else null."
+              },
+              "versions_on_disk": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "tap": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "installed_on_request": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "installed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "receipt_status": {
+                "type": "string",
+                "enum": [
+                  "read",
+                  "missing",
+                  "unreadable",
+                  "unparseable"
+                ]
+              },
+              "apps": {
+                "type": "array",
+                "description": "App bundles the cask installed. path is set only when the app (or a symlink to it) is still inside the Caskroom version directory; it is null in the usual case where Homebrew moved the app to its appdir. The platform links a cask to an application installation by path (PAT-2013). A path outside the cask's own <prefix>/Caskroom/<token>/ directory is not linked (PAT-2032: a symlink planted there could point anywhere). A path-less app links at /Applications/<name> for display only and never makes the estate count the software once.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "path",
+                    "exists"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "path": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "exists": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "taps": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "prefix",
+              "name",
+              "directory",
+              "remote_url",
+              "config_status"
+            ],
+            "properties": {
+              "prefix": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "user/repo with the homebrew- prefix removed (e.g. acme/tools)."
+              },
+              "directory": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The on-disk directory under Library/Taps (e.g. acme/homebrew-tools)."
+              },
+              "remote_url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Remote url from the tap's git config, read as text, credentials stripped."
+              },
+              "config_status": {
+                "type": "string",
+                "enum": [
+                  "read",
+                  "missing",
+                  "unreadable",
+                  "not_a_directory"
+                ]
+              }
+            }
+          }
+        },
+        "issues": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "path"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "examples": [
+                  "unreadable",
+                  "symlink_not_followed",
+                  "not_regular",
+                  "name_unsafe",
+                  "receipt_unreadable",
+                  "receipt_unparseable",
+                  "formula_file_unreadable",
+                  "git_config_unreadable"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "collection_status": {
+                "const": "failed"
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "formulae"
+                  ]
+                },
+                {
+                  "required": [
+                    "casks"
+                  ]
+                },
+                {
+                  "required": [
+                    "taps"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "required": [
+              "truncated",
+              "truncation_reason",
+              "prefixes",
+              "formulae",
+              "casks",
+              "taps",
+              "issues"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "collection_status": {
+                "const": "not_present"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "truncated": {
+                "const": false
+              },
+              "prefixes": {
+                "maxItems": 0
+              },
+              "formulae": {
+                "maxItems": 0
+              },
+              "casks": {
+                "maxItems": 0
+              },
+              "taps": {
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "collection_status": {
+                "const": "complete"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "truncated": {
+                "const": false
+              },
+              "prefixes": {
+                "minItems": 1,
+                "items": {
+                  "properties": {
+                    "collection_status": {
+                      "const": "complete"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ide_extensions": {
+      "type": "object",
+      "description": "PAT-2017 (both agents: updater macos/lib/ide_extensions.sh, windows InventoryIdeExtensions.cs) and PAT-2021 (platform). Every VS Code, VS Code Insiders, Cursor and Windsurf extension and every JetBrains plugin in every local user profile, read from disk. Optional; strict at every level. Status rules (absence requires authority, PAT-1710): 'failed' omits the item list (never []) and may omit every other key (the macOS agent sends a bare {\"collection_status\":\"failed\"} when its parser dies); every other status sends every key; 'truncated' only with 'partial' or 'failed', and a truncation_reason only when truncated; 'not_present' sends empty item and read-row lists; 'complete' shows what it read (at least one read row, all complete). Unit rules: complete needs every unit complete or not_present, at least one complete; not_present needs every unit not_present; a not_present unit lists no items. Absence authority is per unit and only when the block is neither failed nor truncated. Stored as software_observations with identity kind ide_extension (value = id, companion = marketplace: vscode_marketplace for VS Code and Insiders, open_vsx for Cursor and Windsurf, jetbrains_marketplace for JetBrains) or ide_extension_unidentified.",
+      "required": ["collection_status"],
+      "additionalProperties": false,
+      "properties": {
+        "collection_status": {
+          "type": "string",
+          "enum": ["complete", "partial", "not_present", "failed"]
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "truncation_reason": {
+          "type": ["string", "null"],
+          "enum": ["time_limit", "extension_limit", "user_limit", null]
+        },
+        "users": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["user", "user_id", "collection_status", "profiles"],
+            "properties": {
+              "user": {
+                "type": "string",
+                "minLength": 1
+              },
+              "user_id": {
+                "type": ["string", "null"]
+              },
+              "collection_status": {
+                "type": "string",
+                "enum": ["complete", "partial", "not_present", "failed"]
+              },
+              "profiles": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "profiles": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["user", "user_id", "family", "editor", "editor_version", "collection_status", "manifest_source", "extension_count"],
+            "properties": {
+              "user": {
+                "type": "string",
+                "minLength": 1
+              },
+              "user_id": {
+                "type": ["string", "null"]
+              },
+              "family": {
+                "type": "string",
+                "enum": ["vscode", "jetbrains"]
+              },
+              "editor": {
+                "type": "string",
+                "minLength": 1
+              },
+              "editor_version": {
+                "type": ["string", "null"]
+              },
+              "collection_status": {
+                "type": "string",
+                "enum": ["complete", "partial", "failed"]
+              },
+              "manifest_source": {
+                "type": ["string", "null"],
+                "enum": ["extensions_json", "package_json", "plugin_xml", null]
+              },
+              "extension_count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "issues": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code", "path"],
+            "properties": {
+              "code": {
+                "type": "string",
+                "minLength": 1
+              },
+              "path": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "extensions": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["user", "user_id", "family", "editor", "editor_version", "id", "name", "publisher", "publisher_display_name", "version", "installed_at", "source", "pre_release", "target_platform", "disabled", "directory", "manifest_source", "manifest_status"],
+            "properties": {
+              "user": {
+                "type": "string",
+                "minLength": 1
+              },
+              "user_id": {
+                "type": ["string", "null"]
+              },
+              "family": {
+                "type": "string",
+                "enum": ["vscode", "jetbrains"]
+              },
+              "editor": {
+                "type": "string",
+                "minLength": 1,
+                "description": "vscode, vscode_insiders, cursor or windsurf for the vscode family; the JetBrains product directory prefix (IntelliJIdea, PyCharm, ...)"
+              },
+              "editor_version": {
+                "type": ["string", "null"]
+              },
+              "id": {
+                "type": ["string", "null"],
+                "description": "VS Code family: publisher.name lowercased. JetBrains: plugin.xml <id> (or <name>). Null when the manifest could not be read."
+              },
+              "name": {
+                "type": ["string", "null"]
+              },
+              "publisher": {
+                "type": ["string", "null"]
+              },
+              "publisher_display_name": {
+                "type": ["string", "null"]
+              },
+              "version": {
+                "type": ["string", "null"]
+              },
+              "installed_at": {
+                "type": ["string", "null"],
+                "format": "date-time"
+              },
+              "source": {
+                "type": ["string", "null"],
+                "description": "gallery, vsix or resource (VS Code family)"
+              },
+              "pre_release": {
+                "type": ["boolean", "null"]
+              },
+              "target_platform": {
+                "type": ["string", "null"]
+              },
+              "disabled": {
+                "type": ["boolean", "null"]
+              },
+              "directory": {
+                "type": ["string", "null"]
+              },
+              "manifest_source": {
+                "type": ["string", "null"],
+                "enum": ["extensions_json", "package_json", "plugin_xml_jar", "plugin_xml_unpacked", "directory_name", null]
+              },
+              "manifest_status": {
+                "type": ["string", "null"],
+                "enum": ["read", "missing", "unreadable", "unparseable", null]
+              }
+            }
+          }
+        }
+      }
+    },
+    "package_managers": {
+      "type": "object",
+      "description": "PAT-2018 (both agents: updater macos/lib/package_managers.sh, windows InventoryPackageManagers.cs) and PAT-2021 (platform). Global npm packages, pip user-site packages and pipx venv packages for every local user, read from disk; no package manager is run. Optional; strict at every level. Units are the three sources. Status rules (absence requires authority, PAT-1710): 'failed' omits the item list (never []) and may omit every other key (the macOS agent sends a bare {\"collection_status\":\"failed\"} when its parser dies); every other status sends every key; 'truncated' only with 'partial' or 'failed', and a truncation_reason only when truncated; 'not_present' sends empty item and read-row lists; 'complete' shows what it read (at least one read row, all complete). Unit rules: complete needs every unit complete or not_present, at least one complete; not_present needs every unit not_present; a not_present unit lists no items. Absence authority is per unit and only when the block is neither failed nor truncated. Bounds: 5,000 packages per source. Stored as identity kind npm_package (PAT-2015 npm normalisation) or pip_package (PEP 503; pip_user and pipx together), or *_unidentified. pip_package installations close only when both pip_user and pipx are authoritative.",
+      "required": ["collection_status"],
+      "additionalProperties": false,
+      "properties": {
+        "collection_status": {
+          "type": "string",
+          "enum": ["complete", "partial", "not_present", "failed"]
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "truncation_reason": {
+          "type": ["string", "null"],
+          "enum": ["time_limit", "package_limit", "user_limit", null]
+        },
+        "sources": {
+          "type": "object",
+          "description": "Always the three keys unless the block is failed. A truncated source is partial or failed.",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "npm_global": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["collection_status", "truncated", "package_count", "location_count"],
+              "properties": {
+                "collection_status": {
+                  "type": "string",
+                  "enum": ["complete", "partial", "not_present", "failed"]
+                },
+                "truncated": {
+                  "type": "boolean"
+                },
+                "package_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "location_count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "pip_user": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["collection_status", "truncated", "package_count", "location_count"],
+              "properties": {
+                "collection_status": {
+                  "type": "string",
+                  "enum": ["complete", "partial", "not_present", "failed"]
+                },
+                "truncated": {
+                  "type": "boolean"
+                },
+                "package_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "location_count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "pipx": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["collection_status", "truncated", "package_count", "location_count"],
+              "properties": {
+                "collection_status": {
+                  "type": "string",
+                  "enum": ["complete", "partial", "not_present", "failed"]
+                },
+                "truncated": {
+                  "type": "boolean"
+                },
+                "package_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "location_count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        },
+        "users": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["user", "user_id", "collection_status", "sources"],
+            "properties": {
+              "user": {
+                "type": "string",
+                "minLength": 1
+              },
+              "user_id": {
+                "type": ["string", "null"]
+              },
+              "collection_status": {
+                "type": "string",
+                "enum": ["complete", "partial", "not_present", "failed"]
+              },
+              "sources": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [],
+                "properties": {
+                  "npm_global": {
+                    "type": "string",
+                    "enum": ["complete", "partial", "not_present", "failed"]
+                  },
+                  "pip_user": {
+                    "type": "string",
+                    "enum": ["complete", "partial", "not_present", "failed"]
+                  },
+                  "pipx": {
+                    "type": "string",
+                    "enum": ["complete", "partial", "not_present", "failed"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "locations": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["source", "manager", "scope", "user", "user_id", "path", "runtime_version", "interpreters", "collection_status", "package_count"],
+            "properties": {
+              "source": {
+                "type": "string",
+                "enum": ["npm_global", "pip_user", "pipx"]
+              },
+              "manager": {
+                "type": "string",
+                "minLength": 1,
+                "description": "npm_global: system, homebrew, appdata, nvm, fnm or volta. pip_user: library_python, local_lib, appdata_python or microsoft_store. pipx: pipx."
+              },
+              "scope": {
+                "type": "string",
+                "enum": ["user", "system"]
+              },
+              "user": {
+                "type": ["string", "null"]
+              },
+              "user_id": {
+                "type": ["string", "null"]
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "runtime_version": {
+                "type": ["string", "null"]
+              },
+              "interpreters": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "collection_status": {
+                "type": "string",
+                "enum": ["complete", "partial", "failed"]
+              },
+              "package_count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "issues": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code", "path"],
+            "properties": {
+              "code": {
+                "type": "string",
+                "minLength": 1
+              },
+              "path": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "packages": {
+          "type": "array",
+          "maxItems": 15000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["source", "manager", "scope", "user", "user_id", "name", "version", "prefix", "runtime_version", "interpreter", "directory", "metadata_status", "pipx_app", "pipx_main"],
+            "properties": {
+              "source": {
+                "type": "string",
+                "enum": ["npm_global", "pip_user", "pipx"]
+              },
+              "manager": {
+                "type": "string",
+                "minLength": 1
+              },
+              "scope": {
+                "type": "string",
+                "enum": ["user", "system"]
+              },
+              "user": {
+                "type": ["string", "null"]
+              },
+              "user_id": {
+                "type": ["string", "null"]
+              },
+              "name": {
+                "type": ["string", "null"]
+              },
+              "version": {
+                "type": ["string", "null"]
+              },
+              "prefix": {
+                "type": ["string", "null"]
+              },
+              "runtime_version": {
+                "type": ["string", "null"]
+              },
+              "interpreter": {
+                "type": ["string", "null"]
+              },
+              "directory": {
+                "type": ["string", "null"]
+              },
+              "metadata_status": {
+                "type": ["string", "null"],
+                "enum": ["read", "missing", "unreadable", "unparseable", null]
+              },
+              "pipx_app": {
+                "type": ["string", "null"]
+              },
+              "pipx_main": {
+                "type": ["boolean", "null"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "local_models": {
+      "type": "object",
+      "description": "PAT-2019 (both agents: updater macos/lib/local_models.sh, windows InventoryLocalModels.cs) and PAT-2021 (platform). Local model runtimes (Ollama, LM Studio, llama.cpp) in their default install locations and the models in their default stores: names, tags and sizes only. Optional; strict at every level. Units are the three runtimes. Status rules (absence requires authority, PAT-1710): 'failed' omits the item list (never []) and may omit every other key (the macOS agent sends a bare {\"collection_status\":\"failed\"} when its parser dies); every other status sends every key; 'truncated' only with 'partial' or 'failed', and a truncation_reason only when truncated; 'not_present' sends empty item and read-row lists; 'complete' shows what it read (at least one read row, all complete). Unit rules: complete needs every unit complete or not_present, at least one complete; not_present needs every unit not_present; a not_present unit lists no items. Absence authority is per unit and only when the block is neither failed nor truncated. A complete block lists at least one installation or store and every store complete. Bounds: 5,000 models. Stored as identity kinds local_model (value = name[:tag], companion = runtime), local_model_unidentified and local_model_runtime (value and companion = runtime).",
+      "required": ["collection_status"],
+      "additionalProperties": false,
+      "properties": {
+        "collection_status": {
+          "type": "string",
+          "enum": ["complete", "partial", "not_present", "failed"]
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "truncation_reason": {
+          "type": ["string", "null"],
+          "enum": ["time_limit", "model_limit", "user_limit", null]
+        },
+        "runtimes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "ollama": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["collection_status", "installation_count", "store_count", "model_count", "total_bytes"],
+              "properties": {
+                "collection_status": {
+                  "type": "string",
+                  "enum": ["complete", "partial", "not_present", "failed"]
+                },
+                "installation_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "store_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "model_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "total_bytes": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "lm_studio": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["collection_status", "installation_count", "store_count", "model_count", "total_bytes"],
+              "properties": {
+                "collection_status": {
+                  "type": "string",
+                  "enum": ["complete", "partial", "not_present", "failed"]
+                },
+                "installation_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "store_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "model_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "total_bytes": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "llama_cpp": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["collection_status", "installation_count", "store_count", "model_count", "total_bytes"],
+              "properties": {
+                "collection_status": {
+                  "type": "string",
+                  "enum": ["complete", "partial", "not_present", "failed"]
+                },
+                "installation_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "store_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "model_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "total_bytes": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        },
+        "totals": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["model_count", "total_bytes"],
+          "properties": {
+            "model_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "total_bytes": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "users": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["user", "user_id", "collection_status", "runtimes"],
+            "properties": {
+              "user": {
+                "type": "string",
+                "minLength": 1
+              },
+              "user_id": {
+                "type": ["string", "null"]
+              },
+              "collection_status": {
+                "type": "string",
+                "enum": ["complete", "partial", "not_present", "failed"]
+              },
+              "runtimes": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [],
+                "properties": {
+                  "ollama": {
+                    "type": "string",
+                    "enum": ["complete", "partial", "not_present", "failed"]
+                  },
+                  "lm_studio": {
+                    "type": "string",
+                    "enum": ["complete", "partial", "not_present", "failed"]
+                  },
+                  "llama_cpp": {
+                    "type": "string",
+                    "enum": ["complete", "partial", "not_present", "failed"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "installations": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["runtime", "scope", "user", "user_id", "kind", "path", "version", "version_source", "identifier"],
+            "properties": {
+              "runtime": {
+                "type": "string",
+                "enum": ["ollama", "lm_studio", "llama_cpp"]
+              },
+              "scope": {
+                "type": "string",
+                "enum": ["user", "system"]
+              },
+              "user": {
+                "type": ["string", "null"]
+              },
+              "user_id": {
+                "type": ["string", "null"]
+              },
+              "kind": {
+                "type": "string",
+                "minLength": 1,
+                "description": "macOS: app_bundle, homebrew_formula or binary. Windows: program_files, local_programs, winget_portable or scoop."
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "version": {
+                "type": ["string", "null"]
+              },
+              "version_source": {
+                "type": "string",
+                "enum": ["info_plist", "homebrew_keg", "pe_version_resource", "scoop_version_dir", "none"]
+              },
+              "identifier": {
+                "type": ["string", "null"]
+              }
+            }
+          }
+        },
+        "stores": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["runtime", "scope", "user", "user_id", "path", "collection_status", "model_count", "total_bytes"],
+            "properties": {
+              "runtime": {
+                "type": "string",
+                "enum": ["ollama", "lm_studio", "llama_cpp"]
+              },
+              "scope": {
+                "type": "string",
+                "enum": ["user", "system"]
+              },
+              "user": {
+                "type": ["string", "null"]
+              },
+              "user_id": {
+                "type": ["string", "null"]
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "collection_status": {
+                "type": "string",
+                "enum": ["complete", "partial", "failed"]
+              },
+              "model_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "total_bytes": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "issues": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code", "path"],
+            "properties": {
+              "code": {
+                "type": "string",
+                "minLength": 1
+              },
+              "path": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "models": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["runtime", "user", "user_id", "store_path", "name", "tag", "format", "size_bytes", "file_count", "size_source", "missing_blobs", "metadata_status"],
+            "properties": {
+              "runtime": {
+                "type": "string",
+                "enum": ["ollama", "lm_studio", "llama_cpp"]
+              },
+              "user": {
+                "type": ["string", "null"]
+              },
+              "user_id": {
+                "type": ["string", "null"]
+              },
+              "store_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": ["string", "null"]
+              },
+              "tag": {
+                "type": ["string", "null"]
+              },
+              "format": {
+                "type": ["string", "null"],
+                "enum": ["gguf", "safetensors", "other", null]
+              },
+              "size_bytes": {
+                "type": ["integer", "null"],
+                "minimum": 0
+              },
+              "file_count": {
+                "type": ["integer", "null"],
+                "minimum": 0
+              },
+              "size_source": {
+                "type": ["string", "null"],
+                "enum": ["manifest", "stat", null]
+              },
+              "missing_blobs": {
+                "type": ["integer", "null"],
+                "minimum": 0
+              },
+              "metadata_status": {
+                "type": ["string", "null"],
+                "enum": ["read", "missing", "unreadable", "unparseable", null]
+              }
+            }
+          }
+        }
+      }
+    },
+    "mcp_servers": {
+      "type": "object",
+      "description": "PAT-2020 (both agents: updater macos/lib/mcp_servers.sh, windows InventoryMcpServers.cs) and PAT-2021 (platform). The MCP servers configured in the AI clients' own config files for every local user, reduced on the device to name, transport, executable basename, package and URL host. SECRETS NEVER ENTER THIS BLOCK (Andy's decision 2026-09-22): there is no field for arguments, env, headers, tokens or a URL path or query. PRIVACY GUARD (PAT-2021): a server entry carrying any field outside the servers[] properties below, or an allowlisted field not in its reduced form (a host with a path, port or userinfo; an executable with a directory; a package outside the npm/PyPI/image pattern; a secret-shaped string), rejects the WHOLE payload with 400 before anything is stored (configs[].path, servers[].config_path and issues[] are checked too; a key folding to mcp_servers or to one of its fields is a guard hit), increments patched_mcp_privacy_guard_rejections_total and logs event=mcp_privacy_guard_rejected; no field name or value is echoed. Units are the five clients. Status rules (absence requires authority, PAT-1710): 'failed' omits the item list (never []) and may omit every other key (the macOS agent sends a bare {\"collection_status\":\"failed\"} when its parser dies); every other status sends every key; 'truncated' only with 'partial' or 'failed', and a truncation_reason only when truncated; 'not_present' sends empty item and read-row lists; 'complete' shows what it read (at least one read row, all complete). Unit rules: complete needs every unit complete or not_present, at least one complete; not_present needs every unit not_present; a not_present unit lists no items. Absence authority is per unit and only when the block is neither failed nor truncated. Bounds: 2,000 servers. Stored as identity kind mcp_server (value = name, companion = client) or mcp_server_unnamed.",
+      "required": ["collection_status"],
+      "additionalProperties": false,
+      "properties": {
+        "collection_status": {
+          "type": "string",
+          "enum": ["complete", "partial", "not_present", "failed"]
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "truncation_reason": {
+          "type": ["string", "null"],
+          "enum": ["time_limit", "server_limit", "user_limit", null]
+        },
+        "clients": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "claude_desktop": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["collection_status", "config_count", "server_count"],
+              "properties": {
+                "collection_status": {
+                  "type": "string",
+                  "enum": ["complete", "partial", "not_present", "failed"]
+                },
+                "config_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "server_count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "cursor": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["collection_status", "config_count", "server_count"],
+              "properties": {
+                "collection_status": {
+                  "type": "string",
+                  "enum": ["complete", "partial", "not_present", "failed"]
+                },
+                "config_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "server_count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "vscode": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["collection_status", "config_count", "server_count"],
+              "properties": {
+                "collection_status": {
+                  "type": "string",
+                  "enum": ["complete", "partial", "not_present", "failed"]
+                },
+                "config_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "server_count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "windsurf": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["collection_status", "config_count", "server_count"],
+              "properties": {
+                "collection_status": {
+                  "type": "string",
+                  "enum": ["complete", "partial", "not_present", "failed"]
+                },
+                "config_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "server_count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "claude_code": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["collection_status", "config_count", "server_count"],
+              "properties": {
+                "collection_status": {
+                  "type": "string",
+                  "enum": ["complete", "partial", "not_present", "failed"]
+                },
+                "config_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "server_count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        },
+        "totals": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["config_count", "server_count"],
+          "properties": {
+            "config_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "server_count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "users": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["user", "user_id", "collection_status", "clients"],
+            "properties": {
+              "user": {
+                "type": "string",
+                "minLength": 1
+              },
+              "user_id": {
+                "type": ["string", "null"]
+              },
+              "collection_status": {
+                "type": "string",
+                "enum": ["complete", "partial", "not_present", "failed"]
+              },
+              "clients": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [],
+                "properties": {
+                  "claude_desktop": {
+                    "type": "string",
+                    "enum": ["complete", "partial", "not_present", "failed"]
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "enum": ["complete", "partial", "not_present", "failed"]
+                  },
+                  "vscode": {
+                    "type": "string",
+                    "enum": ["complete", "partial", "not_present", "failed"]
+                  },
+                  "windsurf": {
+                    "type": "string",
+                    "enum": ["complete", "partial", "not_present", "failed"]
+                  },
+                  "claude_code": {
+                    "type": "string",
+                    "enum": ["complete", "partial", "not_present", "failed"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "configs": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["client", "user", "user_id", "path", "collection_status", "server_count"],
+            "properties": {
+              "client": {
+                "type": "string",
+                "enum": ["claude_desktop", "cursor", "vscode", "windsurf", "claude_code"]
+              },
+              "user": {
+                "type": ["string", "null"]
+              },
+              "user_id": {
+                "type": ["string", "null"]
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "collection_status": {
+                "type": "string",
+                "enum": ["complete", "partial", "failed"]
+              },
+              "server_count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "issues": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code", "path"],
+            "properties": {
+              "code": {
+                "type": "string",
+                "minLength": 1
+              },
+              "path": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "servers": {
+          "type": "array",
+          "maxItems": 2000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["client", "user", "user_id", "config_path", "scope", "name", "transport", "transport_source", "executable", "runner", "package", "package_status", "host"],
+            "properties": {
+              "client": {
+                "type": "string",
+                "enum": ["claude_desktop", "cursor", "vscode", "windsurf", "claude_code"]
+              },
+              "user": {
+                "type": ["string", "null"]
+              },
+              "user_id": {
+                "type": ["string", "null"]
+              },
+              "config_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "scope": {
+                "type": "string",
+                "enum": ["user", "project"]
+              },
+              "name": {
+                "type": ["string", "null"],
+                "pattern": "^[A-Za-z0-9@][A-Za-z0-9 ._@/+()\\-]{0,127}$"
+              },
+              "transport": {
+                "type": "string",
+                "enum": ["stdio", "http", "sse", "unknown"]
+              },
+              "transport_source": {
+                "type": "string",
+                "enum": ["declared", "inferred"]
+              },
+              "executable": {
+                "type": ["string", "null"],
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._+\\-]{0,63}$"
+              },
+              "runner": {
+                "type": ["string", "null"],
+                "enum": ["npx", "npm", "bunx", "pnpx", "pnpm", "yarn", "uvx", "uv", "pipx", "docker", "podman", null]
+              },
+              "package": {
+                "type": ["string", "null"],
+                "pattern": "^[A-Za-z0-9@][A-Za-z0-9._\\-/]{0,254}$",
+                "description": "Only with package_status extracted."
+              },
+              "package_status": {
+                "type": "string",
+                "enum": ["extracted", "unrecognised", "missing", "not_applicable"]
+              },
+              "host": {
+                "type": ["string", "null"],
+                "description": "Host only: no scheme, userinfo, port, path or query."
+              }
+            }
+          }
+        }
+      }
+    },
+    "os_update": {
+      "type": "object",
+      "description": "OS-update-currency verdict the agent already computed locally (SOFA feed on macOS, WUA COM on Windows). Added under PAT-1806 — server-side receiving/persisting/rollup only; neither endpoint agent sends this key yet (a separate updater-repo follow-up ticket makes them send it once this contract exists). Field shape verified against updater's real contracts/update-status.schema.json (PAT-1862); see docs/PAYLOAD_SCHEMA.md's 'OS update object' section. Optional at the top level — absent in every payload today; the extractor treats absence as a no-op (existing device_os_update row is preserved). installed_os/state/severity/security_relevant/actively_exploited/deferrals_remaining/checked_at are required because the agent's verdict always knows what's installed, the currency state, its severity, and when it was checked, even when there's nothing outstanding; latest_os/deadline/release_age_days/target_os are independently nullable — latest_os is null when SOFA/WUA is unavailable, deadline when there is no policy deadline, release_age_days when the feed doesn't expose a release date, and target_os (PAT-2123) is absent or null when a pending update's target build isn't resolved yet (e.g. Windows Update reporting state=update_required before WUA has determined the exact version) — never a placeholder value, but a non-empty string when present. state and severity are intentionally NOT JSON-Schema enums here even though the real agent-side contract enforces a strict enum on its own wire (up_to_date/update_recommended/update_required/deadline_passed/unsupported_hardware/unknown for state; none/low/medium/high/critical for severity): this schema stores the agent's own verdict vocabulary verbatim, as a plain string, so a future agent release reporting a new value is never rejected at the platform boundary. Ingested into device_os_update (migration 0144 + 0147, one row per device, upserted): target_os absent or null writes SQL NULL, and — because the whole os_update block is written as an unconditional overwrite whenever the block is present, never a field-level COALESCE — a fresh report with target_os absent/null clears any previously-stored target rather than preserving a stale one (device_os_update.target_os is nullable since migration 0144; see upsertOSUpdate, internal/extractor/upsert.go). A section that fails these type checks is rejected here (400, never persisted), and a section that is schema-valid-but-still-somehow-malformed at extraction time is logged and skipped rather than failing the rest of the device snapshot (same robustness posture PAT-948/PAT-871 established).",
+      "required": ["installed_os", "state", "severity", "security_relevant", "actively_exploited", "deferrals_remaining", "checked_at"],
+      "additionalProperties": false,
+      "properties": {
+        "installed_os": {
+          "type": "string",
+          "description": "The OS version currently installed."
+        },
+        "latest_os": {
+          "type": ["string", "null"],
+          "description": "The latest version the feed (SOFA / WUA) reports as available. null when the feed is unavailable."
+        },
+        "target_os": {
+          "type": ["string", "null"],
+          "description": "Minimum acceptable version, from policy or SOFA/WUA latest. Optional and nullable (PAT-2123): absent or null when a pending update's target build isn't resolved yet. When present, must be non-empty."
+        },
+        "state": {
+          "type": "string",
+          "description": "The agent's own currency verdict. Not an enum here (see object description). Real agent-side values: up_to_date, update_recommended, update_required, deadline_passed, unsupported_hardware, unknown; the rollup counts exactly 'up_to_date' as current, the four states with an update outstanding (update_recommended, update_required, deadline_passed, unsupported_hardware) as behind, and 'unknown' or any other value as not reported (PAT-2295).",
+          "examples": ["up_to_date", "update_recommended", "update_required", "deadline_passed", "unsupported_hardware", "unknown"]
+        },
+        "severity": {
+          "type": "string",
+          "description": "Severity of the outstanding update. Not an enum here (see object description). Real agent-side values: none, low, medium, high, critical — none=current; low=behind non-security; medium=behind security; high=deadline close or exploited; critical=deadline passed or exploited+past grace.",
+          "examples": ["none", "low", "medium", "high", "critical"]
+        },
+        "security_relevant": {
+          "type": "boolean",
+          "description": "True when the outstanding update addresses a security issue. Always emitted, even when state is up_to_date (then always false)."
+        },
+        "actively_exploited": {
+          "type": "boolean",
+          "description": "Agent-supplied prior verdict input, retained for mixed-version compatibility. It lacks a CVE identifier, authoritative source URL and source retrieval time, so it is not sufficient for a portal or report active-exploitation claim. Platform claims use fresh CISA KEV or SOFA evidence (PAT-1871)."
+        },
+        "deadline": {
+          "type": ["string", "null"],
+          "description": "RFC3339 UTC policy deadline for applying the update, when one exists. null when there is no deadline."
+        },
+        "deferrals_remaining": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Remaining allowed deferrals before the update is enforced. Always present, never null."
+        },
+        "release_age_days": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Non-negative days since the target release shipped. null when the feed doesn't expose a release date."
+        },
+        "checked_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "RFC3339 timestamp of the agent's own local computation of this verdict (SOFA/WUA check time) — distinct from the platform's own reported_at (when the platform received the payload); the two can differ significantly if an agent's cached verdict is stale."
+        }
+      }
+    },
+    "backup_status": {
+      "type": "object",
+      "description": "Backup detection: Time Machine (macOS, PAT-679) / File History (Windows, PAT-680), OneDrive/iCloud sync, and third-party tools (Backblaze, Arq, Carbon Copy Cloner, Acronis, Veeam, Backup Exec, ...). Platform-neutral shape shared verbatim by both agents. Optional at the top level — absent in payloads from agents that predate PAT-679/680; the extractor treats absence as a no-op (existing devices.backup_status snapshot is preserved). has_backup/stale/sync_only are required booleans because both agents always emit them, even in the all-false fallback default; backup_type/last_backup_at/last_backup_days_ago/notes are nullable and independently optional — Windows omits a null one from the wire entirely (System.Text.Json JsonIgnoreCondition.WhenWritingNull) while macOS always emits the key with an explicit JSON null, so both forms must validate. backup_type is intentionally NOT an enum: 'time_machine' | 'file_history' | 'onedrive_sync' | 'icloud_sync' are the known values today, but third-party tool names (e.g. 'backblaze', 'arq', 'carbon_copy_cloner', 'acronis') are free-form strings decided by the collector, not this schema. Ingested into devices.backup_status (JSONB, migration 0087); a section that fails these type checks is rejected here (400, never persisted), and a section that is schema-valid-but-still-somehow-malformed at extraction time is logged and skipped rather than failing the rest of the device snapshot (PAT-948, same robustness posture PAT-871 established for browser_extensions).",
+      "required": ["has_backup", "stale", "sync_only"],
+      "additionalProperties": false,
+      "properties": {
+        "has_backup": {
+          "type": "boolean",
+          "description": "True when a real backup mechanism (not sync) was detected with reasonable confidence."
+        },
+        "backup_type": {
+          "type": ["string", "null"],
+          "description": "Which mechanism was detected. null when none was found.",
+          "examples": ["time_machine", "file_history", "onedrive_sync", "icloud_sync", "backblaze", "arq", "carbon_copy_cloner", "acronis"]
+        },
+        "last_backup_at": {
+          "type": ["string", "null"],
+          "description": "RFC3339 UTC timestamp of the last completed backup. null when unknown (no backup found, or the mechanism doesn't expose a queryable timestamp, e.g. most third-party tools)."
+        },
+        "last_backup_days_ago": {
+          "type": ["integer", "null"],
+          "description": "Whole days since last_backup_at, clamped to >= 0. null whenever last_backup_at is null."
+        },
+        "stale": {
+          "type": "boolean",
+          "description": "True when has_backup is true and the backup is more than 7 days old. Always false when has_backup is false."
+        },
+        "sync_only": {
+          "type": "boolean",
+          "description": "True for sync mechanisms (OneDrive, iCloud Drive) that are not a substitute for backup. has_backup is false whenever sync_only is true."
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "description": "Free-text detail, e.g. 'OneDrive sync detected; sync is not a substitute for backup' or 'acronis detected; last backup timestamp not available'. null when there's nothing to add."
+        }
+      }
+    },
+    "agent_health": {
+      "type": "object",
+      "description": "Degraded-capability channel (PAT-1064). Added by both endpoint agents (macOS PAT-1065, Windows PAT-1066). Carries directives or capabilities the agent could not carry out this run — the server-side half of a channel that previously existed only as a local agent log line nobody upstream ever read. Optional at the top level, and the absent-vs-present-empty distinction is load-bearing: absent means an agent that predates this protocol (no opinion — existing device_agent_health rows preserved); present with degraded: [] means a current agent actively reporting 'nothing degraded right now' (explicit all-clear — every existing row for the device is deleted, unless the payload is older than this device's recorded watermark). A malformed top-level object is logged and treated exactly like absent (same posture as backup_status, PAT-948). Ingested into device_agent_health (migration 0090), keyed (device_id, kind, subject) — one row per distinct fault identity, re-reports update in place, a recovered capability is deleted by the extractor (upsertAgentHealth, internal/extractor/upsert.go). IMPORTANT: this schema block describes the shape agents are expected to send. The server's ValidatePayload does NOT enforce it — a malformed agent_health section of any shape still passes ingestion validation and is instead handled defensively by the extractor after persistence, entry by entry, so it can never reject the rest of the inventory upload. See docs/PAYLOAD_SCHEMA.md's 'ValidatePayload does not check agent_health at all' for why.",
+      "required": [],
+      "additionalProperties": false,
+      "properties": {
+        "update_channel": {
+          "type": "object",
+          "description": "Optional positive observation copied from the exact verified signed agent config. Independent of degraded health; absence is no opinion and it cannot establish release-soak health. Server binds it to authenticated tenant/device and uses top-level collected_at as observed_at.",
+          "required": ["channel", "source", "config_version"],
+          "additionalProperties": false,
+          "properties": {
+            "channel": {"type":"string","enum":["stable","beta"]},
+            "source": {"type":"string","enum":["tenant","device_override"]},
+            "config_version": {"type":"integer","minimum":1}
+          }
+        },
+        "degraded": {
+          "type": "array",
+          "description": "Each element is one capability or directive the agent could not carry out. kind/subject/reason are free-form strings: a documented vocabulary (see docs/PAYLOAD_SCHEMA.md 'Agent health object' for the canonical list, seeded from directive_skipped/log_upload/device_id_mismatch, capability_missing/extension_removal/lib_not_installed, sync_never_succeeded/catalogue/fetch_failed, and macOS-only tcc_denied/{browser_extensions,mcp_servers,ide_extensions,package_managers}/full_disk_access_missing added PAT-2096/PAT-2100) but NOT an enum enforced here or at ingestion — an unrecognised value must still be stored verbatim, never rejected, so a future agent release reporting a new fault kind never has its entire inventory upload silently dropped. A malformed element (wrong-typed field, empty kind/subject, a NUL byte in kind/subject/reason, count < 1, an unparseable first_seen/last_seen, or a null/absent ever_succeeded) is logged and skipped by sanitizeAgentHealthEntries at extraction time rather than failing the whole payload (PAT-871 precedent). This 'required' array below is a CONTRACT FOR AGENTS, not an ingestion-time check: ValidatePayload does not inspect agent_health's shape at all (review round 3, FIX 9 — a shape check here would let one malformed entry reject the whole inventory upload, exactly what this section exists to prevent). The required keys and their types describe what agents should send; only the extractor's post-persistence defensive decode actually enforces anything.",
+          "items": {
+            "type": "object",
+            "required": ["kind", "subject", "reason", "first_seen", "last_seen", "count", "ever_succeeded"],
+            "additionalProperties": true,
+            "properties": {
+              "kind": {
+                "type": "string",
+                "description": "Fault category. Documented, not enum-enforced.",
+                "examples": ["directive_skipped", "capability_missing", "sync_never_succeeded", "tcc_denied"]
+              },
+              "subject": {
+                "type": "string",
+                "description": "What the directive or capability was about. Documented, not enum-enforced. browser_extensions/mcp_servers/ide_extensions/package_managers are macOS-only, paired with kind tcc_denied.",
+                "examples": ["log_upload", "extension_removal", "catalogue", "browser_extensions", "mcp_servers", "ide_extensions", "package_managers"]
+              },
+              "reason": {
+                "type": "string",
+                "description": "Why it could not be done. Documented, not enum-enforced. full_disk_access_missing is macOS-only (TCC privacy protection denied the collector's root process access to another user's data folder); the Windows agent never sends it.",
+                "examples": ["device_id_mismatch", "lib_not_installed", "fetch_failed", "full_disk_access_missing"]
+              },
+              "first_seen": {
+                "type": "string",
+                "description": "RFC3339 timestamp of when this fault was first observed by the agent."
+              },
+              "last_seen": {
+                "type": "string",
+                "description": "RFC3339 timestamp of when this fault was most recently observed."
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "How many times this fault has occurred. Reported by the agent, never recomputed server-side."
+              },
+              "ever_succeeded": {
+                "type": "boolean",
+                "description": "Whether this exact capability has ever worked on this device. Explicit rather than inferred: the agent is the only party that can know this — the server only ever sees the current snapshot, so a fault that has never worked and a fault that stopped working would otherwise be indistinguishable."
+              }
+            }
+          }
+        }
+      }
+    },
+    "applied_configuration": {
+      "type": "object",
+      "description": "Applied configuration observed on a Mac (PAT-1667 agent, PAT-1668 server): the device-scope configuration profiles that actually landed, plus the enrolled MDM server URL and supervision state. macOS only today; the Windows agent does not emit this key. Optional at the top level — absent in payloads from agents that predate PAT-1667, and the server treats absence as absence rather than as an empty profile list (an absent key writes no snapshot row at all, while collection_status 'ok' with zero profiles is a real observation of an unenrolled Mac). THIS IS APPLIED CONFIGURATION, NOT AUTHORED POLICY: it says what is installed on this device, never what an administrator authored in a management console, and it must never be labelled with a policy name, phrased as an administrative action, or merged with the Intune authored-policy path (PAT-1662/1664) into a single record — a Mac enrolled in Intune produces related rows in both places, which is one change with two independent observations, and adding them together double-counts. collection_status is the load-bearing field: 'ok' means the run read real state, while 'rate_limited' and 'unavailable' mean the run happened but could not read it (macOS rate-limits the `profiles` family to roughly one call per 23 hours and the agent then serves its last-known-good cache), so a non-ok payload's profile list can look perfectly healthy while being arbitrarily stale and is never usable as a change-detection baseline. Ingested into applied_config_snapshots / applied_config_profiles (migration 0127), append-only, one immutable snapshot per device per collection run. IMPORTANT: as with agent_health, this block is a CONTRACT FOR AGENT AUTHORS, not an ingestion-time check — ValidatePayload does not inspect this key at all, so a malformed section is dropped and logged by the extractor's defensive decode (parseAppliedConfiguration) after persistence rather than rejecting the device's whole inventory upload.",
+      "required": ["profiles", "collection_status"],
+      "additionalProperties": true,
+      "properties": {
+        "profiles": {
+          "type": "array",
+          "description": "Device-scope configuration profiles observed on this Mac. Capped by the agent at 500 entries; profiles_truncated says when the cap bit. An unenrolled Mac reports an empty array — a successful collection, not an error.",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "identifier": {
+                "type": "string",
+                "description": "ProfileIdentifier. The join key for change detection. Empty string on a profile the agent could not decode, which cannot be matched across snapshots and is therefore never diffed."
+              },
+              "display_name": {
+                "type": "string",
+                "description": "ProfileDisplayName. A label for the reader, not an identity — profiles get renamed."
+              },
+              "organization": {
+                "type": "string",
+                "description": "ProfileOrganization."
+              },
+              "payload": {
+                "type": "string",
+                "description": "The serialised ProfileItems list, head-capped at 2048 bytes. A JSON STRING, not a nested object — and a capped value is a truncated fragment that will not parse, which is why the server stores it verbatim as TEXT and never reparses it into JSONB."
+              },
+              "payload_capped": {
+                "type": "boolean",
+                "description": "True when payload is a truncated fragment. A no-difference verdict for such a profile only holds up to the cap, and the diff engine records that caveat rather than presenting the comparison as complete."
+              },
+              "decode_error": {
+                "type": "boolean",
+                "description": "Present and true only on a profile the agent could not serialise. The profile is genuinely installed — that part is observed — but its payload content is unknown, not empty, and is never compared."
+              }
+            }
+          }
+        },
+        "profiles_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The agent's own count. Can exceed the number of entries in profiles when the array cap truncated the list; the server believes that arithmetic over the truncated flag, because reading a short list as complete is what manufactures a false mass-removal signal."
+        },
+        "profiles_truncated": {
+          "type": "boolean",
+          "description": "True when more profiles exist than were sent. A truncated list cannot support an absence claim, so the diff engine suppresses exactly the conclusions that need a complete list (an appearance needs a complete prior list, a disappearance a complete current one) and reports the rest."
+        },
+        "collection_status": {
+          "type": "string",
+          "enum": ["ok", "rate_limited", "unavailable"],
+          "description": "ok = the run read real state. rate_limited/unavailable = the run happened but served a cached list; stored and flagged, never used as a diff baseline. An unrecognised value is stored as 'unavailable' rather than assumed successful — an unknown status is not evidence that collection succeeded."
+        },
+        "mdm_server_url": {
+          "type": ["string", "null"],
+          "description": "ServerURL from the com.apple.mdm payload; null when the Mac is unenrolled. This is the only attribution recorded: which platform manages the device, never which policy produced a profile."
+        },
+        "mdm_supervised": {
+          "type": "string",
+          "enum": ["Yes", "No", "Unknown"],
+          "description": "From mdmclient DumpManagementStatus (undocumented, fail-soft). Unknown on any error, missing binary, or unenrolled device."
+        }
+      }
+    },
+    "collection_status": {
+      "type": "object",
+      "description": "Optional top-level object (PAT-1732): the general home for the collection status of top-level array sections that don't have their own nested collection_status object. Nested objects such as hardware_health keep their own nested collection_status key (see hardware_health.collection_status below) rather than using this one. Absent object, or an absent certificates key within it, means that section was collected in full (apps and safari_extensions differ, see below) — old agents that never send this key keep working unchanged. Exists so a collector that fails to enumerate a top-level section (e.g. the Windows certificate store) can say so explicitly instead of choosing between an empty array (which the affected section's own three-way semantics would otherwise read as authoritative absence and prune every stored row) and omitting the key entirely (safe, but invisible to the server). An unrecognised value is treated as 'unavailable', the same conservative default hardware_health.collection_status and applied_configuration.collection_status use, never as 'complete'.",
+      "additionalProperties": false,
+      "properties": {
+        "certificates": {
+          "type": "string",
+          "enum": ["complete", "partial", "unavailable"],
+          "description": "'complete' (or absent) = today's replace-on-write behaviour: an empty certificates array prunes all stored rows, a non-empty array upserts by (device_id, sha1) and prunes rows whose sha1 is not sent. 'partial' = upsert only the certs sent (empty or not) and delete nothing — the sent array is known to be incomplete. 'unavailable' = write nothing at all; the sent certificates array (if any) is ignored outright."
+        },
+        "apps": {
+          "type": "string",
+          "enum": ["complete", "partial", "unavailable"],
+          "description": "PAT-2063. Whether the top-level apps array is the device's whole machine-wide application inventory (PAT-2075: rows with no user_account; per-user rows are governed by apps_users). Unlike certificates, an ABSENT key is not read as complete: it means no signal, and the server then prunes unreported apps only when a safety valve allows it (the report reconfirms at least one current app, and it does not remove more than 5 identifiers AND more than half of them at once). 'complete' (schema_version 3 only; ignored on v2) = the array is authoritative: upsert it and prune every stored app it does not list, even an empty array. 'partial' = upsert the apps sent, prune nothing, and grant no application absence authority (no installation, CVE finding or software policy finding is closed from this report). 'unavailable' = the scan failed: send no machine-wide rows and nothing machine-wide is pruned. A status that contradicts the array ('unavailable' with machine-wide apps listed, 'complete' without an apps array) is not rejected; it is treated as 'partial' and counted in patched_apps_prune_withheld_total{reason=\"inconsistent\"}."
+        },
+        "apps_users": {
+          "type": "array",
+          "description": "PAT-2075. The users whose per-user application inventory the agent tried to read in this run, each with its own verdict. Optional: absent means no per-user authority at all, and every stored per-user row is kept. A per-user row (apps[].user_account set) is pruned only when this array lists its user as 'complete' on a schema_version 3 payload that carries an apps array. A user missing from the array (typically logged off, so the hive or home folder is unreadable), or listed as 'partial' or 'unavailable', keeps every row, and no installation, CVE finding or software policy finding is closed for that user's apps. There is no safety valve for per-user rows: nothing is pruned without an explicit 'complete'. List only users actually read; never list a user as 'complete' whose hive or folder could not be enumerated in full. Two entries for one user merge, least authoritative wins; an entry with an empty user_account is ignored.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["user_account", "collection_status"],
+            "properties": {
+              "user_account": {
+                "type": "string",
+                "description": "Matches apps[].user_account exactly after trimming. An opaque key to the server. Windows: the account name the SID resolves to (DOMAIN\\user or MACHINE\\user), or the SID string when it cannot be resolved. macOS: the short name. At most 128 characters: a longer entry is ignored (no authority for that user) rather than truncated."
+              },
+              "home": {
+                "type": "string",
+                "description": "PAT-2075. Optional, both platforms. The absolute path of this user's home directory exactly as the agent resolved it, with no trailing slash (macOS: the DirectoryService NFSHomeDirectory the scanned folder belongs to; Windows: the profile path, sent only when unambiguous). Never inferred by the server from user_account. It is used for one thing: deciding who owns an application row that an agent before PAT-2075 stored machine-wide and whose path lies in a user's home (/Users/<name>/...). A report that carries apps_users has no machine-wide authority over such a row. The row is pruned only when an entry is 'complete' and its home EQUALS the row's home directory (/Users/<name>, compared exactly, never as a prefix) and the user did not list the app; it is handed to a user's scope when that user lists the same app at the stored path or with a home equal to the row's home directory; otherwise it is held and counted in the run's coverage as apps_legacy_user_held. A non-string is rejected with 400. Any string is accepted, but one that is not exactly /Users/<name> (a relative path, a '.' or '..' segment, a trailing slash, '/', '/Users', '/Users/Shared'), a home sent by two different users, or a user sending two different homes grants nothing. DEPLOY ORDER: a server without this field rejects the whole report with 400 (additional property), so the server must be deployed before any agent sends home."
+              },
+              "collection_status": {
+                "type": "string",
+                "enum": ["complete", "partial", "unavailable"],
+                "description": "'complete' = every per-user app of this user is in apps; unreported per-user rows of this user are pruned, even when none are sent. 'partial' = some of the user's locations could not be read; upsert only. 'unavailable' = the user's inventory could not be read at all; upsert only."
+              }
+            }
+          }
+        },
+        "safari_extensions": {
+          "type": "string",
+          "enum": ["complete", "partial", "unavailable"],
+          "description": "PAT-2067. macOS. Whether the browser_extensions array lists every Safari app extension on the device. browser_extensions_status covers chrome, edge and firefox only, so this is the only signal that can prove a Safari extension gone. An ABSENT key means no signal: stored Safari rows are never marked absent (the pre-PAT-2067 behaviour). 'complete' (schema_version 3 only; ignored on v2) = the agent walked every Safari app-extension location with no error and emitted every Safari row it found; every stored Safari row this report does not list is marked absent, and an empty list marks them all absent. Send it only after a full, error-free walk. It is also ignored when browser_extensions is not sent as an array or browser_extensions_status.cap_reached is true. 'partial' = some locations could not be read; nothing is concluded. 'unavailable' = the walk failed; nothing is concluded. Recorded only for a device that also sends browser_extensions_status."
+        }
+      }
+    },
+    "certificates": {
+      "type": "array",
+      "description": "Certificate inventory. Platform-neutral shape: currently populated by the macOS agent from the System Keychain (PAT-216/PAT-220), and the Windows agent can emit the same array from the Windows certificate store without any schema change. Optional at the top level: the key may be absent (agent does not report certs, no-op), an empty array (agent reported zero certs, prune all existing rows), or a non-empty array (upsert each by (device_id, sha1), then prune rows whose sha1 is not present) — see collection_status.certificates above (PAT-1732) for how a 'partial' or 'unavailable' collection changes this. Ingested into device_certificates. subject_cn/issuer_cn/sha1/not_after are required per item because the corresponding columns are NOT NULL and (device_id, sha1) is the upsert conflict key; not_after must be an RFC3339 timestamp because the extractor parses it and rejects the row on failure. The ext_key_usage/basic_constraints_ca/is_self_signed classification fields (PAT-220) are optional and may be absent (older or non-macOS agents).",
+      "items": {
+        "type": "object",
+        "required": ["subject_cn", "issuer_cn", "sha1", "not_after"],
+        "additionalProperties": true,
+        "properties": {
+          "subject_cn": {
+            "type": "string",
+            "description": "Certificate subject common name."
+          },
+          "issuer_cn": {
+            "type": "string",
+            "description": "Certificate issuer common name."
+          },
+          "sha1": {
+            "type": "string",
+            "description": "Lowercase hex SHA-1 fingerprint. Upsert conflict key together with device_id."
+          },
+          "not_after": {
+            "type": "string",
+            "description": "RFC3339 expiry timestamp. Parsed server-side; a value that does not parse fails the whole device snapshot."
+          },
+          "days_until_expiry": {
+            "type": "integer",
+            "description": "Agent-computed expiry countdown at collection time. Stored as an audit snapshot only (days_until_expiry_at_collection); never used for live queries, which recompute from not_after. Absent is treated as 0."
+          },
+          "ext_key_usage": {
+            "type": "array",
+            "description": "PAT-220: Extended Key Usage OID strings. Absent or empty from agents that predate PAT-220.",
+            "items": { "type": "string" }
+          },
+          "basic_constraints_ca": {
+            "type": "boolean",
+            "description": "PAT-220: true when the certificate carries basicConstraints CA:TRUE."
+          },
+          "is_self_signed": {
+            "type": "boolean",
+            "description": "PAT-220: true when subject equals issuer."
+          },
+          "store": {
+            "type": "string",
+            "description": "PAT-1738: which OS certificate store this row was read from. Windows: 'My' | 'Root' | 'CA'. macOS: 'System' (the only keychain read). Optional; absent defaults server-side to 'My', matching pre-PAT-1738 behaviour so an un-upgraded agent keeps working unchanged."
+          }
+        }
+      }
+    },
+    "browser_extensions": {
+      "type": "array",
+      "description": "Browser extension inventory (Chrome, Edge, Firefox, Safari). Optional — absent in payloads from agents that predate PAT-125 (collector 0.9.0). browser/profile/user_account/extension_id are required per item because device_browser_extensions declares user_account/profile NOT NULL and uses all four as its conflict key; an item with one of those present but empty is schema-valid (this only checks the keys exist) and is skipped and logged by the extractor rather than failing the whole device snapshot (PAT-871). Safari is the one exception (PAT-2064): its extensions live in an app bundle, not a browser user profile, so the agent sends user_account: null and no profile for them; the extractor stores both as the fixed sentinel _system rather than skipping the row, and a Safari row is never marked removed by browser_extensions_status's device-wide completeness report, which has no Safari vocabulary at all. Every other browser still requires both fields present and non-empty. Ingested into device_browser_extensions; risk_level is computed server-side.",
+      "items": {
+        "type": "object",
+        "required": ["browser", "profile", "user_account", "extension_id"],
+        "additionalProperties": true,
+        "properties": {
+          "browser": {
+            "type": "string",
+            "examples": ["chrome", "edge", "firefox", "safari"]
+          },
+          "profile": {
+            "type": ["string", "null"],
+            "description": "Browser profile directory name. Null for Safari (stored as the sentinel `_system`, PAT-2064), which has no browser-profile concept; required non-null for every other browser."
+          },
+          "user_account": {
+            "type": ["string", "null"],
+            "description": "macOS login name the profile belongs to. Null for Safari (stored as the sentinel `_system`, PAT-2064), whose extensions are not scoped to an OS user account; required non-null for every other browser."
+          },
+          "extension_id": { "type": "string" },
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "enabled": { "type": "boolean" },
+          "permissions": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "host_permissions": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "from_webstore": { "type": "boolean" },
+          "update_url": { "type": "string" }
+        }
+      }
+    },
+    "browser_extensions_status": {
+      "type": "object",
+      "description": "PAT-2055. Completeness of browser_extensions, per user and browser, plus whether the collector hit its row cap. Optional: an agent that predates PAT-2055 omits the key, which means unknown; readers then keep the pre-PAT-2055 behaviour exactly. The browser_extensions array itself is unchanged. Strict at every level (additionalProperties false), and case- or fold-variant keys are rejected (PAT-2021). 'failed' may omit cap_reached and users; every other status sends both. cap_reached true is valid only with 'partial', and a capped block grants no absence authority even for pairs it reports complete. A complete block has only complete or not_present users and browsers; a not_present block only not_present ones; a complete user only complete or not_present browsers; a not_present user only not_present browsers. Cross-checked against browser_extensions (chrome, edge and firefox rows with a non-empty user_account, matched to users[].user exactly): no row may sit under a (user, browser) reported not_present, a not_present block lists no such row, and a complete block reports every such row's (user, browser) complete. Only the structure is enforced by rejection (400). A well-formed block that breaks a consistency rule here, or lists more than 500 users, is accepted and stored as partial with its authority withheld, so one bad completeness claim never drops the device's inventory. Only a complete or not_present, uncapped report after an extension's last_seen lets a reader treat that extension as gone.",
+      "required": [
+        "collection_status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "collection_status": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "partial",
+            "not_present",
+            "failed"
+          ],
+          "description": "'complete' = every user's Chrome, Edge and Firefox profiles were read in full, and browser_extensions lists every extension found. 'partial' = something was refused, unreadable or cut off by the cap: store what was sent, conclude nothing is gone except for pairs reported complete or not_present (and never when cap_reached). 'not_present' = no user has any of the three browsers. 'failed' = nothing trustworthy was read: record only the status."
+        },
+        "cap_reached": {
+          "type": "boolean",
+          "description": "True when the collector stopped at its row cap (1,000 on both agents today). Forces 'partial'."
+        },
+        "users": {
+          "type": "array",
+          "maxItems": 500,
+          "description": "One row per local user the collector considered, unique by user.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "user",
+              "user_id",
+              "collection_status",
+              "browsers"
+            ],
+            "properties": {
+              "user": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Exactly the user_account value the agent puts on this user's browser_extensions rows."
+              },
+              "user_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "uid on macOS, SID on Windows; informational."
+              },
+              "collection_status": {
+                "type": "string",
+                "enum": [
+                  "complete",
+                  "partial",
+                  "not_present",
+                  "failed"
+                ]
+              },
+              "browsers": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Per-browser status for this user. Every key is required unless the user's own collection_status is 'failed'.",
+                "required": [],
+                "properties": {
+                  "chrome": {
+                    "type": "string",
+                    "enum": [
+                      "complete",
+                      "partial",
+                      "not_present",
+                      "failed"
+                    ]
+                  },
+                  "edge": {
+                    "type": "string",
+                    "enum": [
+                      "complete",
+                      "partial",
+                      "not_present",
+                      "failed"
+                    ]
+                  },
+                  "firefox": {
+                    "type": "string",
+                    "enum": [
+                      "complete",
+                      "partial",
+                      "not_present",
+                      "failed"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "apps": {
+      "type": "array",
+      "description": "Installed application inventory. identifier is the canonical cross-platform key: CFBundleIdentifier on macOS (schema v3+), registry uninstall-key name on Windows. bundle_id carries the v2 macOS value; the extractor prefers identifier and falls back to bundle_id for v2 compatibility. Required, but a required array is not proof of a complete scan: whether apps it omits are treated as removed is governed by collection_status.apps (PAT-2063).",
+      "items": {
+        "type": "object",
+        "required": ["name", "version"],
+        "additionalProperties": true,
+        "properties": {
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "identifier": {
+            "type": "string",
+            "description": "Primary cross-platform app identifier. macOS (v3+): CFBundleIdentifier. Windows: registry uninstall-key name. Required in schema_version 3+ payloads."
+          },
+          "identifier_kind": {
+            "type": "string",
+            "enum": ["winget", "native"],
+            "description": "Schema v3 only. Required for every Windows app when complete Winget capability is declared. winget means identifier satisfies Microsoft's current case-sensitive PackageIdentifier schema (maximum 128 characters, 2-8 dot-separated segments of at most 32 characters); native covers non-Winget rows and never satisfies mandatory identity. A malformed winget row is retained as inventory but loses identifier authority and clears snapshot completeness."
+          },
+          "bundle_id": {
+            "type": "string",
+            "description": "macOS CFBundleIdentifier. Used as the identifier in schema_version 2 payloads. The extractor prefers identifier when present; falls back to bundle_id for v2 compatibility."
+          },
+          "publisher": {
+            "type": "string",
+            "description": "Application publisher. Windows: registry Publisher value. macOS: may be absent."
+          },
+          "path": { "type": "string" },
+          "size_mb": { "type": "number" },
+          "modified_at": { "type": "string" },
+          "architecture": { "type": "string" },
+          "sha256": { "type": "string" },
+          "team_id": { "type": "string" },
+          "signed_by": { "type": "string" },
+          "notarized": {
+            "type": "boolean",
+            "description": "macOS only. true only when notarization_status is notarized (PAT-2112); false otherwise, including when notarisation could not be determined. Kept for servers that predate notarization_status; read notarization_status where present. Collectors before PAT-2112 sent false for every app."
+          },
+          "signing_status": {
+            "type": "string",
+            "enum": ["signed", "adhoc", "unsigned", "error", "untrusted", "invalid"],
+            "description": "PAT-2112 (signed/adhoc/unsigned/error) and PAT-2117 (untrusted/invalid), macOS only; Windows must not send it (PAT-2113 covers Windows signing evidence). From codesign -dvv's exit status and output: signed = exit 0 and an Authority line, and the chain validates to an Apple root; adhoc = exit 0 and Signature=adhoc (no signing identity); unsigned = codesign reported 'code object is not signed at all'; error = anything else (codesign failed or its output could not be read); untrusted = the signature validates but its certificate chain does not anchor to Apple, so signed_by can still read a Developer ID-shaped name from a self-signed certificate, and the server never treats it as an established publisher; notarization_status is reported not_notarized for these. invalid = the signature does not validate against the code at all (tampered, or broken after signing); notarization_status is reported unknown for these. signed_by stays \"Unknown\" for adhoc, unsigned and error. Optional: absent (an older agent) is not reported, never unsigned. The server stores a string outside the enum as not reported and refuses a non-string."
+          },
+          "notarization_status": {
+            "type": "string",
+            "enum": ["notarized", "not_notarized", "unknown"],
+            "description": "PAT-2112, macOS only; Windows must not send it. notarized = Gatekeeper (spctl --assess --type execute) accepted the app with source 'Notarized Developer ID', or, when spctl timed out, is unavailable or named no source, codesign shows a stapled notarisation ticket. not_notarized = the app cannot be or is not notarised: unsigned, ad hoc, signed by a non-Developer ID identity (Apple system and Mac App Store apps are not notarised), or Gatekeeper named another source (an unstapled app assessed offline can read this). unknown = codesign failed, or neither spctl nor a stapled ticket could answer. Optional: absent is not reported. Only notarized confirms notarisation; not_notarized, unknown and absent all read as not confirmed. The server stores a string outside the enum as not reported and refuses a non-string."
+          },
+          "installation_evidence": {
+            "type": ["object", "null"],
+            "description": "PAT-2113/PAT-2116, Windows only; macOS must not send it. The Windows agent's per-installation Authenticode evidence: on every app row from updater #668 (PAT-2116), and before that only on an app whose MSI ProductCode matches a reviewed target in the signed windows_installation_evidence delivery (PAT-1921; the published target set is empty). Absent is not reported, never unsigned. The platform reads signature_state, signer, signer_thumbprint, issuer, root_thumbprint, root_kind and executable_resolution and ignores the other members (catalogue_version, delivery_version, content_hash, collection_status, collected_at, source, install_path, executable_path, executable_sha256, errors). Must be an object; the server refuses any other type, and a non-string value for any member it reads, with 400. A string it cannot accept is stored as not reported.",
+            "properties": {
+              "signature_state": {
+                "type": "string",
+                "enum": ["valid", "invalid", "unsigned", "unknown"],
+                "description": "valid = WinVerifyTrust (WINTRUST_ACTION_GENERIC_VERIFY_V2) accepted the executable against the device's trust store, from its embedded signature or, when it has none, a SHA-256 catalog membership; offline, cache-only URL retrieval, no revocation check, so never current revocation assurance. invalid = TRUST_E_BAD_DIGEST only: the file changed after it was signed. unsigned (PAT-2116) = only when the embedded check returned exactly TRUST_E_NOSIGNATURE, the SHA-256 catalog lookup ran and found no catalog, no SHA-1 catalog lists the file, and the same helper run proved the catalog database works. unknown = anything else, including an untrusted or unreadable chain, a catalog lookup that could not run, verification failing and no executable resolved. The server stores a string outside the enum as not reported."
+              },
+              "signer": {
+                "type": "string",
+                "maxLength": 512,
+                "description": "The leaf signer certificate's Subject DN (X509Certificate2.Subject), sent only with valid, and omitted when it could not be read. On its own it names a publisher but does not pin one; root_thumbprint and root_kind do. Stored only beside valid, when 1 to 512 characters with no control characters."
+              },
+              "signer_thumbprint": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$",
+                "description": "PAT-2116, only with valid. SHA-256 over the leaf certificate's DER, lower-case hex. Stored for audit; it changes when the certificate renews, so it is not a publisher key."
+              },
+              "issuer": {
+                "type": "string",
+                "maxLength": 512,
+                "description": "PAT-2116, only with valid. The leaf certificate's Issuer DN. Stored only beside valid, when 1 to 512 characters with no control characters."
+              },
+              "root_thumbprint": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$",
+                "description": "PAT-2116, only with valid. SHA-256 of the last certificate in WinVerifyTrust's own provider chain (the trust anchor), lower-case hex. Omitted when the chain could not be read."
+              },
+              "root_kind": {
+                "type": "string",
+                "enum": ["microsoft", "public", "enterprise"],
+                "description": "PAT-2116, only with valid. microsoft = one of four hard-coded Microsoft roots. public = a self-issued root in the registry AuthRoot physical store (Microsoft Trusted Root Program roots). enterprise = anything else, including an unreadable chain; never independently verifiable, so never trusted. The server stores a string outside the enum as not reported."
+              },
+              "executable_resolution": {
+                "type": "string",
+                "description": "PAT-2116. How the executable was tied to the app row: reviewed_target, display_icon or install_location_single_exe. Absent when no executable was resolved (the reason is in errors). Diagnostic only; stored when it is a lower-case code of at most 64 characters."
+              }
+            }
+          },
+          "usage_evidence": {
+            "type": "string",
+            "enum": [
+              "recorded",
+              "no_record",
+              "unmapped",
+              "unavailable"
+            ],
+            "description": "PAT-2328: recorded = timestamp or positive launch count observed; no_record = a readable supported usage source returned no record, never proof of non-use; unmapped = app cannot be mapped to the source; unavailable = collection failed. Optional; absent = not reported. Raw state is separate from collection authority."
+          },
+          "last_used_at": {
+            "type": ["string", "null"],
+            "description": "Platform-neutral observed last-use timestamp, ISO 8601 UTC. null = unknown or no recorded usage; never proof of non-use."
+          },
+          "user_account": {
+            "type": "string",
+            "description": "PAT-2075. The user whose per-user inventory holds this app: Windows HKU\\<SID>\\...\\Uninstall (send the account name the SID resolves to, or the SID string when it cannot be resolved), macOS ~/Applications (send the short name). Empty or absent = a machine-wide row, which is every row an agent before PAT-2075 sends. Trimmed on ingest; must match a collection_status.apps_users[].user_account exactly after the same treatment. A value over 128 characters is never truncated (two users sharing a 128-character prefix would collapse into one and could prune each other's rows): a row carrying one is dropped with a warning, and an apps_users entry carrying one is ignored, so that user gets no authority, the same as 'partial'. A per-user row is pruned only by a report that lists its user as 'complete' in collection_status.apps_users; a user missing from a report (logged off), or listed 'partial' or 'unavailable', keeps every row. The same identifier and version sent machine-wide and per-user, or for several users, is one device_apps row."
+          },
+          "launch_count": {
+            "type": ["integer", "null"],
+            "description": "Platform-neutral lifetime cumulative launch count, not windowed. null when no count was read."
+          }
+        },
+        "allOf": [
+          {
+            "if": { "required": ["usage_evidence"], "properties": { "usage_evidence": { "const": "no_record" } } },
+            "then": { "properties": {
+              "last_used_at": { "type": "null" },
+              "launch_count": { "type": ["integer", "null"], "minimum": 0, "maximum": 0 }
+            } }
+          },
+          {
+            "if": { "required": ["usage_evidence"], "properties": { "usage_evidence": { "const": "unavailable" } } },
+            "then": { "properties": {
+              "last_used_at": { "type": ["string", "null"], "format": "date-time" },
+              "launch_count": { "type": ["integer", "null"], "minimum": 0, "maximum": 2147483647 }
+            } }
+          },
+          {
+            "if": {
+              "required": [
+                "usage_evidence"
+              ],
+              "properties": {
+                "usage_evidence": {
+                  "const": "recorded"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "last_used_at": { "type": ["string", "null"], "format": "date-time" },
+                "launch_count": { "type": ["integer", "null"], "minimum": 0, "maximum": 2147483647 }
+              },
+              "anyOf": [
+                {
+                  "required": [
+                    "last_used_at"
+                  ],
+                  "properties": {
+                    "last_used_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                {
+                  "required": [
+                    "launch_count"
+                  ],
+                  "properties": {
+                    "launch_count": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "if": {
+              "required": [
+                "usage_evidence"
+              ],
+              "properties": {
+                "usage_evidence": {
+                  "enum": [
+                    "unmapped"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "last_used_at": {
+                  "type": "null"
+                },
+                "launch_count": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "compliance_findings": {
+      "type": "array",
+      "description": "Configuration/CIS advisory findings (PAT-300/481). Optional — older collectors omit. Each element identifies a configuration violation detected by the agent.",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity"],
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": ["disk_encryption_off", "removable_storage_unencrypted"],
+            "description": "Machine-readable finding id. ENFORCED AT INGESTION (PAT-913 round 3): ValidatePayload rejects IDs outside this enum — findings write Fail-state signal values, so an arbitrary id could force a Fail onto any rule signal. Enforcement uses findingControlIDs (internal/extractor/finding_controls.go), which is parsed from THIS embedded schema at init — this file is the only hand-maintained copy, and this enum must stay identical to the controls_assessed enum (the loader panics otherwise)."
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "volumes": {
+            "type": "array",
+            "description": "Optional detail for removable_storage_unencrypted (PAT-481)."
+          }
+        }
+      }
+    },
+    "compliance_assessments": {
+      "type": "object",
+      "description": "Positive per-control attestation (PAT-913, Option B). The sole source of a Pass on a finding-control: a control passes only when it appears in controls_assessed AND is absent from compliance_findings. Optional — agents predating PAT-913 omit it, which (like an empty controls_assessed) attests nothing and scores every finding-control as never-attested, so the critical rules fail-unknown (migration 0083).",
+      "additionalProperties": false,
+      "properties": {
+        "controls_assessed": {
+          "type": "array",
+          "description": "The finding-control IDs the agent actually ran a determination for this run. Same ID space as compliance_findings[].id. A control belongs here only if its detection ran to a clean determination; an errored or skipped sub-check must drop its control. ENFORCED AT INGESTION: unlike most nested enums in this schema, ValidatePayload (internal/extractor/validate.go) strictly rejects entries outside this enum, because they mint positive Pass signals in buildSignalsMap. Enforcement uses findingControlIDs (internal/extractor/finding_controls.go), which is parsed from THIS embedded schema at init and shared by the validator and buildSignalsMap — this file is the only hand-maintained copy of the enum; drift is impossible. Adding a new finding control means editing only this schema (both enum sites: here and compliance_findings.items.id — the loader asserts they stay identical, panicking at startup otherwise).",
+          "items": {
+            "type": "string",
+            "enum": ["disk_encryption_off", "removable_storage_unencrypted"]
+          }
+        }
+      }
+    }
+  },
+  "if": {
+    "properties": { "schema_version": { "const": 3 } },
+    "required": ["schema_version"]
+  },
+  "then": {
+    "required": ["platform"],
+    "properties": {
+      "apps": {
+        "items": {
+          "required": ["identifier"]
+        }
+      }
+    }
+  },
+  "else": {
+    "required": ["system_extensions", "background_items", "icloud"],
+    "properties": {
+      "apps": {
+        "items": {
+          "required": ["bundle_id"]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,750 @@
+name: windows-agent-release
+
+# Builds the interim, unsigned Windows agent MSI and publishes it as a GitHub
+# Release asset. Mirrors macos-agent-release.yml. Authenticode signing is a
+# follow-up blocked on OV/EV certificate acquisition (sign-hook.bat / PAT-50
+# Windows parity); SmartScreen will warn on install until then.
+#
+# Trigger:
+#   - push a tag matching `windows-agent-v*`  (e.g. windows-agent-v0.3.0)
+#   - or run manually (workflow_dispatch) with a version input
+#
+# Output (attached to the Release):
+#   PatchedAgent-<version>.msi   — self-contained, single-file headless assurance Service
+#   SHA256SUMS                   — integrity digest (matters: unsigned)
+#
+# PAT-507 / PAT-1092: the publish job below references a GitHub Environment
+# named "release-gate", but that environment currently has zero protection
+# rules configured, so it does not pause publishing for approval. Private
+# repos need GitHub Enterprise for the "required reviewers" protection
+# rule, and this repo is on a Team plan - a billing limitation, not a
+# config oversight. Today, every tag push publishes with no automated
+# approval pause. This is a deliberate, accepted interim state pending an
+# Enterprise upgrade (Andy's cost decision) or estate-wide gate restoration
+# under PAT-941, not a bug. See docs/agent-release-runbook.md.
+
+on:
+  push:
+    tags:
+      - 'windows-agent-v*-beta.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Beta tag version (e.g. 0.3.0-beta.1)'
+        required: true
+      build_only:
+        description: 'Build and upload the MSI artifact only — skip tag, release, and the api.patched.im upload. For verification/testing.'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    outputs:
+      version:       ${{ steps.ver.outputs.version }}
+      channel:       ${{ steps.ver.outputs.channel }}
+      tag_version:   ${{ steps.ver.outputs.tag_version }}
+      msi_product_version: ${{ steps.ver.outputs.msi_product_version }}
+      file_version:  ${{ steps.ver.outputs.file_version }}
+      informational_version: ${{ steps.ver.outputs.informational_version }}
+      msi:           ${{ steps.pkg.outputs.msi }}
+      sha256:        ${{ steps.pkg.outputs.sha256 }}
+      artifact_hmac: ${{ steps.sign.outputs.artifact_hmac }}
+      artifact_metadata_signed: ${{ steps.sign_metadata.outputs.signed }}
+      artifact_metadata_file:   ${{ steps.sign_metadata.outputs.metadata_file }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # PAT-1777: Setup .NET moved into the "Build headless Service" step below
+      # (.github/actions/windows-agent-msi, phase prepare), which the PR check
+      # windows-msi-build.yml also runs. Nothing before that step uses .NET, so
+      # the trust key gate now fails fast before the SDK install as well.
+      - name: Resolve version
+        id: ver
+        shell: bash
+        env:
+          RELEASE_INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          case "${{ github.event_name }}" in
+            workflow_dispatch)
+              V="$RELEASE_INPUT_VERSION"
+              ;;
+            push)
+              V="${GITHUB_REF_NAME#windows-agent-v}"
+              ;;
+            *)
+              echo "unsupported release event: ${{ github.event_name }}" >&2
+              exit 1
+              ;;
+          esac
+          # This workflow is the beta publisher. The resolver also accepts
+          # stable identities for installer-version tests and promotion
+          # compatibility, so enforce the release-channel boundary here.
+          if ! [[ "$V" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-beta\.([1-9][0-9]?)$ ]]; then
+            echo "expected X.Y.Z-beta.N (N=1..99); stable releases must use the promote workflow" >&2
+            exit 1
+          fi
+          windows/installer/resolve-release-version.sh "$V" "$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo "Resolved and validated version: $V"
+
+      # PAT-1248: fail fast, before spending build minutes, if the Windows
+      # self-update trust anchor is still the shipped-inert placeholder.
+      # ArtifactTrust.ProductionKeyId/ProductionPublicKeyBase64 default to a
+      # deliberately non-functional placeholder (see ArtifactTrust.cs) until
+      # Andy provisions the real ARTIFACT_METADATA_SIGNING_KEY pair
+      # (docs/signing-key-runbook.md) and replaces those two constants. That
+      # placeholder is safe at rest (it can never validate a real signature,
+      # so BootstrapUpdater degrades instead of trusting anything) but a
+      # RELEASE built with it would ship an agent whose self-update can never
+      # verify any future update, silently, forever - the same shape of bug
+      # this whole ticket exists to fix. The placeholder marker is a literal,
+      # greppable string chosen specifically so this check cannot silently
+      # stop matching if the surrounding code changes.
+      - name: Assert self-update artifact trust key is provisioned
+        shell: bash
+        env:
+          SIGNING_EXPECTED: ${{ github.repository == 'Patched-LTD/updater' }}
+        run: |
+          # PAT-1257: assert the PRODUCTION constants are not assigned the
+          # placeholders. The original form grepped the file for the placeholder
+          # marker anywhere, which was wrong: the marker legitimately remains in
+          # the file forever as the UnprovisionedPlaceholderKeyId declaration
+          # that IsProvisioned and the unit tests compare against. That gate
+          # therefore failed the first genuinely-provisioned release (0.13.16).
+          # It failed closed, which is the right direction, but it was still a
+          # false positive and would have blocked every release from here on.
+          #
+          # Match the assignments instead. Two shapes are rejected: assignment
+          # by placeholder-constant name, and assignment of the literal
+          # placeholder values directly, so neither route to an unprovisioned
+          # build can slip past.
+          TRUST_FILE='windows/src/Shared/Verification/ArtifactTrust.cs'
+          PLACEHOLDER_KEY_ID='UNPROVISIONED-PAT-1248-ARTIFACT-KEY-REPLACE-BEFORE-SHIP'
+          PLACEHOLDER_PUBKEY='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
+          IS_PLACEHOLDER=false
+
+          # Collapse ALL whitespace (including newlines) to single spaces, then
+          # strip spaces around '=' entirely. Matching is then whitespace
+          # insensitive, so a reformat that writes `ProductionKeyId=Placeholder`
+          # with no spaces cannot slip past a gate that only knew the spaced
+          # form (review finding, 2026-08-11 - a real hole, since this gate is
+          # the only thing standing between an unprovisioned build and the
+          # estate). Line breaks matter too: the public key constant is already
+          # wrapped onto its own line today.
+          FLAT="$(tr -s '[:space:]' ' ' < "$TRUST_FILE" | sed 's/ *= */=/g')"
+
+          for PAT in \
+            "ProductionKeyId=UnprovisionedPlaceholderKeyId" \
+            "ProductionPublicKeyBase64=UnprovisionedPlaceholderPublicKeyBase64" \
+            "ProductionKeyId=\"$PLACEHOLDER_KEY_ID\"" \
+            "ProductionPublicKeyBase64=\"$PLACEHOLDER_PUBKEY\""
+          do
+            if printf '%s' "$FLAT" | grep -qF "$PAT"; then
+              IS_PLACEHOLDER=true
+              echo "Artifact trust key gate: matched unprovisioned assignment: $PAT"
+            fi
+          done
+
+          echo "Artifact trust key gate: expected_provisioned_repo=$SIGNING_EXPECTED placeholder_assigned=$IS_PLACEHOLDER"
+          if [ "$SIGNING_EXPECTED" = "true" ] && [ "$IS_PLACEHOLDER" = "true" ]; then
+            echo "::error::$TRUST_FILE still ASSIGNS the PAT-1248 unprovisioned placeholder to ProductionKeyId or ProductionPublicKeyBase64. Provision the real ARTIFACT_METADATA_SIGNING_KEY pair (docs/signing-key-runbook.md) and replace both constants before shipping a release the Windows agent can trust for self-update - refusing to publish."
+            exit 1
+          fi
+
+      # PAT-1777: the build itself lives in one composite action shared with
+      # the pull request check (windows-msi-build.yml), so the two cannot drift.
+      # Phase prepare: Setup .NET (8 + 10), Publish Service,
+      # Setup Python, Install Python dependencies. No secrets are passed in.
+      - name: Build headless Service
+        uses: ./.github/actions/windows-agent-msi
+        with:
+          phase: prepare
+          version: ${{ steps.ver.outputs.version }}
+          file_version: ${{ steps.ver.outputs.file_version }}
+          informational_version: ${{ steps.ver.outputs.informational_version }}
+          msi_product_version: ${{ steps.ver.outputs.msi_product_version }}
+
+      # PAT-2304 (2026-09-30): the step that re-verified
+      # windows/windows-allowlist.json.sig here is retired, with the allowlist,
+      # its signing workflow and its signing secret. The MSI has not packaged
+      # the allowlist since PAT-1531, and the package phase below still fails
+      # the build if either file ever appears in the MSI File table.
+
+      # PAT-1777: phase package of the shared action: Guard MSI credential
+      # properties stay out of install logs (PAT-1755), Build MSI, and Assert
+      # headless MSI payload contains only the Service (PAT-2352).
+      - name: Build and verify MSI
+        uses: ./.github/actions/windows-agent-msi
+        with:
+          phase: package
+          version: ${{ steps.ver.outputs.version }}
+          file_version: ${{ steps.ver.outputs.file_version }}
+          informational_version: ${{ steps.ver.outputs.informational_version }}
+          msi_product_version: ${{ steps.ver.outputs.msi_product_version }}
+
+      # PAT-1531 follow-up: make the run's mode self-documenting in the job
+      # summary, without requiring anyone to read this YAML to know whether
+      # the tag/release/api.patched.im upload happened. github.event.inputs
+      # values are always strings on workflow_dispatch (never real booleans),
+      # matching this workflow's existing convention (see "Resolve version"
+      # above) - compare against the string 'true', not the boolean literal.
+      - name: Report build mode in job summary
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BUILD_ONLY: ${{ github.event.inputs.build_only }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$BUILD_ONLY" = "true" ]; then
+            echo "**Build-only dispatch:** MSI artifact uploaded, no tag/release/API upload." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "**Proceeding to publish:** tag, GitHub Release, and api.patched.im upload will run." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Locate MSI and compute checksum
+        id: pkg
+        shell: pwsh
+        run: |
+          $msi = Get-ChildItem -Recurse -Filter "PatchedAgent.msi" windows/installer/bin |
+                 Select-Object -First 1
+          if (-not $msi) { Write-Error "PatchedAgent.msi not found under windows/installer/bin"; exit 1 }
+          $dest = "PatchedAgent-${{ steps.ver.outputs.version }}.msi"
+          Copy-Item $msi.FullName $dest
+          $hash = (Get-FileHash $dest -Algorithm SHA256).Hash.ToLower()
+          ./windows/installer/write-sha256sums.ps1 -Sha256 $hash -Artifact $dest
+          "msi=$dest"    >> $env:GITHUB_OUTPUT
+          "sha256=$hash" >> $env:GITHUB_OUTPUT
+          Write-Host "Built $dest  ($hash)"
+          Get-Content SHA256SUMS
+
+      - name: Sign artifact with HMAC-SHA256
+        id: sign
+        shell: bash
+        env:
+          ARTIFACT_SIGNING_KEY: ${{ secrets.ARTIFACT_SIGNING_KEY }}
+        run: |
+          MSI="${{ steps.pkg.outputs.msi }}"
+          if [ -z "$ARTIFACT_SIGNING_KEY" ]; then
+            echo "WARN: ARTIFACT_SIGNING_KEY not set — skipping HMAC signing"
+            echo "artifact_hmac=" >> "$GITHUB_OUTPUT"
+          else
+            HMAC=$(openssl dgst -sha256 -hmac "$ARTIFACT_SIGNING_KEY" -hex "$MSI" | awk '{print $2}')
+            echo "$HMAC" > "$MSI.hmac"
+            echo "artifact_hmac=$HMAC" >> "$GITHUB_OUTPUT"
+            echo "HMAC-SHA256: $HMAC"
+          fi
+
+      # Hard-fail if signing was EXPECTED but did not happen. Signing is expected
+      # on the canonical repo (not a fork); a missing HMAC there means
+      # ARTIFACT_SIGNING_KEY is unset, scoped away, or typo'd on the org secret
+      # - fail loudly rather than publishing an unsigned release (PAT-687, PAT-889).
+      - name: Assert artifact was signed when expected
+        id: assert_signed
+        shell: bash
+        env:
+          SIGNING_EXPECTED: ${{ github.repository == 'Patched-LTD/updater' }}
+          SIGN_HMAC: ${{ steps.sign.outputs.artifact_hmac }}
+        run: |
+          HAS_HMAC=false
+          [ -n "$SIGN_HMAC" ] && HAS_HMAC=true
+          echo "Signing gate: expected=$SIGNING_EXPECTED signed=$HAS_HMAC"
+          if [ "$SIGNING_EXPECTED" = "true" ] && [ "$HAS_HMAC" != "true" ]; then
+            echo "::error::ARTIFACT_SIGNING_KEY was expected but no HMAC was produced. The secret is likely unset, scoped away, or misconfigured - refusing to publish an unsigned release."
+            exit 1
+          fi
+
+      # PAT-1248: sign the artifact's *metadata* (version/platform/channel/
+      # artifact_url/artifact_sha256) with a dedicated Ed25519 key, separate
+      # from the ARTIFACT_SIGNING_KEY HMAC above. ARTIFACT_SIGNING_KEY is a
+      # symmetric secret deliberately never shipped to any endpoint (it also
+      # signs the MSI itself for out-of-band human verification via
+      # tools/verify-agent-release.py) - shipping it to every device would
+      # let one compromised endpoint forge artifacts estate-wide. This
+      # asymmetric signature is what the on-device self-updater
+      # (BootstrapUpdater.cs) actually verifies with the pinned public key in
+      # ArtifactTrust.cs before staging an update. See
+      # verifier/sign-artifact-metadata.py and docs/signing-key-architecture.md.
+      - name: Sign artifact metadata (Ed25519)
+        id: sign_metadata
+        shell: bash
+        env:
+          ARTIFACT_METADATA_SIGNING_KEY:    ${{ secrets.ARTIFACT_METADATA_SIGNING_KEY }}
+          # Matches the existing CATALOGUE_SIGNING_KEY_ID convention (also a
+          # GitHub Actions secret, not a repo var, even though a key_id is not
+          # itself sensitive - see daily-vendor-verify.yml / smoke-test.yml).
+          ARTIFACT_METADATA_SIGNING_KEY_ID: ${{ secrets.ARTIFACT_METADATA_SIGNING_KEY_ID }}
+        run: |
+          V="${{ steps.ver.outputs.version }}"
+          MSI="${{ steps.pkg.outputs.msi }}"
+          SHA="${{ steps.pkg.outputs.sha256 }}"
+          # PAT-1260: Patched-LTD/updater is a private repo, so an
+          # unauthenticated device request against the GitHub Releases URL
+          # this used to sign got a plain 404 (confirmed on WIN-STAGING,
+          # 2026-08-11). The artifact now lives behind the API's own
+          # authenticated download route instead - BootstrapUpdater.cs signs
+          # the same Bearer + HMAC it already uses for every other endpoint
+          # over this URL (endpoint ID agent_artifact_download).
+          RELEASE_URL="https://api.patched.im/v1/agent/artifact/download?platform=windows&channel=beta&version=${V}"
+          METADATA_FILE="$MSI.metadata.json"
+          SIGNED_FILE="$MSI.metadata.signed.json"
+
+          # One line deliberately: an unindented multi-line python heredoc
+          # inside this YAML `run: |` block scalar would end the block early
+          # (see the NOTES= printf comment below in the publish job for the
+          # same footgun previously hit here).
+          python3 -c "import json, sys; print(json.dumps({'version': sys.argv[1], 'platform': 'windows', 'channel': 'beta', 'artifact_url': sys.argv[2], 'artifact_sha256': sys.argv[3]}))" "$V" "$RELEASE_URL" "$SHA" > "$METADATA_FILE"
+
+          if [ -z "$ARTIFACT_METADATA_SIGNING_KEY" ]; then
+            echo "WARN: ARTIFACT_METADATA_SIGNING_KEY not set — skipping Ed25519 artifact-metadata signing"
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          else
+            python3 verifier/sign-artifact-metadata.py \
+              --input  "$METADATA_FILE" \
+              --key-env ARTIFACT_METADATA_SIGNING_KEY \
+              --key-id "$ARTIFACT_METADATA_SIGNING_KEY_ID" \
+              --output "$SIGNED_FILE"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "metadata_file=$SIGNED_FILE" >> "$GITHUB_OUTPUT"
+
+      # Hard-fail if artifact-metadata signing was EXPECTED but did not
+      # happen - the same "Assert ... was signed when expected" pattern as
+      # the HMAC gate above (PAT-687, PAT-889), applied to the new Ed25519
+      # artifact-metadata channel (PAT-1248). A missing signature on the
+      # canonical repo means ARTIFACT_METADATA_SIGNING_KEY is unset, scoped
+      # away, or typo'd on the org secret - fail loudly rather than publish a
+      # release the updater can never verify (it would silently never
+      # update, which is the original PAT-1248 bug).
+      - name: Assert artifact metadata was signed when expected
+        id: assert_metadata_signed
+        shell: bash
+        env:
+          SIGNING_EXPECTED: ${{ github.repository == 'Patched-LTD/updater' }}
+          METADATA_SIGNED:  ${{ steps.sign_metadata.outputs.signed }}
+        run: |
+          echo "Artifact-metadata signing gate: expected=$SIGNING_EXPECTED signed=$METADATA_SIGNED"
+          if [ "$SIGNING_EXPECTED" = "true" ] && [ "$METADATA_SIGNED" != "true" ]; then
+            echo "::error::ARTIFACT_METADATA_SIGNING_KEY was expected but no signed artifact-metadata envelope was produced. The secret is likely unset, scoped away, or misconfigured - refusing to publish a release the updater can never verify."
+            exit 1
+          fi
+
+      # PAT-892: publish the .hmac signature and the PAT-1248 Ed25519
+      # artifact-metadata envelope alongside the MSI and SHA256SUMS. If
+      # signing was skipped (fork without the relevant secret), the
+      # corresponding file will not exist - if-no-files-found: warn keeps
+      # that case from failing the upload; the signing-expected gates above
+      # already hard fail the canonical repo in that situation.
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-agent-${{ steps.ver.outputs.version }}
+          path: |
+            ${{ steps.pkg.outputs.msi }}
+            ${{ steps.pkg.outputs.msi }}.hmac
+            ${{ steps.sign_metadata.outputs.metadata_file }}
+            SHA256SUMS
+          if-no-files-found: warn
+          retention-days: 7
+
+  publish:
+    needs: build
+    # PAT-1531 follow-up: skip tag/release/api.patched.im publish on a manual
+    # dispatch with build_only=true (a build-only verification run). Every
+    # other trigger is unaffected: a tag push has no workflow_dispatch
+    # inputs at all, so github.event.inputs.build_only is unset/null there
+    # and the first clause (event_name != 'workflow_dispatch') already makes
+    # this true via ||, short-circuiting before the input is even consulted.
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.build_only != 'true'
+    runs-on: ubuntu-latest
+    environment: release-gate   # PAT-1092: no protection rules configured (Team-plan billing limit) - does not pause for approval
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download release artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: windows-agent-${{ needs.build.outputs.version }}
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${{ needs.build.outputs.version }}"
+          TAG="windows-agent-v${{ needs.build.outputs.tag_version }}"
+          MSI="${{ needs.build.outputs.msi }}"
+          SHA="${{ needs.build.outputs.sha256 }}"
+
+          # Ensure a tag exists for manual workflow_dispatch runs.
+          #
+          # PAT-1415: this used to swallow both git tag and git push with
+          # 2>/dev/null || true, so a genuine push failure (root cause not
+          # yet established - possibly an actions/checkout@v7 token-scope or
+          # branch-protection interaction) surfaced two steps later as a
+          # confusing "tag exists locally but has not been pushed" error out
+          # of gh release create, with the real stderr already discarded.
+          #
+          # git tag failing because the tag already exists locally is not an
+          # error - re-running a dispatch for an existing tag is legitimate,
+          # so that case is checked for directly with plumbing before
+          # attempting the tag, rather than matched off git's human-readable
+          # message (locale and version dependent - the one place this fix
+          # exists to be reliable). Any other git tag failure, and any git
+          # push failure other than the remote already holding this exact
+          # tag at this exact commit, fails the step with the real error
+          # visible.
+          #
+          # A tag that already exists locally is only safe to reuse if it
+          # points at the commit this run actually checked out and built.
+          # actions/checkout can fetch tags, so a dispatch run for a version
+          # already tagged from an older commit would otherwise reuse that
+          # older tag while publishing an MSI built from the current
+          # checkout - the release and the tag would describe different
+          # code, silently. Refuse instead of reusing when they disagree.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+              EXISTING_SHA=$(git rev-parse "$TAG^{}")
+              HEAD_SHA=$(git rev-parse HEAD^{})
+              if [ "$EXISTING_SHA" = "$HEAD_SHA" ]; then
+                echo "Tag $TAG already exists locally at $HEAD_SHA, reusing it."
+              else
+                echo "::error::Tag $TAG already exists at $EXISTING_SHA but this run is building $HEAD_SHA. Refusing to publish a release whose tag does not match the built commit."
+                exit 1
+              fi
+            elif ! TAG_OUTPUT=$(git tag "$TAG" 2>&1); then
+              echo "::error::git tag $TAG failed"
+              printf '%s\n' "$TAG_OUTPUT" >&2
+              exit 1
+            fi
+
+            if ! PUSH_OUTPUT=$(git push origin "$TAG" 2>&1); then
+              REMOTE_SHA=$(git ls-remote origin "refs/tags/$TAG" | awk '{print $1}')
+              LOCAL_SHA=$(git rev-parse "$TAG^{}")
+              if [ -n "$REMOTE_SHA" ] && [ "$REMOTE_SHA" = "$LOCAL_SHA" ]; then
+                echo "Tag $TAG already on origin at $LOCAL_SHA, treating as success."
+              else
+                echo "::error::git push origin $TAG failed"
+                printf '%s\n' "$PUSH_OUTPUT" >&2
+                exit 1
+              fi
+            fi
+          fi
+
+          # Build notes with printf to avoid YAML literal-block-scalar parsing
+          # issues: unindented lines in a run: | block end the block, causing
+          # YAML to interpret "**SHA-256:**" as an invalid alias reference.
+          # shellcheck disable=SC2016
+          NOTES=$(printf 'Interim unsigned Windows agent MSI.\n\n**SHA-256:** `%s  %s`\n\nVerify before installing:\n```powershell\n(Get-FileHash '"'"'%s'"'"' -Algorithm SHA256).Hash.ToLower()\n# Expected: %s\n```\n\nA %s.hmac asset carries the HMAC-SHA256 signature. Verify it with tools/verify-agent-release.py before deploying - see docs/agent-release-runbook.md for the full procedure.\n\n**Install (silent, elevated prompt or MDM):**\n```\nmsiexec /qn /i %s\n```\n\n**SmartScreen warning:** click *More info* → *Run anyway* for interactive installs.\n\nSuperseded by the Authenticode-signed installer post-incorporation (OV/EV cert pending, PAT-50).' \
+            "$SHA" "$MSI" "$MSI" "$SHA" "$MSI" "$MSI")
+
+          NOTES=$(printf '**Channel:** beta\n\n**Installable version:** %s\n\n%s' "$V" "$NOTES")
+
+          # PAT-892: attach the .hmac signature asset when the sign step
+          # produced one. Not present on forks without ARTIFACT_SIGNING_KEY;
+          # the signing-expected gate above already hard fails the canonical
+          # repo in that case, so a missing file here is never silent on
+          # Patched-LTD/updater.
+          ASSETS=("$MSI" SHA256SUMS)
+          [ -f "$MSI.hmac" ] && ASSETS+=("$MSI.hmac")
+
+          # PAT-1248: attach the Ed25519-signed artifact-metadata envelope
+          # too, for the same reason - missing only on a fork without
+          # ARTIFACT_METADATA_SIGNING_KEY, and the assert-signed gate in the
+          # build job already hard fails Patched-LTD/updater in that case.
+          METADATA_SIGNED_FILE="${{ needs.build.outputs.artifact_metadata_file }}"
+          [ -n "$METADATA_SIGNED_FILE" ] && [ -f "$METADATA_SIGNED_FILE" ] && ASSETS+=("$METADATA_SIGNED_FILE")
+
+          gh release create "$TAG" \
+            "${ASSETS[@]}" \
+            --title "Windows agent $V (beta, interim unsigned)" \
+            --notes "$NOTES" \
+            --prerelease \
+            --verify-tag 2>/dev/null \
+          || gh release create "$TAG" \
+            "${ASSETS[@]}" \
+            --title "Windows agent $V (beta, interim unsigned)" \
+            --notes "$NOTES" \
+            --prerelease
+
+      - name: Setup Tailscale
+        uses: tailscale/github-action@780049a30b6ff5c378a9e7b389d15ece7a204888 # v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret:    ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Configure SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/box_key
+          chmod 600 ~/.ssh/box_key
+
+      # PAT-1260: upload the MSI bytes to the API BEFORE the version is
+      # registered below, so a device can never be told about (and try to
+      # download) a version whose bytes are not yet stored there. Ordering
+      # is enforced by step order plus fail-fast: a non-2xx response or any
+      # other failure here exits 1, and a failed step stops the job before
+      # "Register artifact with dashboard" ever runs.
+      #
+      # Reuses the exact reachability pattern the registration step already
+      # relies on (see its comment below): the admin API is Tailscale-only
+      # and tag:ci (this runner) cannot reach tag:api directly, so SSH into
+      # prod-01 (tag:main, which can reach tag:api:8443) and curl from
+      # there. Reuses the same admin/publisher credential (ADMIN_API_TOKEN,
+      # extracted from /etc/patched-dashboard/dashboard.env on prod-01) -
+      # no new secret.
+      - name: Upload MSI to the API
+        env:
+          ADMIN_API_URL: ${{ vars.ADMIN_API_URL }}
+        run: |
+          V="${{ needs.build.outputs.version }}"
+          MSI="${{ needs.build.outputs.msi }}"
+
+          if [ -z "$ADMIN_API_URL" ]; then
+            echo "::error::ADMIN_API_URL is not set - cannot upload this release's artifact to the API"
+            exit 1
+          fi
+          if [ ! -s "$MSI" ]; then
+            echo "::error::$MSI is missing or empty - cannot upload"
+            exit 1
+          fi
+
+          PROD01_IP=$(sudo "$(command -v tailscale)" ip -4 patched-prod-01)
+
+          # Same "not a shell-parseable heredoc-in-$( )" footgun as the
+          # registration step below - a plain redirect to a file, read back
+          # afterward, rather than $(cat <<'EOF' ... EOF).
+          REMOTE_SCRIPT_FILE="$RUNNER_TEMP/pat1260-remote-upload.sh"
+          cat <<'REMOTE_EOF' > "$REMOTE_SCRIPT_FILE"
+            set -eu
+            umask 0077
+            BODY_FILE=""
+            CFG_FILE=""
+            RESP_FILE=""
+            trap 'rm -f "$BODY_FILE" "$CFG_FILE" "$RESP_FILE"' EXIT
+            BODY_FILE=$(mktemp)
+            CFG_FILE=$(mktemp)
+            RESP_FILE=$(mktemp)
+
+            cat > "$BODY_FILE"
+
+            # Identical extraction to the registration step's remote script:
+            # dashboard.env is a systemd EnvironmentFile, not shell syntax,
+            # so grep+strip the one key rather than sourcing the file.
+            ADMIN_API_TOKEN=$(sed -n 's/^ADMIN_API_TOKEN=//p' /etc/patched-dashboard/dashboard.env | head -n 1 | tr -d '\r')
+            case "$ADMIN_API_TOKEN" in
+              \"*\") ADMIN_API_TOKEN=${ADMIN_API_TOKEN#\"}; ADMIN_API_TOKEN=${ADMIN_API_TOKEN%\"} ;;
+              \'*\') ADMIN_API_TOKEN=${ADMIN_API_TOKEN#\'}; ADMIN_API_TOKEN=${ADMIN_API_TOKEN%\'} ;;
+            esac
+            if [ -z "${ADMIN_API_TOKEN:-}" ]; then
+              echo "::error::ADMIN_API_TOKEN not found (or empty) in /etc/patched-dashboard/dashboard.env on prod-01"
+              exit 1
+            fi
+
+            case "$ADMIN_API_TOKEN" in
+              *[!A-Za-z0-9._~-]*)
+                echo "::error::ADMIN_API_TOKEN contains unexpected characters - refusing to send a possibly-corrupted credential"
+                exit 1
+                ;;
+            esac
+
+            ESCAPED_TOKEN=$(printf '%s' "$ADMIN_API_TOKEN" | sed 's/\\/\\\\/g; s/"/\\"/g')
+
+            {
+              printf 'url = "__ADMIN_API_URL__/admin/agent-versions/windows/beta/__VERSION__/artifact"\n'
+              printf 'request = "PUT"\n'
+              printf 'header = "Content-Type: application/octet-stream"\n'
+              printf 'header = "Authorization: Bearer %s"\n' "$ESCAPED_TOKEN"
+              printf 'data-binary = @%s\n' "$BODY_FILE"
+              printf 'silent\n'
+              printf 'show-error\n'
+              printf 'insecure\n'
+            } > "$CFG_FILE"
+            chmod 600 "$CFG_FILE"
+
+            HTTP_CODE=$(curl -K "$CFG_FILE" -o "$RESP_FILE" -w '%{http_code}')
+            if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+              RESP_SIZE=$(wc -c < "$RESP_FILE" 2>/dev/null | tr -d ' ' || echo 0)
+              SNIPPET=$(head -c 300 "$RESP_FILE" 2>/dev/null | LC_ALL=C tr -c '[:print:]' ' ' | sed 's/::/: :/g')
+              echo "::error::Artifact upload failed with HTTP $HTTP_CODE"
+              echo "Response snippet (first 300 bytes, sanitised): $SNIPPET"
+              if [ "$RESP_SIZE" -gt 300 ]; then
+                echo "(response truncated - $RESP_SIZE bytes total)"
+              fi
+              exit 1
+            fi
+            echo "Artifact upload succeeded: HTTP $HTTP_CODE"
+          REMOTE_EOF
+          REMOTE_SCRIPT=$(cat "$REMOTE_SCRIPT_FILE")
+          rm -f "$REMOTE_SCRIPT_FILE"
+          REMOTE_SCRIPT="${REMOTE_SCRIPT/__ADMIN_API_URL__/$ADMIN_API_URL}"
+          REMOTE_SCRIPT="${REMOTE_SCRIPT/__VERSION__/$V}"
+
+          cat "$MSI" \
+          | ssh -i ~/.ssh/box_key \
+                -o StrictHostKeyChecking=accept-new \
+                -o IdentitiesOnly=yes \
+                root@"$PROD01_IP" \
+              "$REMOTE_SCRIPT"
+
+      - name: Register artifact with dashboard
+        env:
+          ADMIN_API_URL: ${{ vars.ADMIN_API_URL }}
+        run: |
+          V="${{ needs.build.outputs.version }}"
+          SHA="${{ needs.build.outputs.sha256 }}"
+          HMAC="${{ needs.build.outputs.artifact_hmac }}"
+          # PAT-1260: RELEASE_URL no longer embeds $MSI - it's now a fixed API
+          # route parameterised only by platform/channel/version. Matches the
+          # URL now signed into the artifact metadata
+          # above (build job) - the API's authenticated download route, not
+          # the anonymous GitHub Releases URL (private repo, 404s).
+          RELEASE_URL="https://api.patched.im/v1/agent/artifact/download?platform=windows&channel=beta&version=${V}"
+          # PAT-1248: the Ed25519-signed artifact-metadata envelope
+          # (signed_payload/signature/key_id) that BootstrapUpdater.cs
+          # verifies with ArtifactTrust.cs before staging an update. Empty
+          # when signing was skipped (fork without
+          # ARTIFACT_METADATA_SIGNING_KEY) - the assert-signed gate in the
+          # build job already hard fails Patched-LTD/updater in that case,
+          # so this is never silently empty on the canonical repo.
+          METADATA_SIGNED_FILE="${{ needs.build.outputs.artifact_metadata_file }}"
+          # The build job always emits this output name, even when signing
+          # was skipped (fork without the secret) and the file was never
+          # created - only pass it on if it actually exists on disk.
+          [ -f "$METADATA_SIGNED_FILE" ] || METADATA_SIGNED_FILE=""
+
+          if [ -z "$ADMIN_API_URL" ]; then
+            echo "::error::ADMIN_API_URL is not set - cannot register this release with the dashboard"
+            exit 1
+          fi
+
+          # Admin API is Tailscale-only; tag:ci cannot reach tag:api directly.
+          # SSH into prod-01 (tag:main, which can reach tag:api:8443) and curl from there.
+          # Caddy uses an internal CA cert — pass -k to skip cert verification.
+          PROD01_IP=$(sudo "$(command -v tailscale)" ip -4 patched-prod-01)
+
+          # PAT-987: POST /admin/agent-versions requires an Authorization
+          # header (requireAdminToken) - every call since 757ce5ba had been
+          # returning 401, silently, because `curl -sk` has no -f. Fix: the
+          # admin token never crosses the SSH boundary from CI. It is
+          # extracted on prod-01 itself from
+          # /etc/patched-dashboard/dashboard.env (root-only, mode 0600) and
+          # handed to curl via a 0600 config file - never as a CLI argument
+          # (so it never appears in `ps`), never echoed. All temp files are
+          # removed by trap on every exit path, including failure. The HTTP
+          # status is checked explicitly and any non-2xx response fails
+          # this job.
+          # NOTE: this heredoc is redirected to a file, not wrapped in
+          # $(cat <<'EOF' ... EOF). Bash's command-substitution parser does
+          # naive parenthesis counting even inside a quoted heredoc body -
+          # the unbalanced `)` characters in the `case` patterns below
+          # (e.g. \"*\") would be misread as closing the $( ) early,
+          # truncating the script and leaving the rest parsed as top-level
+          # shell code (syntax error at the first stray `;;`). A plain
+          # redirect has no such parsing risk; the file is read back into a
+          # variable via $(cat "$file") afterwards, which is safe because
+          # that substitution's body is just a path, not the script text.
+          REMOTE_SCRIPT_FILE="$RUNNER_TEMP/pat987-remote-register.sh"
+          cat <<'REMOTE_EOF' > "$REMOTE_SCRIPT_FILE"
+            set -eu
+            umask 0077
+            BODY_FILE=""
+            CFG_FILE=""
+            RESP_FILE=""
+            trap 'rm -f "$BODY_FILE" "$CFG_FILE" "$RESP_FILE"' EXIT
+            BODY_FILE=$(mktemp)
+            CFG_FILE=$(mktemp)
+            RESP_FILE=$(mktemp)
+
+            cat > "$BODY_FILE"
+
+            # dashboard.env is systemd EnvironmentFile= format, not shell
+            # syntax - other keys in it (e.g. TURNSTILE_SECRET) hold values
+            # with unescaped shell metacharacters, so `. dashboard.env`
+            # aborts under `set -eu` before ADMIN_API_TOKEN is ever set.
+            # Extract just this one key instead: no sourcing, no eval, no
+            # word splitting. Strip a single layer of surrounding quotes
+            # (systemd permits quoted values); tr -d '\r' clears any CR
+            # byte in the value (there's normally at most one, trailing,
+            # picked up from a CRLF-terminated file).
+            ADMIN_API_TOKEN=$(sed -n 's/^ADMIN_API_TOKEN=//p' /etc/patched-dashboard/dashboard.env | head -n 1 | tr -d '\r')
+            case "$ADMIN_API_TOKEN" in
+              \"*\") ADMIN_API_TOKEN=${ADMIN_API_TOKEN#\"}; ADMIN_API_TOKEN=${ADMIN_API_TOKEN%\"} ;;
+              \'*\') ADMIN_API_TOKEN=${ADMIN_API_TOKEN#\'}; ADMIN_API_TOKEN=${ADMIN_API_TOKEN%\'} ;;
+            esac
+            if [ -z "${ADMIN_API_TOKEN:-}" ]; then
+              echo "::error::ADMIN_API_TOKEN not found (or empty) in /etc/patched-dashboard/dashboard.env on prod-01"
+              exit 1
+            fi
+
+            # Defence in depth: refuse a credential outside a conservative
+            # expected alphabet rather than risk sending a header corrupted
+            # by curl's config-file quoting rules. A malformed token should
+            # be a loud failure here, not a 401 rediscovered later.
+            case "$ADMIN_API_TOKEN" in
+              *[!A-Za-z0-9._~-]*)
+                echo "::error::ADMIN_API_TOKEN contains unexpected characters - refusing to send a possibly-corrupted credential"
+                exit 1
+                ;;
+            esac
+
+            # curl's config-file grammar interprets backslash escapes
+            # inside double-quoted values (\\, \", \t, \n, \r, \v); an
+            # un-escaped token containing a backslash or double quote would
+            # be silently corrupted or inject control characters into the
+            # header. The alphabet check above already excludes both
+            # characters, but escape defensively anyway in case that check
+            # is ever loosened. (curl's unquoted config-value form was
+            # considered instead but rejected: it splits on whitespace, so
+            # a multi-word value like "Authorization: Bearer <token>"
+            # silently loses the header entirely - verified against a real
+            # curl binary during review.)
+            ESCAPED_TOKEN=$(printf '%s' "$ADMIN_API_TOKEN" | sed 's/\\/\\\\/g; s/"/\\"/g')
+
+            {
+              printf 'url = "__ADMIN_API_URL__/admin/agent-versions"\n'
+              printf 'request = "POST"\n'
+              printf 'header = "Content-Type: application/json"\n'
+              printf 'header = "Authorization: Bearer %s"\n' "$ESCAPED_TOKEN"
+              printf 'data-binary = @%s\n' "$BODY_FILE"
+              printf 'silent\n'
+              printf 'show-error\n'
+              printf 'insecure\n'
+            } > "$CFG_FILE"
+            chmod 600 "$CFG_FILE"
+
+            HTTP_CODE=$(curl -K "$CFG_FILE" -o "$RESP_FILE" -w '%{http_code}')
+            if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+              RESP_SIZE=$(wc -c < "$RESP_FILE" 2>/dev/null | tr -d ' ' || echo 0)
+              SNIPPET=$(head -c 300 "$RESP_FILE" 2>/dev/null | LC_ALL=C tr -c '[:print:]' ' ' | sed 's/::/: :/g')
+              echo "::error::Dashboard registration failed with HTTP $HTTP_CODE"
+              echo "Response snippet (first 300 bytes, sanitised): $SNIPPET"
+              if [ "$RESP_SIZE" -gt 300 ]; then
+                echo "(response truncated - $RESP_SIZE bytes total)"
+              fi
+              exit 1
+            fi
+            echo "Dashboard registration succeeded: HTTP $HTTP_CODE"
+          REMOTE_EOF
+          REMOTE_SCRIPT=$(cat "$REMOTE_SCRIPT_FILE")
+          rm -f "$REMOTE_SCRIPT_FILE"
+          REMOTE_SCRIPT="${REMOTE_SCRIPT/__ADMIN_API_URL__/$ADMIN_API_URL}"
+
+          # PAT-1248: NOTE FOR THE PLATFORM SIDE (patched.im repo, out of
+          # scope here) - artifact_metadata_signature, when present, is the
+          # {signed_payload, signature, key_id} envelope BootstrapUpdater.cs
+          # verifies. /v1/agent/artifact must be updated to return it so the
+          # signed-envelope path actually closes end to end; until that
+          # lands the fields below are captured/stored but not yet served.
+          # One line deliberately - see the METADATA_FILE comment above for
+          # why a multi-line heredoc here would truncate this YAML block.
+          python3 -c "import json, sys; p = sys.argv[5] if len(sys.argv) > 5 and sys.argv[5] else None; body = {'platform': 'windows', 'channel': 'beta', 'version': sys.argv[1], 'artifact_url': sys.argv[2], 'artifact_sha256': sys.argv[3], 'artifact_hmac': sys.argv[4], 'released_by': 'ci-github-actions'}; body.update({'artifact_metadata_signature': json.load(open(p))} if p else {}); print(json.dumps(body))" "$V" "$RELEASE_URL" "$SHA" "$HMAC" "$METADATA_SIGNED_FILE" \
+          | ssh -i ~/.ssh/box_key \
+                -o StrictHostKeyChecking=accept-new \
+                -o IdentitiesOnly=yes \
+                root@"$PROD01_IP" \
+              "$REMOTE_SCRIPT"

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% from "_macros.html" import kpi_summary %}
+{% block content %}
+<p class="crumb"><a href="/reports">Reports</a> / Duplicate tools</p>
+<div class="page-head">
+  <h1>Duplicate tools</h1>
+  <p class="meta">Categories where your estate runs more than one product doing the same job, so consolidation candidates are visible without needing price data.</p>
+</div>
+
+{% call kpi_summary(summary.kpi_items, summary.installation_count ~ ' installation' ~ ('' if summary.installation_count == 1 else 's') ~ ' assessed in total, across ' ~ summary.categories_with_products ~ ' categor' ~ ('y' if summary.categories_with_products == 1 else 'ies') ~ ' with products present.') %}<a class="btn btn-small" href="{{ pdf_url }}">Download PDF</a> <a class="btn btn-small" href="{{ csv_url }}">Download CSV</a>{% endcall %}
+
+<div class="card" aria-labelledby="dt-basis-title">
+  <h2 id="dt-basis-title">Basis</h2>
+  {% if not basis.complete %}
+  <div class="notice">Coverage is partial. {{ basis.statement }}</div>
+  {% elif basis.statement %}
+  <p class="meta">{{ basis.statement }}</p>
+  {% endif %}
+  <dl class="kv">
+    <dt>Evidence collected</dt>
+    <dd class="mono">{% if basis.evidence_oldest_at %}{{ basis.evidence_oldest_at | humandate_nowrap(true) }}{% else %}Unknown{% endif %} to {% if basis.evidence_newest_at %}{{ basis.evidence_newest_at | humandate_nowrap(true) }}{% else %}Unknown{% endif %} (UTC)</dd>
+    <dt>Devices assessed</dt>
+    <dd>{{ basis.devices_assessed if basis.devices_assessed is not none else 'Unknown' }} of {{ basis.devices_total if basis.devices_total is not none else 'Unknown' }}</dd>
+    <dt>Stale devices included</dt>
+    <dd>{{ basis.devices_stale if basis.devices_stale is not none else 'Unknown' }}</dd>
+    {% if basis.retired_devices_excluded %}
+    <dt>Retired devices excluded</dt>
+    <dd>{{ basis.devices_retired if basis.devices_retired is not none else 0 }}</dd>
+    {% endif %}
+  </dl>
+  {% if basis.paid_products_rule_pending %}
+  <p class="meta">Only the three-or-more-products rule below is applied. The "two or more paid products" rule needs licence or price data Patched does not hold yet.</p>
+  {% endif %}
+  {% if basis.not_counted %}
+  <p class="meta">Not counted in this report, and why:</p>
+  <ul>
+    {% for item in basis.not_counted %}
+    <li>{{ item.description or item.reason }}{% if item.count %} ({{ item.count }}){% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+
+{% macro category_product_table(category) %}
+<div class="table-scroll">
+<table class="data-table table-stack" id="dt-products-{{ category.category }}">
+  <colgroup>
+    <col><col class="col-secondary"><col><col><col><col class="col-secondary"><col>
+  </colgroup>
+  <thead>
+    <tr>
+      <th>Product</th><th class="col-secondary">Platforms</th><th>Approval state</th>
+      <th>Devices</th><th>Installs</th><th class="col-secondary">Users</th><th>Last seen</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in category.products %}
+    <tr>
+      <td data-label="Product">{{ p.name }}<span class="cell-subtle">{{ p.kinds_label }}</span></td>
+      <td class="col-secondary" data-label="Platforms">{% if p.platforms %}{{ p.platforms | map('platform_display') | join(', ') }}{% else %}-{% endif %}</td>
+      <td data-label="Approval state"><span class="pill {{ p.pill_class }}">{{ p.approval_state_label }}</span></td>
+      <td data-label="Devices">{{ p.device_count }}{% if p.stale_device_count %} <span class="cell-subtle">({{ p.stale_device_count }} stale)</span>{% endif %}</td>
+      <td data-label="Installs">{{ p.installation_count }}</td>
+      <td class="col-secondary" data-label="Users">{% if p.users %}{{ p.users | join(', ') }}{% else %}-{% endif %}</td>
+      <td class="mono" data-label="Last seen">{% if p.last_seen %}<span class="nowrap">{{ p.last_seen | humandate }}</span>{% else %}-{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endmacro %}
+
+{% if flagged_categories %}
+{% for c in flagged_categories %}
+<div class="card card-table" aria-labelledby="dt-cat-{{ c.category }}-title">
+  <h2 id="dt-cat-{{ c.category }}-title">{{ c.display_name }} <span class="pill pill-warn">Consolidation candidate</span></h2>
+  <p class="meta">{{ c.product_count }} product{{ '' if c.product_count == 1 else 's' }} present in your estate.</p>
+  {{ category_product_table(c) }}
+</div>
+{% endfor %}
+{% else %}
+<div class="card">
+  <p class="empty">No category currently shows three or more products in your estate.</p>
+</div>
+{% endif %}
+
+{% if unflagged_categories %}
+<div class="card">
+  <h2>Other categories</h2>
+  <p class="meta">Fewer than three products present, so not a consolidation candidate.</p>
+  {% for c in unflagged_categories %}
+  <details>
+    <summary>{{ c.display_name }} ({{ c.product_count }} product{{ '' if c.product_count == 1 else 's' }})</summary>
+    {{ category_product_table(c) }}
+  </details>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if total_pages > 1 %}
+<nav class="pager" aria-label="Duplicate tools pages">
+  {% if page > 1 %}
+  <a class="btn btn-small" href="{{ prev_url }}">&larr; Previous</a>
+  {% else %}
+  <span class="btn btn-small btn-disabled" aria-disabled="true">&larr; Previous</span>
+  {% endif %}
+  <span class="pager-status">Page {{ page }} of {{ total_pages }}</span>
+  {% if page < total_pages %}
+  <a class="btn btn-small" href="{{ next_url }}">Next &rarr;</a>
+  {% else %}
+  <span class="btn btn-small btn-disabled" aria-disabled="true">Next &rarr;</span>
+  {% endif %}
+</nav>
+{% endif %}
+<p class="toolbar-hint">This is drawn from the products Patched's category rules recognise in these eight categories. A category showing fewer than three products is not evidence that fewer are actually installed, only that fewer of the catalogued ones were found. It is not an audit or a compliance position.</p>
+{% endblock %}

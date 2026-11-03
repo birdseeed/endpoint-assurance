@@ -1,0 +1,41 @@
+{#- PAT-2008: one product's approval history, the drawer body. Rendered on
+    its own for the in-page drawer (partial=1) and included by
+    software_history.html for the full-page, no-JavaScript view. Every value
+    is autoescaped: reasons and emails are customer-supplied text.
+    PAT-2255: this is also the product detail. Its Identifiers section is
+    the one labelled place a product's raw identifiers (an MSI product code,
+    a bundle id, a Team ID) are shown, now that the /software list leaves
+    them out; data-walker-ignore opts only that list out of the walker's
+    GUID leak check, because a labelled identifier here is the intended
+    home for it, not a leak. -#}
+<div class="history" data-history-content>
+  <p class="history__product"><strong>{{ product_name }}</strong></p>
+  {% if identifiers %}
+  <section class="product-identifiers" aria-labelledby="product-identifiers-title">
+    <h3 id="product-identifiers-title" class="product-identifiers__title">Identifiers</h3>
+    <dl class="product-identifiers__list" data-walker-ignore>
+      {% for label, value in identifiers %}
+      <div class="product-identifiers__row"><dt>{{ label }}</dt><dd class="mono cell-anywrap">{{ value }}</dd></div>
+      {% endfor %}
+    </dl>
+  </section>
+  {% endif %}
+  <h3 class="product-identifiers__title">Approval history</h3>
+  {% if history_error %}
+  <p class="empty">History could not be loaded just now. Try again in a minute.</p>
+  {% elif not decisions %}
+  <p class="empty">No approval changes have been recorded for this product in the portal. A decision set before approval changes were recorded here shows its date and reason on the product's approval state.</p>
+  {% else %}
+  <ol class="history__list">
+    {% for d in decisions %}
+    <li class="history__item">
+      <p class="history__change"><span class="pill pill-muted">{{ d.previous_label }}</span> <span aria-hidden="true">&rarr;</span><span class="visually-hidden"> to </span> <span class="pill {{ 'pill-bad' if d.new_label == 'Unapproved' else ('pill-ok' if d.new_label == 'Approved' else 'pill-muted') }}">{{ d.new_label }}</span></p>
+      <p class="history__meta"><span class="mono">{{ d.decided_at | humandate(true) }} UTC</span> <span class="cell-anywrap">by {{ d.actor }}</span></p>
+      {% if d.reason %}<p class="history__reason">Reason: {{ d.reason }}</p>{% endif %}
+      {% if d.protected_warning %}<p class="history__warning">Protected product marked Unapproved.</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% if total > decisions | length %}<p class="toolbar-hint">Showing the latest {{ decisions | length }} of {{ total }} changes.</p>{% endif %}
+  {% endif %}
+</div>

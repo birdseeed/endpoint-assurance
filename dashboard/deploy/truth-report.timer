@@ -1,0 +1,11 @@
+[Unit]
+Description=Push local systemd evidence to the dashboard operational truth page every 15 minutes (PAT-1303)
+
+[Timer]
+OnCalendar=*:0/15
+# If the box was off when the timer fired, run on next boot.
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,23 @@
+{
+  "label": "abetterfinderrename11",
+  "name": "A Better Finder Rename 11",
+  "type": "dmg",
+  "app_path": "/Applications/A Better Finder Rename 11.app",
+  "expected_team_id": "7Y9KW4ND8W",
+  "download": {
+    "method": "static",
+    "url": "https://www.publicspace.net/download/ABFRX11.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

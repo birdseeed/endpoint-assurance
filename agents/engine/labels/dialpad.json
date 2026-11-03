@@ -1,0 +1,23 @@
+{
+  "label": "dialpad",
+  "name": "Dialpad",
+  "type": "dmg",
+  "app_path": "/Applications/Dialpad.app",
+  "expected_team_id": "9V29MQSZ9M",
+  "download": {
+    "method": "static",
+    "url": "https://storage.googleapis.com/dialpad_native/osx/arm64/Dialpad.dmg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "_comment": "Tests Unicode in certificate common names, device names, and app names. Exercises UTF-8 handling in the upsert paths and the certificate CN column. All values are valid per the schema (string fields have no charset restrictions).",
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.3.0",
+  "tenant_id": "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
+  "collected_at": "2026-12-01T00:00:00Z",
+  "device": {
+    "serial": "C00000000006",
+    "hw_uuid": "66666666-AAAA-BBBB-CCCC-DDDDDDDDDDDD",
+    "hostname": "unicode-test-host",
+    "computer_name": "François's MacBook Pro",
+    "hw_model": "Mac14,2",
+    "arch": "arm64",
+    "last_boot": "2026-12-01T00:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M2",
+    "cpu_cores": 8,
+    "ram_gb": 16,
+    "disk_total_gb": 512.0,
+    "disk_free_gb": 256.0
+  },
+  "os": {
+    "name": "macOS",
+    "version": "15.4.1",
+    "build": "24E263"
+  },
+  "compliance": {},
+  "security_tools": [],
+  "system_extensions": [],
+  "background_items": [],
+  "icloud": {
+    "signed_in": "Yes"
+  },
+  "apps": [
+    {
+      "name": "日本語アプリ",
+      "version": "1.0",
+      "bundle_id": "jp.example.app"
+    },
+    {
+      "name": "Über-App GmbH Edition",
+      "version": "2.0",
+      "bundle_id": "de.example.uber-app"
+    },
+    {
+      "name": "تطبيق عربي",
+      "version": "1.0",
+      "bundle_id": "com.example.arabic-app"
+    }
+  ],
+  "certificates": [
+    {
+      "subject_cn": "日本マイクロソフト株式会社",
+      "issuer_cn": "DigiCert Global Root CA G3",
+      "sha1": "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3",
+      "not_after": "2028-01-01T00:00:00Z",
+      "days_until_expiry": 942,
+      "ext_key_usage": ["1.3.6.1.5.5.7.3.1"],
+      "basic_constraints_ca": false,
+      "is_self_signed": false
+    },
+    {
+      "subject_cn": "François DUPONT - Développeur",
+      "issuer_cn": "Autorité de Certification Française",
+      "sha1": "b94a8fe5ccb19ba61c4c0873d391e987982fbbd4",
+      "not_after": "2027-06-01T00:00:00Z",
+      "days_until_expiry": 360,
+      "ext_key_usage": ["1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.4"],
+      "basic_constraints_ca": false,
+      "is_self_signed": false
+    },
+    {
+      "subject_cn": "Müller GmbH — Interne Zertifizierungsstelle",
+      "issuer_cn": "Müller GmbH — Interne Zertifizierungsstelle",
+      "sha1": "c04a8fe5ccb19ba61c4c0873d391e987982fbbd5",
+      "not_after": "2035-12-31T00:00:00Z",
+      "days_until_expiry": 3495,
+      "ext_key_usage": [],
+      "basic_constraints_ca": true,
+      "is_self_signed": true
+    },
+    {
+      "subject_cn": "Ñoño Corp — Certificado Raíz",
+      "issuer_cn": "Ñoño Corp — Certificado Raíz",
+      "sha1": "d14a8fe5ccb19ba61c4c0873d391e987982fbbd6",
+      "not_after": "2040-01-01T00:00:00Z",
+      "days_until_expiry": 4952,
+      "ext_key_usage": ["1.3.6.1.5.5.7.3.1"],
+      "basic_constraints_ca": false,
+      "is_self_signed": false
+    }
+  ]
+}

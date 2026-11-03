@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% from "_macros.html" import filter_multiselect, filter_chips %}
+{% block content %}
+<div class="page-head">
+  <h1>Local admins</h1>
+  <p class="meta">Every account holding standing local administrator rights across your estate, evidenced from the same collection behind the device Compliance tab's admin-count rule.</p>
+</div>
+
+{% if admin_only %}
+<aside class="notice" aria-label="Local admins is admin only">
+  <p><strong>Local admins is available to portal admins only.</strong> Account names are personal data, so this page needs the admin role on your Patched account. Ask an admin on your estate for access, or contact {{ support_email }}.</p>
+</aside>
+{% else %}
+
+<section class="ai-summary" aria-label="Estate summary">
+  <p class="toolbar-hint">Whole estate</p>
+  <div class="ai-summary-grid">
+    {% for tile in summary_tiles %}
+    <a class="ov-card ov-card--{{ 'zero' if tile.zero else 'value' }} ov-card--tone-{{ 'warn' if tile.warn else 'neutral' }}" href="{{ tile.href }}" title="{{ tile.label }}: {{ tile.headline }}">
+      <span class="ov-card__label" title="{{ tile.label }}">{{ tile.label }}</span>
+      <span class="ov-card__headline">{{ tile.headline }}</span>
+    </a>
+    {% endfor %}
+  </div>
+  <p class="ai-summary-actions"><a class="btn btn-small" href="/local-admins.csv">Export all</a> <a class="btn btn-small" href="/local-admins.pdf">Export all as PDF</a></p>
+</section>
+
+<p class="toolbar-hint">The rule threshold is {{ threshold }} standing admins or fewer (the same cis_macos_5_8_local_admin_count / cis_win_5_8_local_admin_count rule the device Compliance tab evaluates). A Windows directory group (for example Domain Admins) is labelled as a group, not a person - its own membership stays opaque to the device. A SID the device could not resolve is shown as unresolved, never guessed at. Local admins is a read-only view: nothing here removes admin rights, and no action is offered from this page.</p>
+
+<div class="card group-card" id="local-admins-table">
+  <div class="group-card__head card-edge-muted">
+    <h2>{{ 'By account' if view == 'account' else 'By device' }}</h2>
+    <span class="pill pill-muted">{{ visible_count }} of {{ accounts_total if view == 'account' else devices_total }} {{ 'account' if view == 'account' else 'device' }}{{ '' if (accounts_total if view == 'account' else devices_total) == 1 else 's' }}</span>
+    <span class="group-card__desc">{% if view == 'account' %}Each principal holding standing admin, with every device it holds that on.{% else %}Every device's admin count against the rule threshold, linking to its Compliance tab.{% endif %}</span>
+  </div>
+
+  <nav class="view-tabs" aria-label="View">
+    <a href="{{ filter_bar.account_view_url }}"{% if view == 'account' %} class="tab-active" aria-current="true"{% endif %}>By account ({{ accounts_total }})</a>
+    <a href="{{ filter_bar.device_view_url }}"{% if view == 'device' %} class="tab-active" aria-current="true"{% endif %}>By device ({{ devices_total }})</a>
+  </nav>
+
+  <div class="filter-bar">
+    <form method="get" action="/local-admins">
+      <div class="filter-bar__row">
+        <input type="search" id="local-admins-search" name="search" class="search filter-bar__search"
+               data-table-search=".la-accounts-table, .la-devices-table"
+               value="{{ state.search }}" placeholder="Search local admins" aria-label="Search local admins">
+        <div class="filter-bar__form">
+          <input type="hidden" name="view" value="{{ view }}">
+          <label class="visually-hidden" for="local-admins-sort">Sort by</label>
+          <select class="filter-select" id="local-admins-sort" name="sort" aria-label="Sort by">
+            {% for column in filter_bar.sorts %}<option value="{{ column.key }}"{% if column.active %} selected{% endif %}>Sort: {{ column.label }}</option>{% endfor %}
+          </select>
+          <label class="visually-hidden" for="local-admins-direction">Sort direction</label>
+          <select class="filter-select" id="local-admins-direction" name="direction" aria-label="Sort direction">
+            <option value="asc"{% if state.direction == 'asc' %} selected{% endif %}>Ascending</option>
+            <option value="desc"{% if state.direction == 'desc' %} selected{% endif %}>Descending</option>
+          </select>
+          {{ filter_multiselect('platform', 'la_platform', 'platform', 'Platform', filter_bar.platform_options) }}
+          {{ filter_multiselect('principal_type', 'la_principal_type', 'principal_type', 'Principal type', filter_bar.principal_options) }}
+          {{ filter_multiselect('over_limit', 'la_over_limit', 'over_limit', 'Admin count', filter_bar.over_limit_options) }}
+          {{ filter_multiselect('unknown', 'la_unknown', 'unknown', 'Membership', filter_bar.unknown_options) }}
+          <button class="btn btn-small" type="submit">Apply filters and search</button>
+        </div>
+      </div>
+    </form>
+    {{ filter_chips(filter_bar.chips, filter_bar.clear_url if filter_bar.chips else none) }}
+    <p class="toolbar-hint">{{ visible_count }} matching {{ 'accounts' if view == 'account' else 'devices' }}.
+      Sorted by {{ (filter_bar.sorts | selectattr('active') | first).label | lower }}, {{ 'ascending' if state.direction == 'asc' else 'descending' }}.
+      Filter option counts cover this whole estate view.
+      <a class="btn btn-small" href="{{ export_view_url }}">Export filtered view</a>
+      <a class="btn btn-small" href="{{ export_view_pdf_url }}">Export filtered view as PDF</a>
+    </p>
+  </div>
+
+  {% if view == 'account' %}
+  {% if accounts %}
+  <div class="table-scroll" role="region" aria-label="Local admins by account" tabindex="0">
+  <table class="data-table table-stack la-accounts-table">
+    <thead><tr>{% for column in filter_bar.sorts %}<th{% if column.active %} aria-sort="{{ 'ascending' if state.direction == 'asc' else 'descending' }}"{% endif %}><a href="{{ column.url }}" title="Sort by {{ column.label | lower }}, {{ 'descending' if column.active and state.direction == 'asc' else 'ascending' }}">{{ column.label }}{% if column.active %} {{ '↑' if state.direction == 'asc' else '↓' }}{% endif %}</a></th>{% endfor %}</tr></thead>
+    <tbody>
+      {% for account in accounts %}
+      <tr{% if account.hidden %} class="row-hide-filter"{% endif %} data-filter-view="account" data-filter-la_platform="{{ account.filter_platform }}" data-filter-la_principal_type="{{ account.filter_principal_type }}" data-filter-la_over_limit="{{ account.filter_over_limit }}" data-filter-la_unknown="{{ account.filter_unknown }}">
+        <td data-label="Account"><strong>{{ account.name }}</strong>{% if account.note %}<span class="cell-subtle">{{ account.note }}</span>{% endif %}</td>
+        <td data-label="Type"><span class="pill pill-muted">{{ account.type_label }}</span></td>
+        <td data-label="Devices">{{ account.device_count }}</td>
+        <td data-label="Device list">{% for dev in account.devices %}<a href="/devices/{{ dev.device_id }}/compliance#compliance-signals">{{ dev.hostname }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="empty">No principal currently holds standing local admin on this estate.</p>{% endif %}
+  <p class="empty filtered-empty" data-filter-empty{% if visible_count or not accounts %} hidden{% endif %}>No accounts match these filters and search.</p>
+  {% else %}
+  {% if devices %}
+  <div class="table-scroll" role="region" aria-label="Local admins by device" tabindex="0">
+  <table class="data-table table-stack la-devices-table">
+    <thead><tr>{% for column in filter_bar.sorts %}<th{% if column.active %} aria-sort="{{ 'ascending' if state.direction == 'asc' else 'descending' }}"{% endif %}><a href="{{ column.url }}" title="Sort by {{ column.label | lower }}, {{ 'descending' if column.active and state.direction == 'asc' else 'ascending' }}">{{ column.label }}{% if column.active %} {{ '↑' if state.direction == 'asc' else '↓' }}{% endif %}</a></th>{% endfor %}<th>Names</th></tr></thead>
+    <tbody>
+      {% for device in devices %}
+      <tr{% if device.hidden %} class="row-hide-filter"{% endif %} data-filter-view="device" data-filter-la_platform="{{ device.filter_platform }}" data-filter-la_principal_type="{{ device.filter_principal_type }}" data-filter-la_over_limit="{{ device.filter_over_limit }}" data-filter-la_unknown="{{ device.filter_unknown }}">
+        <td data-label="Device"><a href="/devices/{{ device.device_id }}/compliance#compliance-signals">{{ device.hostname }}</a></td>
+        <td data-label="Platform">{{ device.platform | platform_display }}</td>
+        <td data-label="Count">{% if device.assessed_admin_count is not none %}{{ device.assessed_admin_count }}{% if device.reported_admin_count is not none and device.reported_admin_count != device.assessed_admin_count %}<span class="cell-subtle">{{ device.reported_admin_count }} reported</span>{% endif %}{% else %}<span class="cell-subtle">Unknown</span>{% endif %}</td>
+        <td data-label="Against the limit">
+          {% if device.pass is none %}<span class="pill pill-muted">Unknown</span>
+          {% elif device.pass %}<span class="pill pill-ok">Within limit</span>
+          {% else %}<span class="pill pill-bad">Over limit</span>{% endif %}
+        </td>
+        <td data-label="Membership">
+          {% if device.membership_readable %}<span class="pill pill-muted" title="{{ device.builtin_admin_note }}">Read{% if device.collection_status == 'partial' %} (partial){% endif %}</span>
+          {% else %}<span class="pill pill-warn">Could not be read</span>{% endif %}
+        </td>
+        <td data-label="Names">
+          {% if device.principals %}{% for p in device.principals %}{{ p.name }}{% if p.note %} <span class="cell-subtle">({{ p.note }})</span>{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
+          {% else %}<span class="cell-subtle">{% if device.membership_readable %}No standing admin reported{% else %}Not available{% endif %}</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="empty">No device has reported a local admin signal yet.</p>{% endif %}
+  <p class="empty filtered-empty" data-filter-empty{% if visible_count or not devices %} hidden{% endif %}>No devices match these filters and search.</p>
+  {% endif %}
+</div>
+
+{% endif %}
+{% endblock %}
+{# Native GET controls deliberately use the same server pipeline with JS on or off. #}

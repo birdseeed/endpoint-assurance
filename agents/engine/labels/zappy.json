@@ -1,0 +1,23 @@
+{
+  "label": "zappy",
+  "name": "Zappy",
+  "type": "appindmginzip",
+  "app_path": "/Applications/Zappy.app",
+  "expected_team_id": "6LS97Q5E79",
+  "download": {
+    "method": "static",
+    "url": "https://zappy.zapier.com/releases/zappy-latest.zip"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

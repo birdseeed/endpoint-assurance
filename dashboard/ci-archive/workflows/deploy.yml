@@ -1,0 +1,203 @@
+name: Deploy Dashboard
+
+on:
+  workflow_dispatch:
+    inputs:
+      adopt_code_tree:
+        # PAT-2307. Leave off for a normal deploy, which only checks the
+        # tree and fails if anything root runs is writable by another user.
+        description: "Take root ownership of the box's code tree before checking it. Only for the first deploy of PAT-2307, or to recover after something re-granted www-data."
+        type: boolean
+        default: false
+
+# PAT-617: deploy keys are disabled org-wide, so the box cannot `git fetch` from
+# GitHub — the old "ssh in and fetch github" flow ran green but silently left the
+# box on a stale commit (and could revert hotfixes). Instead the runner, which
+# already has the code checked out and an SSH key to the box, PUSHES main to the
+# box's bare mirror (/opt/git/dashboard.git). Its post-receive hook does the real
+# deploy: reset --hard origin/main (origin = the local mirror) + pip install +
+# systemctl restart. No box→GitHub dependency.
+
+# One deploy at a time (PAT-2305): two overlapping runs could interleave the
+# nginx config backup and restore in deploy/install-nginx-config.sh, or the
+# mirror push and restart. Never cancel an in-flight deploy; queue behind it.
+concurrency:
+  group: deploy-prod-01-dashboard
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so the push to the box mirror fast-forwards
+
+      - name: Setup Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Resolve Tailscale IP
+        id: tailscale_ip
+        # Read the peer's IPv4 straight from the local peer list instead of
+        # `tailscale ip -4 <name>`, which in TS 1.42 does a MagicDNS/system-resolver
+        # lookup that flakes on the runner ("server misbehaving" on 127.0.0.53) and
+        # then silently yields an empty host — turning the push into `root@:...`.
+        # Parsing `status --json` needs no DNS; retry a few times for node settle,
+        # and fail loudly (not silently empty) if the box never appears.
+        run: |
+          ip=""
+          for i in $(seq 1 10); do
+            ip=$(sudo "$(command -v tailscale)" status --json \
+              | jq -r '.Peer[] | select(.HostName=="patched-prod-01") | .TailscaleIPs[] | select(test(":")|not)' \
+              | head -n1)
+            if [ -n "$ip" ]; then break; fi
+            echo "patched-prod-01 not visible in peer list yet (attempt $i/10); retrying in 3s..."
+            sleep 3
+          done
+          if [ -z "$ip" ]; then
+            echo "::error::Could not resolve patched-prod-01 Tailscale IP from the peer list after 10 attempts." >&2
+            sudo "$(command -v tailscale)" status || true
+            exit 1
+          fi
+          echo "Resolved patched-prod-01 -> $ip"
+          echo "ip=$ip" >> $GITHUB_OUTPUT
+
+      - name: Configure SSH key for the box
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/box_key
+          chmod 600 ~/.ssh/box_key
+
+      - name: Check the code tree before the box runs anything from it
+        # PAT-2307: the push below fires the mirror's post-receive hook,
+        # which has root run scripts/deploy.sh out of /opt/patched-dashboard,
+        # and deploy.sh goes on to run pip, the smoke suite and the unit and
+        # polkit installs from the same tree. Refuse to push unless no
+        # non-root user could have changed any of it. The guard is piped in
+        # from THIS checkout (GitHub's copy), never run from the box, so a
+        # box-side edit cannot switch it off. On adopt it first moves the
+        # app's runtime data to its state directory and takes root
+        # ownership of the tree and the mirror.
+        env:
+          BOX_IP: ${{ steps.tailscale_ip.outputs.ip }}
+          ADOPT_CODE_TREE: ${{ inputs.adopt_code_tree }}
+        run: |
+          set -euo pipefail
+          mode=check
+          if [ "$ADOPT_CODE_TREE" = "true" ]; then
+            mode=adopt
+            echo "::warning::adopt_code_tree=true: moving runtime data to /var/lib/patched-dashboard and taking root ownership of /opt/patched-dashboard and /opt/git/dashboard.git before the check."
+          fi
+          ssh -i ~/.ssh/box_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new \
+              "root@${BOX_IP}" "bash -s -- ${mode}" < deploy/code-tree-guard.sh
+
+      - name: Check the box's deploy script and hook match GitHub
+        # PAT-2311: the push below fires the mirror's post-receive hook, which
+        # has root run the box's own copy of scripts/deploy.sh (the reset to
+        # the new commit happens inside it, PAT-1441). The step above proves
+        # no non-root user could have changed either file; this one proves
+        # nobody did. Both are hashed on the box and compared with this
+        # checkout: deploy.sh with the same file at the commit the box has
+        # checked out (full history is fetched above), the hook with
+        # deploy/post-receive or the pinned hash of the copy installed in
+        # July. The script is piped in from this checkout, like the guard.
+        env:
+          BOX_IP: ${{ steps.tailscale_ip.outputs.ip }}
+        run: |
+          set -euo pipefail
+          bash deploy/verify-box-deploy-script.sh verify \
+              ssh -i ~/.ssh/box_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new \
+              "root@${BOX_IP}"
+
+      - name: Push to box bare mirror (auto-deploys via post-receive hook)
+        id: push_to_box
+        env:
+          GIT_SSH_COMMAND: ssh -i ~/.ssh/box_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new
+        run: |
+          # PAT-1441: capture whether this push actually moved the ref. With no
+          # new commits git prints "Everything up-to-date" and sends nothing, so
+          # the post-receive hook never fires and scripts/deploy.sh never runs at
+          # ALL -- not "runs and exits early". That matters because dispatching
+          # this workflow is the reflex anyone reaches for when they suspect the
+          # box has drifted, and in exactly that case it silently did nothing
+          # while reporting success. See the reconcile step below.
+          set -o pipefail
+          git push "root@${{ steps.tailscale_ip.outputs.ip }}:/opt/git/dashboard.git" \
+              HEAD:refs/heads/main 2>&1 | tee /tmp/push_output.txt
+          if grep -qi "Everything up-to-date" /tmp/push_output.txt; then
+              echo "pushed=false" >> "$GITHUB_OUTPUT"
+              echo "No ref update: the box is already on this commit, so the hook did not fire."
+          else
+              echo "pushed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Reconcile box-side config when the push was a no-op
+        if: steps.push_to_box.outputs.pushed == 'false'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ steps.tailscale_ip.outputs.ip }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            # PAT-1441: the push moved nothing, so the hook never ran. Invoke
+            # scripts/deploy.sh directly -- it reconciles box-side systemd and
+            # polkit config BEFORE its own no-op guard, so this restores any
+            # hand-edited or drifted unit even though the checkout does not move.
+            # Without this, a dispatched deploy is inert in precisely the
+            # situation where someone is dispatching it to fix drift.
+            set -euo pipefail
+            /opt/patched-dashboard/scripts/deploy.sh
+
+      - name: Check the code tree before root installs its nginx config
+        # PAT-2307: the next step copies deploy/nginx-dashboard.conf out of
+        # the tree into /etc/nginx as root. Check the tree again first, with
+        # the runner's copy of the guard. On adopt, the deploy.sh that just
+        # ran was the previous commit's, which hands the tree back to
+        # www-data after its reset, so lock it again, but only once
+        # DEPLOYED_SHA confirms this commit is running: a deploy that rolled
+        # back leaves the old code the tree it expects.
+        env:
+          BOX_IP: ${{ steps.tailscale_ip.outputs.ip }}
+          ADOPT_CODE_TREE: ${{ inputs.adopt_code_tree }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          args=check
+          if [ "$ADOPT_CODE_TREE" = "true" ]; then
+            args="adopt-finish ${EXPECTED_SHA}"
+          fi
+          ssh -i ~/.ssh/box_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new \
+              "root@${BOX_IP}" "bash -s -- ${args}" < deploy/code-tree-guard.sh
+
+      - name: Verify deployed revision and refresh nginx config
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ steps.tailscale_ip.outputs.ip }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            expected_sha='${{ github.sha }}'
+            actual_sha=$(git -C /opt/patched-dashboard rev-parse HEAD)
+            deployed_sha=$(sed -n 's/^DEPLOYED_SHA=//p' /opt/patched-dashboard/DEPLOYED_SHA | tail -n1)
+            systemctl is-active --quiet patched-dashboard
+            if [ "$actual_sha" != "$expected_sha" ] || [ "$deployed_sha" != "$expected_sha" ]; then
+              echo "::error::Dashboard deploy did not reach the requested revision." >&2
+              exit 1
+            fi
+            # PAT-2305: install the nginx site config only if nginx accepts
+            # it. The script backs up the live file outside /etc/nginx, tests
+            # the new one in place, restores the previous file and exits
+            # non-zero if nginx -t fails, and reloads only on success. It runs
+            # only after the check above has confirmed the checkout's HEAD.
+            if ! /opt/patched-dashboard/deploy/install-nginx-config.sh; then
+              echo "::error::The nginx site config was not installed and reloaded cleanly; see the install-nginx-config lines above." >&2
+              exit 1
+            fi
+            echo "Verified deployment: ${actual_sha:0:7}"

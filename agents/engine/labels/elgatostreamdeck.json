@@ -1,0 +1,25 @@
+{
+  "label": "elgatostreamdeck",
+  "name": "Elgato Stream Deck",
+  "type": "pkg",
+  "app_path": "/Applications/Elgato Stream Deck.app",
+  "expected_team_id": "Y93VXCB8Q5",
+  "download": {
+    "method": "static",
+    "url": "https://gc-updates.elgato.com/mac/sd-update/final/download-website.php"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [
+    "Stream Deck"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

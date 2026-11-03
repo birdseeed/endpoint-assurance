@@ -1,0 +1,25 @@
+{
+  "label": "pcoipclient",
+  "name": "PCoIPClient",
+  "type": "dmg",
+  "app_path": "/Applications/PCoIPClient.app",
+  "expected_team_id": "RU4LW7W32C",
+  "download": {
+    "method": "static",
+    "url": "https://dl.teradici.com/DeAdBCiUYInHcSTy/pcoip-client/raw/names/pcoip-client-dmg/versions/latest/pcoip-client_latest.dmg"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [
+    "Teradici PCoIP Client"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

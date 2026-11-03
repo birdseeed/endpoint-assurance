@@ -1,0 +1,25 @@
+{
+  "label": "sigil",
+  "name": "Sigil",
+  "type": "tbz",
+  "app_path": "/Applications/Sigil.app",
+  "expected_team_id": "2SMCVQU3CJ",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/Sigil-Ebook/Sigil/releases/latest",
+    "asset_pattern": "\\.txz$"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "PAT-1278: declared type 'tbz' doesn't match GitHub's actual asset extension. Sigil-Ebook/Sigil releases ship 'Sigil.app-<version>-Mac-arm64.txz' and 'Sigil.app-<version>-Mac-x86_64.txz' (confirmed via GitHub releases API against the 'latest' release, tag 2.8.1, 2026-08-13; matches engine/Installomator.sh's own sigil label, which sets archiveName to 'Mac-arm64.txz'/'Mac-x86_64.txz'). Added asset_pattern '\\\\.txz$' so _github_release_asset_suffix()'s type-derived '.tbz' guess is bypassed. Team ID and URL still require human review before setting allowlisted=true."
+  }
+}

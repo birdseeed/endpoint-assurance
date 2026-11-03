@@ -1,0 +1,24 @@
+{
+  "label": "creativeforcetriad",
+  "name": "Triad",
+  "type": "pkg",
+  "app_path": "/Applications/Triad.app",
+  "expected_team_id": "Y5K3N5Y6PY",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://download.creativeforce.io/released-files.042024/prod/triad/mac"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

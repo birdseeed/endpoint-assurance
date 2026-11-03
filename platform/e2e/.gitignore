@@ -1,0 +1,9 @@
+.state/
+artifacts/
+ui/.venv/
+RESULTS.md
+macos/vm_key
+macos/vm_key.pub
+macos/.vm_ip
+macos/.before_devices.json
+macos/.device_detail.json

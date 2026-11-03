@@ -1,0 +1,4 @@
+"Microsoft Status","CA Owner","CA Common Name or Certificate Name","Subject","SHA-1 Fingerprint","SHA-256 Fingerprint","Microsoft EKUs","Valid From [GMT]","Valid To [GMT]","Public Key Algorithm","Signature Hash Algorithm"
+"Included","Contoso","Contoso Root CA","CN=Contoso Root CA; O=Contoso; C=US","AA11BB22CC33DD44EE55FF66AA77BB88CC99DD00","deadbeef","Server Authentication","2014 Jul 23","2034 Jul 23","RSA 2048 bits","SHA256WithRSA"
+"Disabled","Fabrikam","Fabrikam Legacy Root","CN=Fabrikam Legacy Root; O=Fabrikam; C=US","11223344556677889900AABBCCDDEEFF0011223","cafebabe","Server Authentication","2005 Jan 01","2020 Jan 01","RSA 1024 bits","SHA1WithRSA"
+"Included","Northwind","Northwind Issuing CA","CN=Northwind Issuing CA; O=Northwind; C=US","00112233445566778899aabbccddeeff0011223","facefeed","Client Authentication","2018 Mar 05","2038 Mar 05","RSA 4096 bits","SHA384WithRSA"

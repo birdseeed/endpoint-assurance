@@ -1,0 +1,31 @@
+{
+  "label": "openeid",
+  "name": "Open-EID",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "root-unique-pkg"
+  },
+  "app_path": "/Applications/Open-EID.app",
+  "expected_team_id": "ET847QJV9F",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.id.ee/en/article/install-id-software/"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [
+    "EstEIDTokenApp",
+    "EstEIDTokenNotify",
+    "web-eid"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

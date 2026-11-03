@@ -1,0 +1,23 @@
+{
+  "label": "privileges",
+  "name": "Privileges",
+  "type": "zip",
+  "app_path": "/Applications/Privileges.app",
+  "expected_team_id": "7R5ZEU67FQ",
+  "download": {
+    "method": "static",
+    "url": "https://github.com/SAP/macOS-enterprise-privileges/releases/download/1.5.4/Privileges.zip"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

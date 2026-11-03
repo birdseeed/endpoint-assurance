@@ -1,0 +1,23 @@
+{
+  "label": "affinityapp",
+  "name": "Affinity",
+  "type": "dmg",
+  "app_path": "/Applications/Affinity.app",
+  "expected_team_id": "5HD2ARTBFS",
+  "download": {
+    "method": "static",
+    "url": "https://downloads.affinity.studio/Affinity.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

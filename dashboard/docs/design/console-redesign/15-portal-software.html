@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Patched customer portal &mdash; Customer portal, software</title>
+<!-- Design reference for the customer portal (PAT-1602). Static mockup, invented data.
+     Ruling 12 Sept 2026: the customer detail screens are designed for the customer, not
+     the staff console tables with staff-only columns hidden. The customer is asked a
+     different question from the operator, so the shape differs.
+     Organised by policy state, not alphabetically, because the customer question is what
+     is allowed here rather than what is installed. The waiting-on-a-decision queue is the
+     engine: it is what produces the approved list and the removal campaigns. -->
+<style>
+    body { margin:0; font-family:system-ui,-apple-system,'Segoe UI',sans-serif; font-size:14px; color:#0f1115; background:#f5f5f3; -webkit-font-smoothing:antialiased; }
+    .lbl { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:#7d8089; }
+    .mono { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; }
+    .num { font-weight:700; letter-spacing:-.02em; }
+    .pill { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; padding:2px 6px; border-radius:4px; white-space:nowrap; }
+    .card { background:#fff; border:1px solid rgba(15,17,21,.12); border-radius:6px; }
+    .navitem { display:flex; align-items:center; gap:10px; padding:7px 14px; color:rgba(255,255,255,.72); font-size:13px; border-left:2px solid transparent; }
+    .navitem--on { background:rgba(255,255,255,.07); color:#fff; border-left-color:#f5530a; font-weight:500; }
+    .th { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#7d8089; padding:9px 14px; text-align:left; }
+    .td { padding:10px 14px; border-top:1px solid rgba(15,17,21,.07); font-size:13px; }
+    .grp { display:flex; align-items:center; gap:10px; padding:11px 16px; background:#fafaf8; border-bottom:1px solid rgba(15,17,21,.07); }
+    .ask { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:11px; font-weight:600; color:#c93f04; white-space:nowrap; }
+  </style>
+</head>
+<body>
+<div style="display:flex; width:1440px; height:900px; overflow:hidden; background:#f5f5f3;">
+
+  <div style="width:216px; flex-shrink:0; background:#0f1115; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:center; gap:9px; padding:18px 16px 22px;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="#f5530a" stroke-width="2.4"/><circle cx="10" cy="10" r="2.2" fill="#ffffff"/></svg>
+      <span style="font-weight:700; font-size:15px; color:#fff;">Patched</span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:1px;">
+      <div class="navitem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>Your estate</div>
+      <div class="navitem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/></svg>Findings</div>
+      <div class="navitem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v11H4z"/><path d="M9 20h6"/></svg>Devices</div>
+      <div class="navitem navitem--on"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 10h8M8 14h5"/></svg>Software</div>
+      <div class="navitem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l5 5v13H6z"/><path d="M14 3v6h6"/></svg>Reports</div>
+    </div>
+    <div style="margin-top:auto; padding:14px 16px; border-top:1px solid rgba(255,255,255,.09);">
+      <div class="lbl" style="color:rgba(255,255,255,.34);">Your specialist</div>
+      <div style="display:flex; align-items:center; gap:9px; margin-top:9px;">
+        <div style="width:26px; height:26px; border-radius:50%; background:#2a2d33; color:#fff; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center;">AB</div>
+        <div><div style="font-size:12px; color:#fff;">Example specialist</div><div class="mono" style="font-size:10px; color:rgba(255,255,255,.5);">specialist@example.invalid</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex-grow:1; display:flex; flex-direction:column; min-width:0;">
+    <div style="height:56px; flex-shrink:0; background:#fff; border-bottom:1px solid rgba(15,17,21,.12); display:flex; align-items:center; padding:0 24px; gap:11px;">
+      <h1 style="margin:0; font-size:18px; font-weight:700; letter-spacing:-.015em;">Software</h1>
+      <span class="mono" style="font-size:10px; color:#7d8089; background:#f5f5f3; border:1px solid rgba(15,17,21,.07); padding:3px 7px; border-radius:4px;">SAMPLE DATA</span>
+      <span class="mono" style="font-size:10px; color:#c93f04; background:#fff4ed; border:1px solid rgba(201,63,4,.22); padding:3px 7px; border-radius:4px;">MANAGED</span>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:11px;">
+        <div style="display:flex; border:1px solid rgba(15,17,21,.12); border-radius:6px; overflow:hidden;"><span class="mono" style="font-size:10px; font-weight:600; padding:5px 9px; background:#0f1115; color:#fff;">LIGHT</span><span class="mono" style="font-size:10px; font-weight:600; padding:5px 9px; color:#7d8089;">DARK</span></div>
+        <div style="border:1px solid rgba(15,17,21,.12); border-radius:6px; padding:6px 11px; font-size:12px; font-weight:500;">Ask Andy a question</div>
+      </div>
+    </div>
+
+    <div style="padding:20px 24px; display:flex; flex-direction:column; gap:14px; overflow:hidden;">
+
+      <div class="card" style="padding:15px 18px; display:flex; align-items:center; gap:24px;">
+        <div><div class="lbl">Products found</div><div class="num" style="font-size:26px; margin-top:5px;">184</div></div>
+        <div style="width:1px; height:38px; background:rgba(15,17,21,.09);"></div>
+        <div><div class="lbl">Approved</div><div class="num" style="font-size:26px; margin-top:5px; color:#15803d;">142</div></div>
+        <div style="width:1px; height:38px; background:rgba(15,17,21,.09);"></div>
+        <div><div class="lbl">No decision yet</div><div class="num" style="font-size:26px; margin-top:5px;">25</div></div>
+        <div style="width:1px; height:38px; background:rgba(15,17,21,.09);"></div>
+        <div><div class="lbl">Not wanted</div><div class="num" style="font-size:26px; margin-top:5px; color:#b91c1c;">17</div></div>
+        <div style="width:1px; height:38px; background:rgba(15,17,21,.09);"></div>
+        <div style="font-size:13px; color:#2a2d33; line-height:1.5; max-width:520px;">
+          Your approved software list is a policy, not an inventory. Everything below sits in one of three states, and anything without a decision is the queue that produces the other two.
+        </div>
+      </div>
+
+      <div class="card" style="overflow:hidden;">
+        <div class="grp" style="border-left:3px solid #7d8089;">
+          <span style="font-size:13px; font-weight:600;">Waiting on a decision</span>
+          <span class="pill" style="background:#f5f5f3; color:#7d8089;">25 PRODUCTS</span>
+          <span style="font-size:12px; color:#7d8089;">Found on your estate and not yet on your list. Tell us what you want and your specialist records it.</span>
+          <span class="ask" style="margin-left:auto;">OLDEST FIRST &rarr;</span>
+        </div>
+        <table style="width:100%; border-collapse:collapse;">
+          <thead><tr><th class="th">Product</th><th class="th">Publisher</th><th class="th">Installs</th><th class="th">Evidence</th><th class="th">First seen</th><th class="th">What you can say</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="td" style="font-weight:500;">Tailscale</td><td class="td" style="color:#7d8089;">Tailscale Inc</td>
+              <td class="td mono">9</td>
+              <td class="td"><span class="pill" style="background:#f0fdf4; color:#15803d;">VERSION CONFIRMED</span></td>
+              <td class="td mono" style="color:#7d8089;">7 SEP</td>
+              <td class="td" style="text-align:right;"><span class="ask">APPROVE IT &nbsp;&middot;&nbsp; REMOVE IT &rarr;</span></td>
+            </tr>
+            <tr>
+              <td class="td" style="font-weight:500;">Notion</td><td class="td" style="color:#7d8089;">Notion Labs</td>
+              <td class="td mono">23</td>
+              <td class="td"><span class="pill" style="background:#f0fdf4; color:#15803d;">VERSION CONFIRMED</span></td>
+              <td class="td mono" style="color:#7d8089;">2 SEP</td>
+              <td class="td" style="text-align:right;"><span class="ask">APPROVE IT &nbsp;&middot;&nbsp; REMOVE IT &rarr;</span></td>
+            </tr>
+            <tr>
+              <td class="td" style="font-weight:500;">WinRAR</td><td class="td" style="color:#7d8089;">win.rar GmbH</td>
+              <td class="td mono">6</td>
+              <td class="td"><span class="pill" style="background:#fff7ed; color:#c2410c;">NAME MATCH ONLY</span></td>
+              <td class="td mono" style="color:#7d8089;">29 AUG</td>
+              <td class="td" style="text-align:right;"><span class="ask">ASK US TO CONFIRM FIRST &rarr;</span></td>
+            </tr>
+            <tr>
+              <td class="td" style="font-weight:500;">uTorrent</td><td class="td" style="color:#7d8089;">Rainberry Inc</td>
+              <td class="td mono">1</td>
+              <td class="td"><span class="pill" style="background:#f0fdf4; color:#15803d;">VERSION CONFIRMED</span></td>
+              <td class="td mono" style="color:#7d8089;">26 AUG</td>
+              <td class="td" style="text-align:right;"><span class="ask">APPROVE IT &nbsp;&middot;&nbsp; REMOVE IT &rarr;</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="padding:10px 16px; border-top:1px solid rgba(15,17,21,.07); font-size:12px; color:#7d8089;">21 more waiting. <span class="ask">SHOW ALL TWENTY FIVE &rarr;</span></div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px; align-items:start;">
+
+        <div class="card" style="overflow:hidden;">
+          <div class="grp" style="border-left:3px solid #b91c1c;">
+            <span style="font-size:13px; font-weight:600;">Not wanted</span>
+            <span class="pill" style="background:#fef2f2; color:#b91c1c;">17 PRODUCTS</span>
+            <span style="font-size:12px; color:#7d8089;">41 installs</span>
+          </div>
+          <table style="width:100%; border-collapse:collapse;">
+            <thead><tr><th class="th">Product</th><th class="th">Installs</th><th class="th">Status</th><th class="th"></th></tr></thead>
+            <tbody>
+              <tr><td class="td" style="font-weight:500;">Tailscale</td><td class="td mono">9</td><td class="td"><span class="pill" style="background:#fff7ed; color:#c2410c;">REMOVING NOW</span></td><td class="td" style="text-align:right;"><span class="ask">WATCH IT &rarr;</span></td></tr>
+              <tr><td class="td" style="font-weight:500;">TeamViewer</td><td class="td mono">11</td><td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">DRY RUN DONE</span></td><td class="td" style="text-align:right;"><span class="ask">AUTHORISE REMOVAL &rarr;</span></td></tr>
+              <tr><td class="td" style="font-weight:500;">Spotify</td><td class="td mono">14</td><td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">NOT STARTED</span></td><td class="td" style="text-align:right;"><span class="ask">ASK FOR A DRY RUN &rarr;</span></td></tr>
+              <tr><td class="td" style="font-weight:500;">Honey (extension)</td><td class="td mono">7</td><td class="td"><span class="pill" style="background:#f0fdf4; color:#15803d;">REMOVED 5 SEP</span></td><td class="td" style="text-align:right;"><span class="ask">EVIDENCE &rarr;</span></td></tr>
+            </tbody>
+          </table>
+          <div style="padding:10px 16px; border-top:1px solid rgba(15,17,21,.07); font-size:12px; color:#7d8089;">Nothing is removed without you authorising it, and every removal is dry run first.</div>
+        </div>
+
+        <div class="card" style="overflow:hidden;">
+          <div class="grp" style="border-left:3px solid #15803d;">
+            <span style="font-size:13px; font-weight:600;">Approved</span>
+            <span class="pill" style="background:#f0fdf4; color:#15803d;">142 PRODUCTS</span>
+            <span style="font-size:12px; color:#7d8089;">these are your list</span>
+          </div>
+          <table style="width:100%; border-collapse:collapse;">
+            <thead><tr><th class="th">Product</th><th class="th">Installs</th><th class="th">Behind</th><th class="th">Approved</th></tr></thead>
+            <tbody>
+              <tr><td class="td" style="font-weight:500;">Google Chrome</td><td class="td mono">203</td><td class="td mono" style="color:#b91c1c;">61</td><td class="td mono" style="color:#7d8089;">14 AUG</td></tr>
+              <tr><td class="td" style="font-weight:500;">Microsoft 365 Apps</td><td class="td mono">241</td><td class="td mono" style="color:#c2410c;">12</td><td class="td mono" style="color:#7d8089;">14 AUG</td></tr>
+              <tr><td class="td" style="font-weight:500;">Zoom</td><td class="td mono">188</td><td class="td mono" style="color:#c2410c;">19</td><td class="td mono" style="color:#7d8089;">14 AUG</td></tr>
+              <tr><td class="td" style="font-weight:500;">Adobe Acrobat Reader</td><td class="td mono">96</td><td class="td mono" style="color:#15803d;">0</td><td class="td mono" style="color:#7d8089;">14 AUG</td></tr>
+            </tbody>
+          </table>
+          <div style="padding:10px 16px; border-top:1px solid rgba(15,17,21,.07); font-size:12px; color:#7d8089;">Approved does not mean up to date. <span class="ask">SEE WHAT IS BEHIND &rarr;</span></div>
+        </div>
+
+      </div>
+
+      <div style="font-size:12px; color:#7d8089; line-height:1.5; padding:0 2px;">
+        Approving or rejecting a product is a request. Your specialist records the decision against the product with the date and who asked, so the list you show an assessor is a set of decisions with names on them rather than a spreadsheet anyone could have edited.
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

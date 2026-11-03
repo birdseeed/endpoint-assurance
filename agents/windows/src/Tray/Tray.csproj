@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Patched.Tray</RootNamespace>
+    <AssemblyName>Patched.Tray</AssemblyName>
+    <!-- WPF for the status/deploy window; WinForms for the reliable NotifyIcon -->
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <OutputType>WinExe</OutputType>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <!-- WPF needs native WindowsDesktop runtime libraries. Bundle them into the
+         single EXE and extract at startup because the MSI installs no loose DLLs. -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <ApplicationIcon>Resources\tray-icon.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Shared.csproj" />
+  </ItemGroup>
+  <!-- Microsoft.Extensions.Logging.Abstractions must be a direct PackageReference here
+       even though Shared already pulls it in transitively. The WPF _wpftmp shadow project
+       does not inherit transitive package references from ProjectReference items, so ILogger<T>
+       is invisible to the shadow compilation without this explicit declaration. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\tray-icon.ico" />
+    <Resource Include="Resources\tray-icon-update.ico" />
+    <Resource Include="Resources\tray-icon-error.ico" />
+    <Resource Include="Resources\patched-ring-mark-slate.png" />
+    <Resource Include="Resources\patched-wordmark-matrix-white.png" />
+  </ItemGroup>
+</Project>

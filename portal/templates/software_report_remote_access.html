@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% from "_macros.html" import kpi_summary %}
+{% block content %}
+<p class="crumb"><a href="/reports">Reports</a> / Remote access tools</p>
+<div class="page-head">
+  <h1>Remote access tools</h1>
+  <p class="meta">Every remote access tool installed on your estate, by device and, where a per-user install is reported, by user, with your existing software approval state.</p>
+</div>
+
+{% call kpi_summary(summary.kpi_items, summary.remote_access_installation_count ~ ' remote access installation' ~ ('' if summary.remote_access_installation_count == 1 else 's') ~ ' assessed in total, across every approval state below.') %}<a class="btn btn-small" href="{{ pdf_url }}">Download PDF</a> <a class="btn btn-small" href="{{ csv_url }}">Download CSV</a>{% endcall %}
+
+<div class="card" aria-labelledby="ra-basis-title">
+  <h2 id="ra-basis-title">Basis</h2>
+  {% if not basis.complete %}
+  <div class="notice">Coverage is partial. {{ basis.statement }}</div>
+  {% elif basis.statement %}
+  <p class="meta">{{ basis.statement }}</p>
+  {% endif %}
+  <dl class="kv">
+    <dt>Evidence collected</dt>
+    <dd class="mono">{% if basis.evidence_oldest_at %}{{ basis.evidence_oldest_at | humandate_nowrap(true) }}{% else %}Unknown{% endif %} to {% if basis.evidence_newest_at %}{{ basis.evidence_newest_at | humandate_nowrap(true) }}{% else %}Unknown{% endif %} (UTC)</dd>
+    <dt>Devices assessed</dt>
+    <dd>{{ basis.devices_assessed if basis.devices_assessed is not none else 'Unknown' }} of {{ basis.devices_total if basis.devices_total is not none else 'Unknown' }}</dd>
+    <dt>Stale devices included</dt>
+    <dd>{{ basis.devices_stale if basis.devices_stale is not none else 'Unknown' }}</dd>
+    {% if basis.retired_devices_excluded %}
+    <dt>Retired devices excluded</dt>
+    <dd>{{ basis.devices_retired if basis.devices_retired is not none else 0 }}</dd>
+    {% endif %}
+  </dl>
+  {% if basis.not_counted %}
+  <p class="meta">Not counted in this report, and why:</p>
+  <ul>
+    {% for item in basis.not_counted %}
+    <li>{{ item.description or item.reason }}{% if item.count %} ({{ item.count }}){% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+
+<div class="card" aria-labelledby="ra-rmm-title">
+  <h2 id="ra-rmm-title">RMM agents</h2>
+  <p class="meta">Your own remote monitoring and management tooling, kept separate from the findings above so it is never presented as an unsanctioned remote-access tool: {{ summary.rmm_agent_tool_count }} tool{{ '' if summary.rmm_agent_tool_count == 1 else 's' }}, {{ summary.rmm_agent_installation_count }} installation{{ '' if summary.rmm_agent_installation_count == 1 else 's' }}.</p>
+  {% if rmm_products %}
+  <div class="table-scroll">
+  <table class="data-table" id="ra-rmm-table">
+    <thead><tr><th>Tool</th><th class="col-secondary">Platform</th><th>Approval state</th><th>Devices</th><th>Installs</th><th>Last seen</th></tr></thead>
+    <tbody>
+      {% for p in rmm_products %}
+      <tr>
+        <td data-label="Tool">{{ p.name }}</td>
+        <td class="col-secondary" data-label="Platform">{{ p.platform | platform_display if p.platform else '-' }}</td>
+        <td data-label="Approval state"><span class="pill {{ p.pill_class }}">{{ p.approval_state_label }}</span></td>
+        <td data-label="Devices">{{ p.device_count }}</td>
+        <td data-label="Installs">{{ p.installation_count }}</td>
+        <td class="mono" data-label="Last seen">{% if p.last_seen %}<span class="nowrap">{{ p.last_seen | humandate }}</span>{% else %}-{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">No RMM agents were found on your estate.</p>
+  {% endif %}
+</div>
+
+<form method="get" action="/reports/software/remote-access" class="alerts-filter-form">
+  <label class="visually-hidden" for="ra-filter-category">Category</label>
+  <select class="search" id="ra-filter-category" name="category">
+    <option value="">All categories</option>
+    <option value="remote_access"{% if category_filter == 'remote_access' %} selected{% endif %}>Remote access</option>
+    <option value="rmm_agent"{% if category_filter == 'rmm_agent' %} selected{% endif %}>RMM agent</option>
+  </select>
+  <label class="visually-hidden" for="ra-filter-kind">Kind</label>
+  <select class="search" id="ra-filter-kind" name="kind">
+    <option value="">All kinds</option>
+    <option value="app"{% if kind_filter == 'app' %} selected{% endif %}>App</option>
+    <option value="browser_extension"{% if kind_filter == 'browser_extension' %} selected{% endif %}>Browser extension</option>
+    <option value="package"{% if kind_filter == 'package' %} selected{% endif %}>Package</option>
+  </select>
+  <label class="visually-hidden" for="ra-filter-state">Approval state</label>
+  <select class="search" id="ra-filter-state" name="state">
+    <option value="">All approval states</option>
+    <option value="unapproved"{% if state_filter == 'unapproved' %} selected{% endif %}>Unapproved</option>
+    <option value="unreviewed"{% if state_filter == 'unreviewed' %} selected{% endif %}>Unreviewed</option>
+    <option value="ignored"{% if state_filter == 'ignored' %} selected{% endif %}>Ignored</option>
+    <option value="approved"{% if state_filter == 'approved' %} selected{% endif %}>Approved</option>
+  </select>
+  <label class="visually-hidden" for="ra-filter-platform">Platform</label>
+  <select class="search" id="ra-filter-platform" name="platform">
+    <option value="">All platforms</option>
+    <option value="macos"{% if platform_filter == 'macos' %} selected{% endif %}>macOS</option>
+    <option value="windows"{% if platform_filter == 'windows' %} selected{% endif %}>Windows</option>
+  </select>
+  <button type="submit" class="btn btn-small">Filter</button>
+  {% if category_filter or kind_filter or state_filter or platform_filter %}<a class="btn btn-small" href="/reports/software/remote-access">Clear filters</a>{% endif %}
+</form>
+
+<div class="card card-table">
+  {% if products %}
+  <div class="table-scroll">
+  <table class="data-table table-stack" id="ra-products-table">
+    <colgroup>
+      <col><col class="col-secondary"><col><col><col><col><col class="col-secondary"><col>
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Product</th><th class="col-secondary">Platform</th><th>Approval state</th>
+        <th>Devices</th><th>Installs</th><th>Users</th><th class="col-secondary">Machine-wide</th>
+        <th>Last seen</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in products %}
+      <tr>
+        <td data-label="Product">
+          <a class="cell-anywrap" href="{{ p.devices_url }}">{{ p.name }}</a>
+          <span class="cell-subtle">{{ p.category_label }} &middot; {{ p.kind_label }}</span>
+        </td>
+        <td class="col-secondary" data-label="Platform">{{ p.platform | platform_display if p.platform else '-' }}</td>
+        <td data-label="Approval state"><span class="pill {{ p.pill_class }}">{{ p.approval_state_label }}</span></td>
+        <td data-label="Devices">{{ p.device_count }}{% if p.stale_device_count %} <span class="cell-subtle">({{ p.stale_device_count }} stale)</span>{% endif %}</td>
+        <td data-label="Installs">{{ p.installation_count }}</td>
+        <td data-label="Users">{% if p.users %}{{ p.users | join(', ') }}{% else %}-{% endif %}</td>
+        <td class="col-secondary" data-label="Machine-wide">{{ p.machine_wide_count }}</td>
+        <td class="mono" data-label="Last seen">{% if p.last_seen %}<span class="nowrap">{{ p.last_seen | humandate }}</span>{% else %}-{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">No products match this filter.</p>
+  {% endif %}
+</div>
+
+{% if total_pages > 1 %}
+<nav class="pager" aria-label="Remote access tools pages">
+  {% if page > 1 %}
+  <a class="btn btn-small" href="{{ prev_url }}">&larr; Previous</a>
+  {% else %}
+  <span class="btn btn-small btn-disabled" aria-disabled="true">&larr; Previous</span>
+  {% endif %}
+  <span class="pager-status">Page {{ page }} of {{ total_pages }}</span>
+  {% if page < total_pages %}
+  <a class="btn btn-small" href="{{ next_url }}">Next &rarr;</a>
+  {% else %}
+  <span class="btn btn-small btn-disabled" aria-disabled="true">Next &rarr;</span>
+  {% endif %}
+</nav>
+{% endif %}
+<p class="toolbar-hint">This is an estimate from the remote access tools and RMM agents Patched's catalogue recognises. A device reporting none of them is not evidence that no remote access tool is installed, only that none of the catalogued ones were found. It is not an audit or a compliance position.</p>
+{% endblock %}

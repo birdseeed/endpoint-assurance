@@ -1,0 +1,24 @@
+{
+  "label": "blender",
+  "name": "Blender",
+  "type": "dmg",
+  "app_path": "/Applications/Blender.app",
+  "expected_team_id": "68UA947AUU",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://ftp.nluug.nl/pub/graphics/blender/release/Blender"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

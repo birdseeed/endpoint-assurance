@@ -1,0 +1,24 @@
+{
+  "label": "mendeleyreferencemanager",
+  "name": "Mendeley Reference Manager",
+  "type": "dmg",
+  "app_path": "/Applications/Mendeley Reference Manager.app",
+  "expected_team_id": "45K89Y5X9B",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.mendeley.com/download-reference-manager/macOS"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

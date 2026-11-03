@@ -1,0 +1,29 @@
+{
+  "label": "firecutforpremierepro",
+  "name": "FireCut for Premiere Pro",
+  "type": "pkg",
+  "app_path": "/Applications/FireCut for Premiere Pro.app",
+  "expected_team_id": "7ASRSVAEMS",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://firecut.ai/downloads/premiere-pro/"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [
+    "Adobe Premiere Pro 2024",
+    "Adobe Premiere Pro 2025",
+    "Adobe Premiere Pro 2026",
+    "Adobe Premiere Pro 2027"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

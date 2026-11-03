@@ -1,0 +1,13 @@
+[Unit]
+Description=Daily Restic backup — dashboard.db + reports/ to Cloudflare R2
+
+[Timer]
+# 02:00 UTC daily — 1 hour before the api-01 DB backup (03:00 UTC).
+# RandomizedDelaySec spreads the start across a 15-minute window.
+OnCalendar=*-*-* 02:00:00
+RandomizedDelaySec=900
+# Re-run missed backups on next boot (e.g. after maintenance window)
+Persistent=true
+
+[Install]
+WantedBy=timers.target

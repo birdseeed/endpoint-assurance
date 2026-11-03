@@ -1,0 +1,24 @@
+{
+  "label": "krita",
+  "name": "krita",
+  "type": "dmg",
+  "app_path": "/Applications/krita.app",
+  "expected_team_id": "DL93766A3G",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://apps.kde.org/en-gb/krita/index.xml"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

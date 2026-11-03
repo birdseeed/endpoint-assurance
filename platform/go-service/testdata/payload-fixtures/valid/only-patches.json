@@ -1,0 +1,61 @@
+{
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.3.0",
+  "tenant_id": "66666666-6666-6666-6666-666666666666",
+  "collected_at": "2026-12-01T00:00:00Z",
+  "device": {
+    "serial": "C00000000003",
+    "hw_uuid": "33333333-AAAA-BBBB-CCCC-DDDDDDDDDDDD",
+    "hostname": "patches-test-host",
+    "hw_model": "Mac14,2",
+    "arch": "arm64",
+    "last_boot": "2026-12-01T00:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M2",
+    "cpu_cores": 8,
+    "ram_gb": 8,
+    "disk_total_gb": 256.0,
+    "disk_free_gb": 128.0
+  },
+  "os": {
+    "name": "macOS",
+    "version": "15.4.1",
+    "build": "24E263"
+  },
+  "compliance": {},
+  "security_tools": [],
+  "system_extensions": [],
+  "background_items": [],
+  "icloud": {
+    "signed_in": "No"
+  },
+  "apps": [
+    {
+      "name": "Safari",
+      "version": "18.4",
+      "bundle_id": "com.apple.Safari"
+    }
+  ],
+  "patches": [
+    {
+      "name": "macOS Ventura 13.7",
+      "version": "13.7",
+      "installed_at": "2024-09-16T00:00:00Z",
+      "date_raw": "16 Sep 2024"
+    },
+    {
+      "name": "macOS Sonoma 14.7.1",
+      "version": "14.7.1",
+      "installed_at": "2024-10-29T00:00:00Z",
+      "date_raw": "29 Oct 2024"
+    },
+    {
+      "name": "macOS Sequoia 15.4.1",
+      "version": "15.4.1",
+      "installed_at": null,
+      "date_raw": "unparseable date string"
+    }
+  ]
+}

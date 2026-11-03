@@ -1,0 +1,7 @@
+{
+  "checks": [
+    "State filter and no-match search remain distinct from source failure",
+    "Native dialog wraps keyboard focus and returns focus on close"
+  ],
+  "synthetic_only": true
+}

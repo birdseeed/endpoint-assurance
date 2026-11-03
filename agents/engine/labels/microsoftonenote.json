@@ -1,0 +1,26 @@
+{
+  "label": "microsoftonenote",
+  "name": "Microsoft OneNote",
+  "type": "pkg",
+  "app_path": "/Applications/Microsoft OneNote.app",
+  "expected_team_id": "UBF8T346G9",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://res.public.onecdn.static.microsoft/mro1cdnstorage/C1297A47-86C4-4C1F-97FA-950631F94777/MacAutoupdate/0409ONMC2019.xml"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "Microsoft OneNote"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

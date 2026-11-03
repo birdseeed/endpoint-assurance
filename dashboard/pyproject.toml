@@ -1,0 +1,32 @@
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+# Deliberately narrow (PAT-1698): main.py is 15,671 lines and has never been
+# linted before this ticket. E9 catches syntax/runtime errors, F catches real
+# pyflakes defects (undefined names, unused imports, shadowed builtins).
+# Bugbear (B) was evaluated and is NOT enabled here: an unfiltered run found
+# 28 B findings, 19 of them B023 (loop-variable closures) concentrated in
+# main.py alone -- not clean or near-clean per this ticket's bar. Revisit B
+# separately once that's been triaged. An unfiltered `--select ALL` run
+# found 21,356 findings total; see the PAT-1698 PR body for the count-by-rule.
+select = ["E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+# main.py: 15,671 lines, never previously linted. This ticket pins the
+# ruleset and reports the baseline -- it does not clean up main.py (would
+# destroy blame history the console redesign in flight depends on).
+#   F401 (16x): unaudited unused-import debt, predates this ticket.
+#   F811 (1x): `get_db` is deliberately redefined at line ~1211 to shadow
+#     shared.get_db() with a version bound to this module's own (patchable)
+#     DB_PATH -- see the PAT-814 comment immediately above the redefinition.
+#     Not a bug; ruff can't see the intent.
+"main.py" = ["F401", "F811"]
+# intune_upload.py / scanner.py: unaudited unused-import debt, same as
+# main.py above -- not touched by this ticket.
+"intune_upload.py" = ["F401"]
+"scanner.py" = ["F401"]
+# tests/*.py: unused imports/locals scattered across the 1,705-function test
+# suite (copy-pasted setup boilerplate, fixtures trimmed but imports left).
+# Low risk, not audited under this ticket -- deferred cleanup.
+"tests/*.py" = ["F401", "F841"]

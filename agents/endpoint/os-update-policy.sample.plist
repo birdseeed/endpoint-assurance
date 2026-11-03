@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  os-update-policy.plist — per-tenant OS update nudge policy.
+  Delivered via the PAT-279 agent-config channel to:
+    /Library/Application Support/Patched/os-update-policy.plist
+  All keys are optional; sane defaults are baked into the daemon.
+-->
+<dict>
+  <!-- Minimum acceptable macOS version.
+       Default: latest security release for the installed major (from SOFA). -->
+  <!-- <key>target_os</key> <string>14.6.1</string> -->
+
+  <!-- Don't nag until a release is this many days old (avoids day-zero breakage).
+       Skipped for actively-exploited CVE releases when exploited_overrides_age=true.
+       Default: 7 -->
+  <key>minimum_age_days</key>
+  <integer>7</integer>
+
+  <!-- Deadline = release_date + grace_days (unless deadline is set explicitly).
+       Default: 14 -->
+  <key>grace_days</key>
+  <integer>14</integer>
+
+  <!-- Optional absolute deadline override (ISO-8601 date or datetime). -->
+  <!-- <key>deadline</key> <string>2026-07-01</string> -->
+
+  <!-- How many times the user may defer the blocking prompt.
+       At 0 the Defer button is disabled; the window still reappears on cadence.
+       Default: 5 -->
+  <key>deferral_budget</key>
+  <integer>5</integer>
+
+  <!-- How long one deferral buys, in hours.
+       Default: 24 -->
+  <key>defer_interval_hours</key>
+  <integer>24</integer>
+
+  <!-- How many days before the deadline the gentle card escalates to the
+       blocking acknowledgement window.
+       Default: 3 -->
+  <key>blocking_window_days</key>
+  <integer>3</integer>
+
+  <!-- When true and an actively-exploited CVE is present, skip minimum_age_days
+       and halve grace_days.
+       Default: true -->
+  <key>exploited_overrides_age</key>
+  <true/>
+</dict>
+</plist>

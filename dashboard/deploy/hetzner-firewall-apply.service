@@ -1,0 +1,21 @@
+[Unit]
+Description=Apply Hetzner Cloud Firewall rules for patched-prod-01
+Documentation=file:///opt/patched-dashboard/deploy/hetzner-firewall-apply.sh
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# hcloud reads its token from $HOME/.config/hcloud/cli.toml. Running as root
+# means it reads /root/.config/hcloud/cli.toml — auth was done once via
+# `hcloud context create patched-im` during bootstrap.
+User=root
+ExecStart=/opt/patched-dashboard/deploy/hetzner-firewall-apply.sh patched-prod-01-edge --yes
+StandardOutput=journal
+StandardError=journal
+# Don't hammer the API on transient failure — let the timer try again next cycle.
+Restart=no
+TimeoutStartSec=2min
+
+[Install]
+WantedBy=multi-user.target

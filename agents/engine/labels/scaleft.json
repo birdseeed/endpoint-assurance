@@ -1,0 +1,26 @@
+{
+  "label": "scaleft",
+  "name": "ScaleFT",
+  "type": "pkg",
+  "app_path": "/Applications/ScaleFT.app",
+  "expected_team_id": "B7F62B65BN",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://dist.scaleft.com/repos/macos/stable/all/macos-client/"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "ScaleFT"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

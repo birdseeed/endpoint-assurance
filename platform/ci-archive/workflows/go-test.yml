@@ -1,0 +1,126 @@
+name: go-test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # Deliberately broad: deployment inventory classifies every cmd main
+      # package, so any go-service change can affect the production contract.
+      - 'go-service/**'
+      - 'deploy/api-01/**'
+      - 'api-vps-artefacts/alerting/prometheus-rules-patched.yml'
+      - 'api-vps-artefacts/alerting/prometheus-rules-patched.test.yml'
+      - 'api-vps-artefacts/alerting/selector-liveness/**'
+      - '.github/workflows/deploy-api-01.yml'
+      - '.github/workflows/api-build.yml'
+      - '.github/workflows/go-test.yml'
+      # PAT-1316: contracts/extension-removal-scopes.json is read at test time
+      # (internal/handlers/extension_removal_scope_contract_test.go) but lives
+      # outside go-service/, so an edit to just this file needs its own
+      # trigger to re-run the test that checks it.
+      - 'contracts/extension-removal-scopes.json'
+  pull_request:
+    paths:
+      - 'go-service/**'
+      - 'deploy/api-01/**'
+      - 'api-vps-artefacts/alerting/prometheus-rules-patched.yml'
+      - 'api-vps-artefacts/alerting/prometheus-rules-patched.test.yml'
+      - 'api-vps-artefacts/alerting/selector-liveness/**'
+      - '.github/workflows/deploy-api-01.yml'
+      - '.github/workflows/api-build.yml'
+      - '.github/workflows/go-test.yml'
+      - 'contracts/extension-removal-scopes.json'
+
+jobs:
+  govulncheck:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module:
+          - go-service
+          - api-vps-artefacts/alerting/selector-liveness
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: ${{ matrix.module }}/go.mod
+          cache-dependency-path: ${{ matrix.module }}/go.sum
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
+
+      - name: govulncheck
+        working-directory: ${{ matrix.module }}
+        run: govulncheck ./...
+
+  build-test-vet:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: go-service
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go-service/go.mod
+          cache-dependency-path: go-service/go.sum
+
+      - name: gofmt
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [[ -n "$unformatted" ]]; then
+            echo "::error::Go files are not formatted with gofmt"
+            printf '%s\n' "$unformatted"
+            exit 1
+          fi
+
+      - name: Test database environment contract
+        run: |
+          direct_reads="$(grep -rnE 'os\.(Getenv|LookupEnv)\([[:space:]]*"DATABASE_URL"[[:space:]]*\)' . --include='*_test.go' || true)"
+          if [[ -n "$direct_reads" ]]; then
+            echo "::error::Go tests must select their database with TEST_DATABASE_URL"
+            printf '%s\n' "$direct_reads"
+            exit 1
+          fi
+
+      - name: go build
+        run: go build ./...
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test ./...
+
+      - name: Validate Prometheus alert rules
+        working-directory: .
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq prometheus
+          promtool --version | grep -F '2.45.3'
+          promtool test rules api-vps-artefacts/alerting/prometheus-rules-patched.test.yml
+          promtool check rules api-vps-artefacts/alerting/prometheus-rules-patched.yml
+
+      - name: Test selector-liveness
+        working-directory: api-vps-artefacts/alerting/selector-liveness
+        run: go test ./...
+
+      - name: API deployment contract
+        working-directory: .
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+          shellcheck deploy/api-01/deploy.sh deploy/api-01/emergency-api-only.sh deploy/api-01/bootstrap-cve-sync.sh deploy/api-01/deploy-prometheus-rules.sh deploy/api-01/verify-systemd-hardening-floor.sh deploy/api-01/install-maintenance-systemd-units.sh deploy/api-01/deploy-ownership-guard.sh deploy/api-01/service-account-hygiene.sh deploy/api-01/test_root_production_integration.sh
+          python3 deploy/api-01/check_binary_inventory.py
+          python3 -m unittest discover -s deploy/api-01 -p 'test_*.py'
+          # Never execute pull-request-controlled code as host root. The
+          # fixed-path/root contract runs inside a disposable, networkless
+          # container with the checkout mounted read-only.
+          docker run --rm --network none \
+            --cap-drop ALL \
+            --security-opt no-new-privileges \
+            -e PATCHED_ROOT_HARNESS_CONTAINER=1 \
+            -v "$GITHUB_WORKSPACE:/workspace:ro" ubuntu:24.04 \
+            /bin/bash /workspace/deploy/api-01/test_root_production_integration.sh

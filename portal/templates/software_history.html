@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <h1>Product detail</h1>
+  <p class="meta">The product's identifiers, and who changed its approval state, when, from what, to what, and why. <a class="ask-link" href="/software">Back to Software</a></p>
+</div>
+<div class="card history-card">
+  {% include "_software_history.html" %}
+</div>
+{% endblock %}

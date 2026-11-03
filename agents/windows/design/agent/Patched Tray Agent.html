@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Patched — Windows Tray Agent</title>
+<style>
+  :root {
+    --uv: #f5530a; --uv-deep: #c93f04; --uv-wash: rgba(245,83,10,0.08);
+    --slate: #1b1b1b; --graphite: #383838; --mute: #6a6a6a;
+    --rule: rgba(0,0,0,0.10); --hair: rgba(0,0,0,0.06);
+    --secure: #1a8a4e; --secure-dot: #2fb968; --critical: #d13438; --idle: #8a8d94;
+    /* Windows 11 system font + monospace for evidence */
+    --sys: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+    --mono: "Cascadia Code", "Cascadia Mono", Consolas, ui-monospace, monospace;
+    --board: #16171a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: radial-gradient(1100px 640px at 16% -10%, #20222a 0%, transparent 60%), var(--board);
+    color: #e9eaec; font-family: var(--sys); -webkit-font-smoothing: antialiased; padding: 52px 56px 90px;
+  }
+
+  /* Board header */
+  .board-head { max-width: 1280px; margin: 0 auto 46px; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--uv); margin-bottom: 16px; }
+  h1.title { font-size: 34px; font-weight: 600; letter-spacing: -0.4px; margin: 0; color: #fff; }
+  .lede { font-size: 15px; line-height: 1.6; color: #a8abb1; max-width: 700px; margin: 14px 0 0; }
+  .lede strong { color: #cfd2d7; font-weight: 600; }
+  .lede .mono { font-family: var(--mono); font-size: 13px; }
+  .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+  .tagpill { font-family: var(--mono); font-size: 10.5px; color: #c9ccd1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); padding: 5px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 7px; }
+  .tagpill .sw { width: 9px; height: 9px; border-radius: 2px; }
+
+  .section { max-width: 1280px; margin: 0 auto; }
+  .section + .section { margin-top: 60px; }
+  .sec-label { display: flex; align-items: baseline; gap: 14px; margin-bottom: 24px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 18px; }
+  .sec-num { font-family: var(--mono); font-size: 11px; color: var(--mute); letter-spacing: 0.1em; color: #8d9097; }
+  .sec-name { font-size: 15px; font-weight: 600; color: #fff; }
+  .sec-note { font-size: 13px; color: #8d9097; margin-left: auto; max-width: 460px; text-align: right; line-height: 1.5; }
+
+  /* ───── Tray icon states ───── */
+  .barwrap { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .barcard { border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); }
+  .barcap { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 9px 14px; color: #8d9097; background: #15161a; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .traydemo { display: flex; align-items: center; gap: 26px; padding: 18px 20px; }
+  .barcard.litebg .traydemo { background: linear-gradient(0deg, #eceef2, #e3e6ec); }
+  .barcard.darkbg .traydemo { background: linear-gradient(0deg, #202225, #16181b); }
+  .istate { display: flex; flex-direction: column; align-items: center; gap: 11px; }
+  .istate .lab { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .barcard.litebg .lab { color: #5a5f67; } .barcard.darkbg .lab { color: #9498a0; }
+  .trayslot { width: 28px; height: 28px; border-radius: 5px; display: flex; align-items: center; justify-content: center; position: relative; }
+  .barcard.litebg .mark-cell { background: #1d2026; } .barcard.darkbg .mark-cell { background: rgba(255,255,255,0.92); }
+  .mark { display: grid; gap: 1px; } .mark-cell { border-radius: 0.5px; }
+  .badge { position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; border-radius: 50%; }
+  .barcard.litebg .badge { box-shadow: 0 0 0 1.5px #e7e9ee; } .barcard.darkbg .badge { box-shadow: 0 0 0 1.5px #1a1c1f; }
+  .badge.orange { background: var(--uv); } .badge.red { background: var(--critical); }
+  .badge.grey { background: transparent; border: 1.5px solid var(--idle); box-shadow: none !important; }
+  .scan-anim { animation: breathe 1.3s ease-in-out infinite; }
+  @keyframes breathe { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* ───── Flyout frames ───── */
+  .frames { display: grid; grid-template-columns: repeat(auto-fill, minmax(384px, 1fr)); gap: 34px 30px; align-items: start; }
+  .frame { display: flex; flex-direction: column; gap: 16px; }
+  .screen {
+    position: relative; height: 480px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.09);
+    background: radial-gradient(120% 90% at 78% 120%, #4a5562 0%, transparent 55%), linear-gradient(150deg, #2f3640 0%, #262b33 55%, #20242b 100%);
+  }
+  /* taskbar at the bottom (Windows 11) */
+  .taskbar {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 44px; z-index: 3; display: flex; align-items: center; justify-content: center;
+    background: rgba(32,34,38,0.72); backdrop-filter: blur(26px) saturate(140%); -webkit-backdrop-filter: blur(26px) saturate(140%);
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .tb-apps { display: flex; align-items: center; gap: 12px; }
+  .tb-app { width: 26px; height: 26px; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.86); }
+  .tb-app.start { background: linear-gradient(135deg,#3a8fd6,#2a6fb0); color: #fff; }
+  .systray { position: absolute; right: 10px; bottom: 0; height: 44px; display: flex; align-items: center; gap: 14px; padding-right: 4px; }
+  .systray .sicon { color: rgba(255,255,255,0.82); display: flex; }
+  .systray .tray-patched { position: relative; display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 5px; }
+  .systray .tray-patched.active { background: rgba(255,255,255,0.14); }
+  .systray .mark-cell { background: rgba(255,255,255,0.92); }
+  .systray .badge { box-shadow: 0 0 0 1.5px rgba(40,44,52,0.9); }
+  .clock { color: rgba(255,255,255,0.9); font-size: 11px; line-height: 1.25; text-align: right; }
+
+  /* the flyout (rises from the tray, bottom-right) */
+  .flyout {
+    position: absolute; right: 11px; bottom: 54px; width: 352px; z-index: 4;
+    background: rgba(249,249,249,0.85); backdrop-filter: blur(50px) saturate(160%); -webkit-backdrop-filter: blur(50px) saturate(160%);
+    border: 1px solid rgba(0,0,0,0.10); border-radius: 8px;
+    box-shadow: 0 18px 44px -10px rgba(0,0,0,0.5); color: var(--slate); padding: 14px; text-align: left;
+  }
+
+  .fhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; }
+  .fhead .wordmark { height: 14px; width: auto; display: block; }
+  .pwlk { display: inline-flex; align-items: center; gap: 0.32em; line-height: 1; color: var(--slate); }
+  .pwlk .pw-mark { height: 0.72em; width: auto; display: block; }
+  .pwlk .pw-word { font-family: var(--sys); font-weight: 600; font-size: 1em; letter-spacing: -0.018em; color: currentColor; }
+  .gear { background: none; border: none; cursor: default; color: var(--mute); padding: 3px; display: flex; border-radius: 5px; }
+  .gear:hover { background: rgba(0,0,0,0.05); }
+
+  .status { display: flex; gap: 11px; align-items: flex-start; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .dot.secure { background: var(--secure-dot); box-shadow: 0 0 0 3px rgba(47,185,104,0.16); }
+  .dot.orange { background: var(--uv); box-shadow: 0 0 0 3px var(--uv-wash); }
+  .dot.red { background: var(--critical); box-shadow: 0 0 0 3px rgba(209,52,56,0.14); }
+  .dot.grey { background: var(--idle); }
+  .spinner { width: 13px; height: 13px; margin-top: 3px; flex-shrink: 0; border-radius: 50%; border: 2px solid rgba(0,0,0,0.16); border-top-color: var(--graphite); animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .status-title { font-size: 16px; font-weight: 600; color: var(--slate); line-height: 1.2; }
+  .status-sub { font-size: 12px; color: var(--mute); margin-top: 3px; line-height: 1.4; }
+
+  .compliance { display: flex; align-items: center; gap: 7px; margin-top: 13px; font-family: var(--mono); font-size: 11px; color: var(--graphite); }
+  .compliance .seal { color: var(--secure); display: flex; }
+  .hr { height: 1px; background: var(--rule); margin: 13px -14px; }
+
+  /* Windows list rows */
+  .menurow { display: flex; align-items: center; gap: 11px; height: 36px; padding: 0 10px; margin: 0 -6px; border-radius: 5px; cursor: default; font-size: 13px; color: var(--slate); }
+  .menurow:hover { background: rgba(0,0,0,0.05); }
+  .menurow .ic { color: var(--graphite); display: flex; width: 18px; justify-content: center; }
+  .menurow .sc { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--mute); }
+
+  /* update rows */
+  .updlist { display: flex; flex-direction: column; margin-top: 4px; }
+  .updrow { display: flex; gap: 11px; padding: 9px 0; }
+  .updrow + .updrow { border-top: 1px solid var(--hair); }
+  .appicon { width: 30px; height: 30px; border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: #fff; }
+  .updmain { flex: 1; min-width: 0; }
+  .updname { font-size: 13px; font-weight: 600; color: var(--slate); }
+  .updver { font-family: var(--mono); font-size: 11px; color: var(--mute); margin-top: 2px; }
+  .updver .arr { color: var(--graphite); } .updver .to { color: var(--secure); }
+  .updchips { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+  .chip { font-family: var(--mono); font-size: 10px; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .chip-cve { color: var(--graphite); background: rgba(0,0,0,0.05); }
+  .chip-verified { color: var(--secure); background: rgba(26,138,78,0.10); }
+  .chip-verified .seal { display: flex; }
+
+  .finding { margin-top: 13px; border: 1px solid rgba(209,52,56,0.28); background: rgba(209,52,56,0.05); border-radius: 6px; padding: 11px 12px; }
+  .finding-top { display: flex; align-items: center; gap: 8px; }
+  .sev { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.05em; text-transform: uppercase; color: #fff; background: var(--critical); padding: 2px 6px; border-radius: 3px; }
+  .finding-name { font-size: 13px; font-weight: 600; color: var(--slate); }
+  .finding-body { font-size: 12px; color: var(--graphite); line-height: 1.5; margin-top: 7px; }
+  .finding-meta { font-family: var(--mono); font-size: 10.5px; color: var(--mute); margin-top: 8px; }
+
+  .progblock { margin-top: 14px; }
+  .progline { font-size: 12.5px; color: var(--graphite); line-height: 1.5; }
+  .track { height: 4px; background: rgba(0,0,0,0.09); border-radius: 2px; overflow: hidden; position: relative; margin-top: 12px; }
+  .track .fill { position: absolute; top: 0; left: 0; height: 100%; background: var(--uv); border-radius: 2px; box-shadow: 0 0 8px rgba(245,83,10,0.35); }
+  .track .fill::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent); animation: shimmer 1.4s ease-in-out infinite; }
+  @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+  .progmeta { display: flex; justify-content: space-between; margin-top: 9px; font-family: var(--mono); font-size: 10.5px; color: var(--mute); }
+
+  .note { display: flex; align-items: center; gap: 7px; margin-top: 12px; font-size: 11.5px; color: var(--mute); line-height: 1.4; }
+  .note .ic { color: var(--mute); display: flex; flex-shrink: 0; }
+
+  .btnrow { display: flex; gap: 8px; margin-top: 14px; }
+  .btn { flex: 1; height: 32px; border-radius: 4px; border: 1px solid transparent; cursor: default; font-family: var(--sys); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+  .btn.grow { flex: 2.2; }
+  .btn-primary { background: var(--uv); color: #fff; } .btn-primary:hover { background: var(--uv-deep); }
+  .btn-secondary { background: rgba(0,0,0,0.045); color: var(--slate); border-color: rgba(0,0,0,0.10); }
+  .btn-secondary:hover { background: rgba(0,0,0,0.08); }
+  .btn-slate { background: var(--slate); color: #fff; } .btn-slate:hover { background: var(--graphite); }
+
+  .cap { display: flex; gap: 13px; align-items: baseline; }
+  .cap .cnum { font-family: var(--mono); font-size: 11px; color: var(--uv); letter-spacing: 0.08em; flex-shrink: 0; }
+  .cap .cname { font-size: 14px; font-weight: 600; color: #fff; }
+  .cap .cnote { font-size: 12.5px; color: #8d9097; line-height: 1.5; margin-top: 4px; }
+
+  .footer { max-width: 1280px; margin: 72px auto 0; padding-top: 22px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; font-family: var(--mono); font-size: 10.5px; color: #7d8089; letter-spacing: 0.08em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<div class="board-head">
+  <div class="eyebrow">Patched · Windows Agent / MMXXVI</div>
+  <h1 class="title">System Tray Agent</h1>
+  <p class="lede">
+    The Windows counterpart to the macOS menu-bar agent — the always-present status surface for a managed
+    <strong>Scan · Patch · Prove</strong> service. Branded but native: a Windows 11 Fluent tray flyout (Mica, Segoe UI,
+    rounded corners), not a marketing surface. Nothing depends on a management server; every substantive action hands off to the Self Service app.
+  </p>
+  <div class="legend">
+    <span class="tagpill"><span class="sw" style="background:var(--uv)"></span>One accent · signal orange</span>
+    <span class="tagpill"><span class="sw" style="background:var(--secure-dot)"></span>Secure</span>
+    <span class="tagpill"><span class="sw" style="background:var(--uv)"></span>Attention</span>
+    <span class="tagpill"><span class="sw" style="background:var(--critical)"></span>Critical</span>
+    <span class="tagpill"><span class="sw" style="background:var(--idle)"></span>Idle / offline</span>
+    <span class="tagpill">Segoe UI · Cascadia Mono for evidence</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-label">
+    <span class="sec-num">A</span>
+    <span class="sec-name">Tray icon — state by tint &amp; badge</span>
+    <span class="sec-note">A monochrome Patched mark that adapts to the light or dark taskbar and encodes state with a small badge — never a colour fill of the glyph itself.</span>
+  </div>
+  <div class="barwrap">
+    <div class="barcard darkbg">
+      <div class="barcap">Dark taskbar (default)</div>
+      <div class="traydemo" id="row-dark"></div>
+    </div>
+    <div class="barcard litebg">
+      <div class="barcap">Light taskbar</div>
+      <div class="traydemo" id="row-light"></div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-label">
+    <span class="sec-num">B</span>
+    <span class="sec-name">Flyout — every state</span>
+    <span class="sec-note">A Fluent flyout rising from the tray, ~352 px wide over Mica. Reassurance by default; evidence (last scan + a compliance figure) is always on screen.</span>
+  </div>
+  <div class="frames" id="frames"></div>
+</div>
+
+<div class="footer">
+  <span>Patched — Windows Tray Agent</span>
+  <span>WinUI 3 · NotifyIcon flyout · Mica · Segoe Fluent Icons</span>
+</div>
+
+<script>
+/* Pixel-P mark */
+const P_GLYPH = [[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0]];
+function makeMark(cell, gap) {
+  const wrap = document.createElement('div');
+  wrap.className = 'mark';
+  wrap.style.gridTemplateColumns = `repeat(5, ${cell}px)`;
+  wrap.style.gridAutoRows = `${cell}px`;
+  wrap.style.gap = (gap ?? Math.max(1, cell * 0.18)) + 'px';
+  P_GLYPH.forEach(row => row.forEach(c => {
+    const d = document.createElement('div');
+    if (c) d.className = 'mark-cell';
+    d.style.width = cell + 'px'; d.style.height = cell + 'px';
+    wrap.appendChild(d);
+  }));
+  return wrap;
+}
+
+/* Fluent-style icons (approximating Segoe Fluent Icons) */
+const I = {
+  gear: '<circle cx="12" cy="12" r="3.2"/><path d="M12 4.2v2.2M12 17.6v2.2M19.8 12h-2.2M6.4 12H4.2M17.5 6.5l-1.6 1.6M8.1 15.9l-1.6 1.6M17.5 17.5l-1.6-1.6M8.1 8.1L6.5 6.5"/>',
+  shieldcheck: '<path d="M12 3.2l7 2.4v5.1c0 4.4-2.9 7.6-7 8.9-4.1-1.3-7-4.5-7-8.9V5.6l7-2.4z"/><path d="M8.7 11.7l2.3 2.3 4.3-4.5"/>',
+  seal: '<path d="M12 3l2.1 1.6 2.6-.3 1 2.4 2.3 1.2-.6 2.6 1.3 2.3-1.8 1.9.2 2.6-2.5.7-1.2 2.3-2.6-.5L12 21l-2.1-1.3-2.6.5-1.2-2.3-2.5-.7.2-2.6L2 12.1 3.3 9.8l-.6-2.6L5 6l1-2.4 2.6.3z"/><path d="M9.2 12l2 2 3.6-3.8"/>',
+  lock: '<rect x="5.2" y="10.8" width="13.6" height="8.4" rx="2"/><path d="M7.6 10.8V8.2a4.4 4.4 0 0 1 8.8 0v2.6"/>',
+  refresh: '<path d="M19 12a7 7 0 1 1-2.1-5"/><path d="M19.2 5v3.4h-3.4"/>',
+  open: '<path d="M13.5 5H6.2A1.2 1.2 0 0 0 5 6.2v11.6A1.2 1.2 0 0 0 6.2 19h11.6a1.2 1.2 0 0 0 1.2-1.2V10.5"/><path d="M14 5h5v5M19 5l-7.5 7.5"/>',
+  power: '<path d="M12 3.5v8"/><path d="M7.7 6.6a7 7 0 1 0 8.6 0"/>',
+  cancel: '<circle cx="12" cy="12" r="8.2"/><path d="M9 9l6 6M15 9l-6 6"/>',
+  arrowright: '<path d="M5 12h13M13 6.5l5.5 5.5L13 17.5"/>',
+  wifislash: '<path d="M4.5 9.3c1.4-1 3-1.8 4.6-2.2M14 7.2c2 .4 3.9 1.3 5.5 2.5M7.2 12.4c1-.7 2.1-1.2 3.3-1.5M16.8 12.4c-.4-.3-.9-.6-1.3-.8M9.8 15.4c1.3-1 3.1-1 4.4 0"/><circle cx="12" cy="18" r="0.9" fill="currentColor" stroke="none"/><path d="M4 4l16 16"/>',
+  clock: '<circle cx="12" cy="12" r="8.2"/><path d="M12 7.4V12l3.2 1.9"/>',
+  wifi: '<path d="M4.5 9.3c4.4-3.3 10.6-3.3 15 0M7.2 12.4c2.8-2.1 6.8-2.1 9.6 0M9.8 15.4c1.3-1 3.1-1 4.4 0"/><circle cx="12" cy="18" r="0.9" fill="currentColor" stroke="none"/>',
+  volume: '<path d="M5 9.5h3l4-3.5v12l-4-3.5H5z"/><path d="M15.5 9.2a4 4 0 0 1 0 5.6"/>',
+  battery: '<rect x="3" y="8.5" width="15" height="7" rx="1.6"/><rect x="4.6" y="10.1" width="9" height="3.8" rx="0.6" fill="currentColor" stroke="none"/><path d="M19.6 11v2"/>',
+  chevup: '<path d="M6 14l6-6 6 6"/>',
+  arrowclock: '<path d="M19 12a7 7 0 1 1-2.1-5"/><path d="M19.2 5v3.4h-3.4"/>',
+};
+function ic(name, size = 16, stroke = 1.6) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">${I[name] || ''}</svg>`;
+}
+
+function pwMarkSVG() {
+  const ink = 'fill="currentColor"', cells = [
+    [0,0,ink],[10,0,ink],[20,0,ink],[30,0,ink],[0,10,ink],[30,10,ink],[0,20,ink],[30,20,ink],
+    [0,30,ink],[10,30,ink],[20,30,ink],[30,30,'fill="#f5530a"'],[0,40,ink],[0,50,ink],
+  ].map(([x,y,f]) => `<rect x="${x}" y="${y}" width="10" height="10" rx="1.3" ${f}/>`).join('');
+  return `<svg class="pw-mark" viewBox="0 0 40 60" fill="none" aria-hidden="true">${cells}</svg>`;
+}
+function pwLockup(px) {
+  return `<span class="pwlk" style="font-size:${px}px"><span class="pw-word">Patched</span></span>`;
+}
+function flyHead() {
+  return `<div class="fhead">${pwLockup(15)}
+    <button class="gear">${ic('gear', 15, 1.6)}</button></div>`;
+}
+function updRow(letter, color, name, from, to, cve, vendor) {
+  return `<div class="updrow"><span class="appicon" style="background:${color}">${letter}</span>
+    <div class="updmain"><div class="updname">${name}</div>
+      <div class="updver">${from} <span class="arr">→</span> <span class="to">${to}</span></div>
+      <div class="updchips"><span class="chip chip-cve">${cve}</span>
+        <span class="chip chip-verified"><span class="seal">${ic('seal',11,1.7)}</span>Verified · ${vendor}</span></div>
+    </div></div>`;
+}
+
+const FLY = {
+  secure: () => `${flyHead()}
+    <div class="status"><span class="dot secure"></span>
+      <div><div class="status-title">Protected</div><div class="status-sub">Last scanned 2 minutes ago · continuous</div></div></div>
+    <div class="compliance"><span class="seal">${ic('seal',14,1.6)}</span>CIS 142 / 142 · No known CVEs</div>
+    <div class="hr"></div>
+    <div class="menurow"><span class="ic">${ic('refresh',15,1.7)}</span>Scan now</div>
+    <div class="menurow"><span class="ic">${ic('open',15,1.6)}</span>Open Patched</div>
+    <div class="menurow"><span class="ic">${ic('power',15,1.7)}</span>Quit</div>`,
+
+  updates: () => `${flyHead()}
+    <div class="status"><span class="dot orange"></span>
+      <div><div class="status-title">3 updates ready</div><div class="status-sub">Recommended — you choose when to install</div></div></div>
+    <div class="hr"></div>
+    <div class="updlist">
+      ${updRow('Ed','#1a73e8','Microsoft Edge','125.0','126.0','CVE-2026-1842','Microsoft')}
+      ${updRow('Ch','#11a36b','Google Chrome','125.0','126.0','CVE-2026-2011','Google')}
+      ${updRow('Zo','#2b6cff','Zoom','6.0.10','6.1.2','CVE-2026-1990','Zoom')}
+    </div>
+    <div class="note"><span class="ic">${ic('lock',13,1.7)}</span>Nothing installs without your approval.</div>
+    <div class="btnrow">
+      <button class="btn btn-primary grow">Review in Patched ${ic('arrowright',14,1.9)}</button>
+      <button class="btn btn-secondary">Later</button></div>`,
+
+  action: () => `${flyHead()}
+    <div class="status"><span class="dot red"></span>
+      <div><div class="status-title">Action needed</div><div class="status-sub">1 critical finding on this device</div></div></div>
+    <div class="finding">
+      <div class="finding-top"><span class="sev">Critical</span><span class="finding-name">Disk encryption is off</span></div>
+      <div class="finding-body">This device’s drive isn’t encrypted. If it’s lost or stolen, your files could be read. Turn on encryption to close this gap.</div>
+      <div class="finding-meta">Benchmark · CIS 2.5.1 · Full-disk encryption (BitLocker)</div></div>
+    <div class="btnrow"><button class="btn btn-primary">Resolve in Patched ${ic('arrowright',14,1.9)}</button></div>
+    <div class="note"><span class="ic">${ic('shieldcheck',13,1.7)}</span>You stay in control — Patched guides the fix, nothing is forced.</div>`,
+
+  scanning: () => `${flyHead()}
+    <div class="status"><span class="spinner"></span>
+      <div><div class="status-title">Scanning…</div><div class="status-sub">Checking against live CVE data &amp; CIS benchmarks</div></div></div>
+    <div class="progblock">
+      <div class="progline">Comparing app 118 of 247 against the National Vulnerability Database.</div>
+      <div class="track"><span class="fill" style="width:48%"></span></div>
+      <div class="progmeta"><span>118 / 247 apps · 142 checks</span><span>48%</span></div></div>
+    <div class="hr"></div>
+    <div class="menurow" style="color:var(--graphite)"><span class="ic">${ic('cancel',15,1.7)}</span>Cancel scan</div>`,
+
+  offline: () => `${flyHead()}
+    <div class="status"><span class="dot grey"></span>
+      <div><div class="status-title">Can’t reach Patched</div><div class="status-sub">Last scan 6 days ago</div></div></div>
+    <div class="note" style="margin-top:13px;color:var(--graphite);font-size:12.5px;">
+      <span class="ic">${ic('wifislash',15,1.7)}</span>Your protection status may be out of date. Check your connection and try again.</div>
+    <div class="compliance" style="color:var(--mute)"><span style="color:var(--mute)">${ic('clock',13,1.6)}</span>Showing last known result · CIS 141 / 142</div>
+    <div class="btnrow">
+      <button class="btn btn-slate">${ic('refresh',14,1.9)} Retry now</button>
+      <button class="btn btn-secondary">Open Patched</button></div>`,
+};
+
+function taskbar(state) {
+  const badge = { secure:'', updates:'orange', action:'red', scanning:'scan', offline:'grey' }[state];
+  const bar = document.createElement('div');
+  bar.className = 'taskbar';
+  bar.innerHTML = `<div class="tb-apps">
+    <span class="tb-app start">${ic('chevup',16,1.8)}</span>
+    <span class="tb-app">${ic('open',16,1.6)}</span>
+    <span class="tb-app">${ic('shieldcheck',16,1.6)}</span>
+    <span class="tb-app">${ic('clock',16,1.6)}</span></div>`;
+  const tray = document.createElement('div');
+  tray.className = 'systray';
+  tray.innerHTML = `<span class="sicon">${ic('chevup',14,1.7)}</span>
+    <span class="sicon">${ic('wifi',15,1.6)}</span>
+    <span class="sicon">${ic('volume',15,1.6)}</span>
+    <span class="sicon">${ic('battery',17,1.5)}</span>`;
+  const patched = document.createElement('span');
+  patched.className = 'tray-patched active';
+  const mk = makeMark(2.1, 1.1);
+  if (badge === 'scan') mk.classList.add('scan-anim');
+  patched.appendChild(mk);
+  if (badge && badge !== 'scan') { const b = document.createElement('span'); b.className = 'badge ' + (badge==='grey'?'grey':badge); patched.appendChild(b); }
+  tray.appendChild(patched);
+  const clock = document.createElement('span');
+  clock.className = 'clock';
+  clock.innerHTML = '9:41 AM<br>6/11/2026';
+  tray.appendChild(clock);
+  bar.appendChild(tray);
+  return bar;
+}
+
+const FRAMES = [
+  ['01','secure','Secure','Quiet and finished. A green status line with the evidence behind it — last-scan time and a compliance figure. Footer actions stay understated.'],
+  ['02','updates','Updates available','Nudge-style. Each update shows current → target version, the CVE it closes, and a verified-source provenance chip. Primary action opens Self Service; nothing is forced.'],
+  ['03','action','Action needed','Critical finding in plain language with the benchmark cited as evidence. One action hands off to Self Service; copy reassures the user stays in control.'],
+  ['04','scanning','Scanning','Live progress against the NVD and CIS. Names what it checks and stays cancellable.'],
+  ['05','offline','Offline / stale','Muted. Admits it couldn’t reach Patched, dates the last result, and still shows the last known compliance figure. Retry is neutral, not alarming.'],
+];
+
+/* render icon rows */
+function renderTrayRow(container) {
+  [['Secure',''],['Attention','orange'],['Critical','red'],['Scanning','scan'],['Offline','grey']].forEach(([label,badge]) => {
+    const cell = document.createElement('div'); cell.className = 'istate';
+    const slot = document.createElement('div'); slot.className = 'trayslot';
+    const mk = makeMark(2.4, 1.3); if (badge==='scan') mk.classList.add('scan-anim'); slot.appendChild(mk);
+    if (badge && badge!=='scan') { const b=document.createElement('span'); b.className='badge '+badge; slot.appendChild(b); }
+    const lab = document.createElement('span'); lab.className='lab'; lab.textContent=label;
+    cell.appendChild(slot); cell.appendChild(lab); container.appendChild(cell);
+  });
+}
+renderTrayRow(document.getElementById('row-dark'));
+renderTrayRow(document.getElementById('row-light'));
+
+const framesEl = document.getElementById('frames');
+FRAMES.forEach(([num,key,name,note]) => {
+  const frame = document.createElement('div'); frame.className = 'frame';
+  const screen = document.createElement('div'); screen.className = 'screen';
+  screen.appendChild(taskbar(key));
+  const fly = document.createElement('div'); fly.className = 'flyout'; fly.innerHTML = FLY[key]();
+  screen.appendChild(fly);
+  const cap = document.createElement('div'); cap.className = 'cap';
+  cap.innerHTML = `<span class="cnum">${num}</span><div><div class="cname">${name}</div><div class="cnote">${note}</div></div>`;
+  frame.appendChild(screen); frame.appendChild(cap); framesEl.appendChild(frame);
+});
+</script>
+</body>
+</html>

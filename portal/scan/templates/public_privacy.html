@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacy notice | Patched.im CVE assessment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="icon" type="image/svg+xml" href="{{ static_url('favicon.svg') }}">
+<link rel="stylesheet" href="{{ static_url('css/public-brand.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/site.css') }}">
+</head>
+<body>
+<div class="pub-page">
+
+{% include "_site_nav.html" %}
+
+  <main class="pub-main pub-main--wide">
+
+    <a class="pub-back" href="/public/scan">← Back to CVE assessment</a>
+
+    <div class="pub-prose-card">
+      <h1>Privacy notice</h1>
+      <p class="pub-updated">For the Patched.im free CVE assessment. Last updated: .</p>
+
+      <p>This notice covers the personal data processed when you use the free CVE assessment
+        flow at <code>dashboard.patched.im/public/scan</code>. It is written for plain
+        readability rather than legal density. The Data Protection Act 2018 (Isle of Man)
+        applies; the UK GDPR is mirrored.</p>
+
+      <h2>Who is the controller</h2>
+      <p>{{ legal_name }}, a company registered in the Isle of Man. Contact:
+        <a href="mailto:hello@patched.im">hello@patched.im</a>.</p>
+
+      <h2>What we collect</h2>
+      <ul>
+        <li><strong>Your email address</strong>: used to verify the request and deliver
+          your report.</li>
+        <li><strong>Your company name</strong>: used to label the report.</li>
+        <li><strong>The uploaded Intune devices export (CSV)</strong>: typically contains
+          device names, operating systems, OS versions, compliance state, last sync
+          timestamps, and may contain user principal names, model and manufacturer details,
+          and serial numbers.</li>
+        <li><strong>The optional detected-apps export (JSON)</strong>: typically contains
+          installed application names and versions per device.</li>
+        <li><strong>Technical metadata</strong>: your IP address (used to apply rate
+          limits) and basic request metadata.</li>
+      </ul>
+      <p>We do not require an account. We do not collect any personal data beyond what is
+        listed above.</p>
+
+      <h2>Lawful basis</h2>
+      <p>Your consent (you upload the data and confirm you are authorised to share it) is
+        the basis for processing the uploaded inventory. Our legitimate interest in
+        preventing abuse of the service is the basis for processing the IP address and
+        rate-limit metadata.</p>
+
+      <h2>What we do with it</h2>
+      <ul>
+        <li>Parse the uploaded export to identify device operating systems and installed
+          applications.</li>
+        <li>Cross-reference identified software against the NIST National Vulnerability
+          Database (NVD). The CPE (software identifier) strings are sent to NVD; device
+          names, user names, and other identifiers are not.</li>
+        <li>Generate a branded report and email it to the address you provided, using
+          SendGrid as our email delivery provider. Only your email address is shared with
+          SendGrid for this purpose.</li>
+        <li>Apply rate limits to prevent abuse.</li>
+      </ul>
+
+      <h2>Third parties</h2>
+      <ul>
+        <li><strong>NIST NVD</strong>: receives CPE strings only (e.g.
+          <code>cpe:2.3:a:microsoft:edge:120.0:*:...</code>), no device or user
+          identifiers.</li>
+        <li><strong>Microsoft 365</strong>: your email address, the verification code, and
+          the report attachment pass through Patched's own Microsoft 365 mailbox for
+          delivery, hosted in the UK.</li>
+        <li><strong>Cloudflare</strong>: fronts the dashboard and, if the Turnstile bot
+          challenge is enabled, sets cookies for bot-detection purposes. See Cloudflare's
+          own privacy notice for details.</li>
+        <li>We do not sell, share, or transfer your data to any other third party.</li>
+      </ul>
+
+      <h2>Where it is stored</h2>
+      <p>On {{ legal_name }} infrastructure hosted at Hetzner Online GmbH, in the EU. The
+        report is also emailed to you as an attachment through Patched's Microsoft 365
+        mailbox, hosted in the UK — see Third parties above.</p>
+
+      <h2>How long we keep it</h2>
+      <ul>
+        <li><strong>Uploaded files</strong> (devices CSV, detected-apps JSON): deleted
+          from disk immediately after the report is generated.</li>
+        <li><strong>The generated report</strong>: kept for 30 days after generation,
+          then automatically deleted by a daily retention sweep. Sooner if you click the
+          "delete now" link in the report email.</li>
+        <li><strong>Database row</strong> (request status, email, company name): marked
+          deleted at the same time as the report. Logical retention beyond that is for
+          abuse-prevention only; personal data is removed.</li>
+      </ul>
+
+      <h2>Your rights</h2>
+      <p>You can:</p>
+      <ul>
+        <li>Request access to the personal data we hold about you.</li>
+        <li>Request deletion (the "delete now" link in your report email does this
+          directly; you can also email us).</li>
+        <li>Withdraw consent at any time.</li>
+        <li>Lodge a complaint with the Isle of Man Information Commissioner if you believe
+          we have not handled your data correctly.</li>
+      </ul>
+      <p>Email <a href="mailto:hello@patched.im">hello@patched.im</a> to exercise any of
+        these rights. We aim to respond within one calendar month.</p>
+
+      <h2>Cookies</h2>
+      <p>The CVE assessment flow itself does not set any cookies. If the Cloudflare
+        Turnstile bot-challenge is enabled on the form, Cloudflare may set cookies on the
+        challenge page only.</p>
+
+      <h2>Changes</h2>
+      <p>If we change this notice we will update the "last updated" date above. Substantive
+        changes that affect existing reports will be notified by email to the address on
+        record.</p>
+
+      <h2>Contact</h2>
+      <p>{{ legal_name }}, Isle of Man.
+        <a href="mailto:hello@patched.im">hello@patched.im</a>.</p>
+    </div>
+
+  </main>
+
+{% include "_site_footer.html" %}
+
+</div>
+<script>document.querySelectorAll('[data-year]').forEach(function(e){e.textContent=new Date().getFullYear();});</script>
+</body>
+</html>

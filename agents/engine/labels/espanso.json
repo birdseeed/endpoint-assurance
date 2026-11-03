@@ -1,0 +1,24 @@
+{
+  "label": "espanso",
+  "name": "Espanso",
+  "type": "appindmg",
+  "app_path": "/Applications/Espanso.app",
+  "expected_team_id": "6424323YUH",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/espanso/espanso/releases/latest"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "PAT-1281: declared type 'appindmginzip' assumed a zip-wrapped dmg, which was true of espanso's old release layout but not the current one. Confirmed via the live GitHub releases API (tag v2.4.0, published 2026-07-21) that espanso/espanso now ships macOS as a plain 'Espanso-Mac-Universal.dmg' with no zip wrapper -- the release notes say so explicitly ('Distributed macOS builds as DMG instead of ZIP', #2706). The only .zip asset in that release is 'Espanso-Win-Portable-x86_64.zip' (Windows), which is what 'appindmginzip' was actually resolving to, since _github_release_asset_suffix() maps that type to '.zip'. Changed type to 'appindmg' so resolution targets '.dmg' and inspect_macos() routes through the plain app-in-dmg pipeline, matching the real artifact. engine/Installomator.sh's own espanso stanza still declares type=appInDmgInZip with archiveName=Espanso-Mac-Universal.zip, which is the same now-wrong assumption on the real install path, not just verification -- flagged separately, not fixed here. Team ID and URL still require human review before setting allowlisted=true."
+  }
+}

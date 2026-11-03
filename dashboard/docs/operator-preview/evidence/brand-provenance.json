@@ -1,0 +1,18 @@
+{
+  "brand_source_sha": "adf89fd85c5e830ebb5fcf4aa777f454ccd5bbfb",
+  "dashboard_source_sha": "00a8d92400dd5f63aeb69e0fe71d0e3b7a6aeab2",
+  "files": [
+    {
+      "source": "kit/tokens.css",
+      "preview": "brand/tokens.css",
+      "sha256": "6c3d97c61a462b1bf65022550bc2e4a90c5ea4fab25ff338c072c28f64d0fba6",
+      "byte_identical": true
+    },
+    {
+      "source": "kit/logo/patched-lockup-horizontal.svg",
+      "preview": "brand/patched-lockup-horizontal.svg",
+      "sha256": "6c8ba5d548fb07747fc79a9cea68499b9bbc747f9bcc2d61c345e6d33072b37d",
+      "byte_identical": true
+    }
+  ]
+}

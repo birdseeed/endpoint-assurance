@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Patched — patched.im Design Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --snow:#FFFFFF; --paper:#F5F5F3; --slate:#0F1115;
+    --signal:#F5530A; --signal-deep:#C93F04; --signal-wash:rgba(245,83,10,.08);
+    --rule:rgba(15,17,21,.12); --hair:rgba(15,17,21,.07);
+    --mute:rgba(15,17,21,.40); --graphite:rgba(15,17,21,.58);
+    --d:'Archivo',sans-serif; --b:'Inter',sans-serif; --m:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{background:#e9e9e6; color:var(--slate); font-family:var(--b); -webkit-font-smoothing:antialiased;}
+  .mono{font-family:var(--m); text-transform:uppercase; letter-spacing:.12em;}
+
+  /* page chrome / spec frame */
+  .frame{max-width:1080px; margin:40px auto; }
+  .specbar{display:flex; justify-content:space-between; align-items:baseline; padding:0 6px 16px;}
+  .specbar .t{font-family:var(--d); font-weight:700; font-size:20px; letter-spacing:-.02em;}
+  .specbar .s{font-family:var(--m); font-size:10.5px; letter-spacing:.12em; color:var(--mute); text-transform:uppercase;}
+
+  /* the site itself */
+  .site{background:var(--snow); border:1px solid var(--rule); border-radius:8px; overflow:hidden; box-shadow:0 30px 80px -40px rgba(15,17,21,.4);}
+
+  .nav{display:flex; align-items:center; padding:22px 40px; border-bottom:1px solid var(--rule); position:sticky; top:0; background:rgba(255,255,255,.88); backdrop-filter:blur(8px); z-index:5;}
+  .nav .brand{display:flex; align-items:center; gap:12px;}
+  .nav .brand .wm{font-family:var(--d); font-weight:600; font-size:21px; letter-spacing:-.03em;}
+  .nav .links{margin-left:auto; display:flex; align-items:center; gap:32px; font-size:14px; color:var(--graphite);}
+  .nav .links a{color:var(--graphite); text-decoration:none;}
+  .nav .links a:hover{color:var(--slate);}
+  .nav .links .cta{color:var(--slate); font-weight:600;}
+
+  section{padding:0;}
+  .eyebrow{font-family:var(--m); text-transform:uppercase; letter-spacing:.14em; font-size:10.5px; color:var(--mute);}
+
+  /* hero */
+  .hero{display:grid; grid-template-columns:1.05fr .95fr;}
+  .hero .copy{padding:84px 40px 84px;}
+  .hero h1{font-family:var(--d); font-weight:700; font-size:64px; line-height:.98; letter-spacing:-.035em; margin:20px 0 22px;}
+  .hero p{font-size:16.5px; line-height:1.62; color:var(--graphite); max-width:42ch; margin:0 0 30px;}
+  .row{display:flex; gap:12px;}
+  .btn-primary{background:var(--slate); color:#fff; font-size:14px; font-weight:600; padding:13px 22px; border-radius:4px; text-decoration:none; display:inline-block;}
+  .btn-ghost{border:1px solid var(--rule); color:var(--slate); font-size:14px; font-weight:600; padding:13px 22px; border-radius:4px; text-decoration:none; display:inline-block;}
+  .proofrow{display:flex; gap:40px; margin-top:38px; padding-top:24px; border-top:1px solid var(--rule);}
+  .pstat .pv{font-family:var(--d); font-weight:700; font-size:34px; letter-spacing:-.03em; line-height:1; font-variant-numeric:tabular-nums;}
+  .pstat .pk{font-family:var(--m); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--mute); margin-top:9px;}
+  .hero .vis{border-left:1px solid var(--rule); background:var(--slate); display:flex; align-items:center; justify-content:center; padding:40px;}
+  .arcwrap{position:relative; display:flex;}
+  .arcwrap .score{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+  .arcwrap .score .v{font-family:var(--d); font-weight:700; font-size:60px; letter-spacing:-.03em; color:#fff; line-height:1;}
+  .arcwrap .score .k{font-family:var(--m); font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.5); margin-top:8px;}
+  .cmeter{display:flex; flex-direction:column; gap:11px; margin:16px 0;}
+  .ctrack{position:relative; height:3px; background:rgba(255,255,255,.16); border-radius:2px;}
+  .ctrack .f{position:absolute; left:0; top:0; bottom:0; background:#fff; border-radius:2px;}
+  .ctrack .fr{position:absolute; top:-3.5px; width:2px; height:10px; background:var(--signal); border-radius:1px;}
+
+  /* statement */
+  .statement{padding:70px 40px; border-top:1px solid var(--rule); display:grid; grid-template-columns:.8fr 1.2fr; gap:40px; align-items:start;}
+  .statement .lbl{font-family:var(--m); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--mute); padding-top:8px;}
+  .statement h2{font-family:var(--d); font-weight:700; font-size:34px; line-height:1.12; letter-spacing:-.02em; margin:0;}
+  .statement h2 .o{color:var(--signal);}
+
+  /* tiers */
+  .tiers{padding:64px 40px; border-top:1px solid var(--rule);}
+  .tiers .head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;}
+  .tier{display:flex; align-items:center; gap:24px; padding:26px 0; border-top:1px solid var(--rule);}
+  .tier .mk{flex:0 0 auto; display:flex;}
+  .tier .nm{font-family:var(--d); font-weight:700; font-size:23px; letter-spacing:-.02em;}
+  .tier .meta{margin-left:auto; display:flex; align-items:center; gap:20px;}
+  .tier .spp{font-family:var(--m); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--mute);}
+  .badge{display:inline-flex; align-items:center; gap:7px; font-family:var(--m); font-size:10px; letter-spacing:.08em; text-transform:uppercase; padding:6px 11px; border-radius:3px;}
+  .badge.solid{background:var(--slate); color:#fff;}
+  .badge.outline{border:1px solid var(--rule); color:var(--graphite);}
+  .badge .dot{width:6px;height:6px;border-radius:50%; background:var(--signal);}
+
+  /* stat band */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--rule);}
+  .stat{padding:42px 28px; border-left:1px solid var(--rule);}
+  .stat:first-child{border-left:none;}
+  .stat .v{font-family:var(--d); font-weight:700; font-size:40px; letter-spacing:-.03em; line-height:1;}
+  .stat .v .o{color:var(--signal);}
+  .stat .k{font-family:var(--m); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--mute); margin-top:10px;}
+
+  /* closing band */
+  .closing{background:var(--slate); color:#fff; padding:74px 40px; display:grid; grid-template-columns:1.2fr 1fr; gap:50px; align-items:center;}
+  .closing h2{font-family:var(--d); font-weight:700; font-size:52px; letter-spacing:-.035em; line-height:1; margin:0;}
+  .closing p{font-size:16px; line-height:1.6; color:rgba(255,255,255,.66); max-width:44ch; margin:20px 0 28px;}
+  .btn-accent{background:var(--signal); color:#fff; font-size:14px; font-weight:600; padding:14px 24px; border-radius:4px; text-decoration:none; display:inline-block;}
+  .closing .panel .cap{display:flex; justify-content:space-between; font-family:var(--m); font-size:11px; letter-spacing:.1em; text-transform:uppercase; margin-top:14px;}
+
+  /* footer */
+  .foot{display:flex; justify-content:space-between; align-items:center; padding:34px 40px; border-top:1px solid var(--rule);}
+  .foot .wm{font-family:var(--d); font-weight:600; font-size:17px; letter-spacing:-.03em; display:flex; align-items:center; gap:10px;}
+  .foot .c{font-family:var(--m); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--mute);}
+
+  /* design-notes */
+  .notes{margin-top:34px; background:var(--snow); border:1px solid var(--rule); border-radius:8px; padding:30px 34px;}
+  .notes h3{font-family:var(--d); font-weight:600; font-size:15px; margin:0 0 18px; display:flex; align-items:center; gap:10px;}
+  .notes h3 .b{font-family:var(--m); font-size:9px; letter-spacing:.12em; color:var(--signal-deep); border:1px solid var(--signal); border-radius:3px; padding:2px 7px; text-transform:uppercase;}
+  .notegrid{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--rule); border:1px solid var(--rule);}
+  .ncell{background:var(--snow); padding:18px; }
+  .ncell .k{font-family:var(--m); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--mute); margin-bottom:9px;}
+  .ncell .v{font-size:12.5px; color:var(--slate); line-height:1.5;}
+  .swatches{display:flex; gap:6px; margin-top:8px;}
+  .sw{width:22px;height:22px;border-radius:3px;border:1px solid var(--rule);}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="specbar">
+    <span class="t">patched.im — website</span>
+    <span class="s">Web surface · brand webfonts · MMXXVI</span>
+  </div>
+
+  <div class="site">
+    <!-- NAV -->
+    <div class="nav">
+      <div class="brand"><span id="navMark"></span><span class="wm">Patched</span></div>
+      <div class="links">
+        <a href="#">Posture</a><a href="#">Tiers</a><a href="#">Approach</a><a href="#">Field reports</a>
+        <a href="#" class="cta">Book a review →</a>
+      </div>
+    </div>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="copy">
+        <span class="eyebrow">Endpoint consultancy · MMXXVI</span>
+        <h1>Turn the estate.</h1>
+        <p>We are retained to close the gaps between MDM, identity and device posture — and keep the dial pointed there.</p>
+        <div class="row">
+          <a class="btn-primary" href="#">Book a review →</a>
+          <a class="btn-ghost" href="#">See Posture</a>
+        </div>
+        <div class="proofrow">
+          <div class="pstat"><div class="pv" id="nMachines">0</div><div class="pk">Machines under management</div></div>
+          <div class="pstat"><div class="pv" id="nUpdates">0</div><div class="pk">Updates deployed</div></div>
+        </div>
+      </div>
+      <div class="vis">
+        <div class="arcwrap"><div id="heroArc"></div><div class="score"><div class="v" id="pct">—</div><div class="k">estate patched</div></div></div>
+      </div>
+    </section>
+
+    <!-- STATEMENT -->
+    <section class="statement">
+      <span class="lbl">Why we exist</span>
+      <h2>The consultancy IT leaders retain when the MSP playbook stops fitting. We close the gaps — and <span class="o">prove</span> the estate is patched.</h2>
+    </section>
+
+    <!-- TIERS -->
+    <section class="tiers">
+      <div class="head">
+        <span class="mono" style="font-size:11px; color:var(--mute);">The engagement</span>
+        <span class="mono" style="font-size:11px; color:var(--mute);">One service · three named rungs</span>
+      </div>
+      <div class="tier">
+        <span class="mk" id="t1"></span>
+        <span class="nm">Report</span>
+        <span class="meta"><span class="spp">Scan + Prove</span><span class="badge solid"><span class="dot"></span>Available now</span></span>
+      </div>
+      <div class="tier">
+        <span class="mk" id="t2"></span>
+        <span class="nm">Patch &amp; Deploy</span>
+        <span class="meta"><span class="spp">Scan + Patch + Prove</span><span class="badge outline"><span class="dot"></span>Coming soon</span></span>
+      </div>
+      <div class="tier">
+        <span class="mk" id="t3"></span>
+        <span class="nm">Full Endpoint Management</span>
+        <span class="meta"><span class="spp">Apple · Jamf + ABM / Windows · Intune</span><span class="badge outline"><span class="dot"></span>Coming soon</span></span>
+      </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="stats">
+      <div class="stat"><div class="v"><span class="o">+38</span> pts</div><div class="k">Median posture gain</div></div>
+      <div class="stat"><div class="v">11 days</div><div class="k">To first patch</div></div>
+      <div class="stat"><div class="v">1,847</div><div class="k">Apps patched · one estate</div></div>
+      <div class="stat"><div class="v">4.6 yrs</div><div class="k">Average retention</div></div>
+    </section>
+
+    <!-- CLOSING -->
+    <section class="closing">
+      <div>
+        <h2>Close the gaps.</h2>
+        <p>We start with a posture review — a fixed-scope read on where your estate actually stands. No retainer required to begin.</p>
+        <a class="btn-accent" href="#">Book a review →</a>
+      </div>
+      <div class="panel">
+        <div class="cap" style="margin-top:0; color:rgba(255,255,255,.55)"><span>Posture — live</span><span style="color:var(--signal)">+58%</span></div>
+        <div class="cmeter" id="closeMeter"></div>
+        <div class="cap"><span style="color:rgba(255,255,255,.6)">1,063 / 1,847 patched</span><span style="color:rgba(255,255,255,.45)">Northwind</span></div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <div class="foot">
+      <span class="wm"><span id="footMark"></span>Patched</span>
+      <span class="c">© Patched MMXXVI · Turn the estate</span>
+    </div>
+  </div>
+
+  <!-- DESIGN NOTES -->
+  <div class="notes">
+    <h3><span class="b">Guide</span> patched.im — design rules</h3>
+    <div class="notegrid">
+      <div class="ncell">
+        <div class="k">Mark</div>
+        <div class="v">Ring mark + Archivo "Patched" lockup, top-left. Outline ring on light chrome; never the pixel-P here.</div>
+      </div>
+      <div class="ncell">
+        <div class="k">Type</div>
+        <div class="v">Archivo 700 display (hero 64 / H2 52–34), Inter 16.5 body, JetBrains Mono uppercase eyebrows &amp; data.</div>
+      </div>
+      <div class="ncell">
+        <div class="k">Colour</div>
+        <div class="v">Snow + paper surfaces, slate ink, one signal-orange event per view (≤2%).</div>
+        <div class="swatches">
+          <span class="sw" style="background:#FFFFFF"></span>
+          <span class="sw" style="background:#F5F5F3"></span>
+          <span class="sw" style="background:#0F1115"></span>
+          <span class="sw" style="background:#F5530A"></span>
+        </div>
+      </div>
+      <div class="ncell">
+        <div class="k">Layout</div>
+        <div class="v">40px margins, sections split by 1px rules (not whitespace), the posture arc / closing-line as the graphic device, buttons 4px radius.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SLATE="#0F1115", SIGNAL="#F5530A", SNOW="#FFFFFF";
+function ring(size, o={}){
+  const ink=o.mono||o.ink||SLATE, accent=o.mono||o.accent||SIGNAL;
+  const t=Math.max(1.3,size*0.072), r=size*0.26, seg=size*0.26, fs=size*0.52;
+  let s=`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block">`;
+  s+=`<rect x="${t/2}" y="${t/2}" width="${size-t}" height="${size-t}" rx="${r}" fill="none" stroke="${ink}" stroke-width="${t}"/>`;
+  s+=`<path d="M ${size-r-seg} ${t/2} H ${size-r} A ${r} ${r} 0 0 1 ${size-t/2} ${r}" fill="none" stroke="${accent}" stroke-width="${t}" stroke-linecap="round"/>`;
+  s+=`<text x="50%" y="${size*0.50+fs*0.355}" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="700" font-size="${fs}" letter-spacing="-0.04em" fill="${ink}">P</text>`;
+  return s+"</svg>";
+}
+function estateField(){return '';}
+/* Posture gauge — squircle perimeter = the estate; slate patched, orange patching front. */
+function gauge(S, pF, gF){
+  const t=14, pad=t/2+9, x0=pad, y0=pad, w=S-pad*2, rr=S*0.26, PL=1000;
+  const pLen=Math.max(0,pF*PL), gLen=gF>0?Math.max(24,gF*PL):0;
+  const rect=(stroke,extra)=>`<rect x="${x0}" y="${y0}" width="${w}" height="${w}" rx="${rr}" pathLength="${PL}" fill="none" stroke="${stroke}" stroke-width="${t}" ${extra}/>`;
+  let s=`<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block">`;
+  s+=rect("rgba(255,255,255,0.15)","");
+  s+=rect("#FFFFFF",`stroke-dasharray="${pLen} ${PL}" stroke-dashoffset="0" stroke-linecap="round"`);
+  s+=rect("#F5530A",`stroke-dasharray="${gLen} ${PL}" stroke-dashoffset="${-pLen}" stroke-linecap="round"`);
+  return s+"</svg>";
+}
+function countUp(el, target, dur){
+  if(!el) return;
+  el.textContent = target.toLocaleString();   /* resting value \u2014 always correct */
+  const start=performance.now();
+  (function step(now){
+    const p=Math.min(1,(now-start)/dur);
+    if(p<1){ el.textContent=Math.round(target*(1-Math.pow(1-p,3))).toLocaleString(); requestAnimationFrame(step); }
+    else { el.textContent=target.toLocaleString(); }
+  })(performance.now());
+}
+function meter(fills){
+  return fills.map(f=>`<div class="ctrack"><div class="f" style="width:${Math.round(f*100)}%"></div><div class="fr" style="left:calc(${Math.round(f*100)}% - 1px)"></div></div>`).join('');
+}
+const $=id=>document.getElementById(id);
+$("navMark").innerHTML=ring(30);
+$("footMark").innerHTML=ring(22);
+$("t1").innerHTML=ring(26); $("t2").innerHTML=ring(26); $("t3").innerHTML=ring(26);
+
+/* ---- Live estate feed (wire these to the API) ---- */
+const ESTATE = {
+  machines: 12480,          // machines under management
+  updatesDeployed: 3184902, // updates deployed collectively
+  appsPatched: 84210,       // apps currently patched
+  appsTotal: 91500          // apps across the estate (drives the gauge)
+};
+const patchedFrac = ESTATE.appsPatched / ESTATE.appsTotal;
+const patchingFrac = 0.04;
+$("heroArc").innerHTML = gauge(300, patchedFrac, patchingFrac);
+$("pct").textContent = Math.round(patchedFrac*100) + '%';
+countUp($("nMachines"), ESTATE.machines, 1400);
+countUp($("nUpdates"), ESTATE.updatesDeployed, 1700);
+$("closeMeter").innerHTML=meter([0.72,0.66,0.60,0.55,0.50,0.44]);
+</script>
+</body>
+</html>

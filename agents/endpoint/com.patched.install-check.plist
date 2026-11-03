@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.patched.install-check.plist — LaunchDaemon for patched-install.sh (PAT-661).
+
+  Runs every 15 minutes (900 s) as root, matching the cadence of the uninstall
+  engine (com.patched.uninstall-check.plist, PAT-376). The script gates itself on:
+    1. Agent tier is managed; assurance and every other value fail closed.
+    2. The pending-installs queue from GET /v1/allowlist/pending-installs (PAT-659);
+       if the queue is empty the run is a no-op.
+
+  Install:
+    sudo cp com.patched.install-check.plist /Library/LaunchDaemons/
+    sudo launchctl bootstrap system /Library/LaunchDaemons/com.patched.install-check.plist
+
+  Uninstall:
+    sudo launchctl bootout system /Library/LaunchDaemons/com.patched.install-check.plist
+    sudo rm /Library/LaunchDaemons/com.patched.install-check.plist
+
+  GitHub-Non-Author-Review gate: this daemon installs third-party software. Do not ship to customer
+  endpoints until the GitHub-Non-Author-Review security review is complete.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.patched.install-check</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>/usr/local/patched-updater/patched-install.sh</string>
+  </array>
+
+  <key>StartInterval</key>
+  <integer>900</integer>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <!-- Root is required for Installomator (which calls pkgutil, installer, etc.). -->
+  <key>UserName</key>
+  <string>root</string>
+
+  <key>StandardOutPath</key>
+  <string>/var/log/patched-install.log</string>
+  <key>StandardErrorPath</key>
+  <string>/var/log/patched-install.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin</string>
+  </dict>
+
+  <!-- Throttle restarts on repeated crashes. -->
+  <key>ThrottleInterval</key>
+  <integer>60</integer>
+</dict>
+</plist>

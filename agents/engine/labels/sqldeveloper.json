@@ -1,0 +1,24 @@
+{
+  "label": "sqldeveloper",
+  "name": "SQLDeveloper",
+  "type": "zip",
+  "app_path": "/Applications/SQLDeveloper.app",
+  "expected_team_id": "VB5E2TV963",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.oracle.com/database/sqldeveloper/technologies/download/"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

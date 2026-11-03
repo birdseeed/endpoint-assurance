@@ -1,0 +1,24 @@
+{
+  "label": "windsurf",
+  "name": "Windsurf",
+  "type": "zip",
+  "app_path": "/Applications/Windsurf.app",
+  "expected_team_id": "83Z2LHX6XW",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://windsurf.com/editor/releases"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

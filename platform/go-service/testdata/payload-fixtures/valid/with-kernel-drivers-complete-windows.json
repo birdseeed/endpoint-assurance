@@ -1,0 +1,67 @@
+{
+  "schema_version": 3,
+  "platform": "windows",
+  "agent": "patched-collect-win",
+  "agent_version": "0.1.0",
+  "tenant_id": "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB",
+  "collected_at": "2026-12-01T10:00:00Z",
+  "device": {
+    "serial": "DMT1234567",
+    "hw_uuid": "CCCCCCCC-DDDD-EEEE-FFFF-AAAAAAAAAAAA",
+    "hostname": "DESKTOP-TESTWIN",
+    "hw_model": "Dell OptiPlex 7090",
+    "arch": "x86_64",
+    "last_boot": "2026-11-30T08:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Intel(R) Core(TM) i7-10700",
+    "cpu_cores": 8,
+    "ram_gb": 16,
+    "disk_total_gb": 476.9,
+    "disk_free_gb": 210.3
+  },
+  "os": {
+    "name": "Windows",
+    "version": "11.0.22631",
+    "build": "22631.3593"
+  },
+  "compliance": {
+    "bitlocker_os_drive": "On",
+    "windows_firewall_domain": "enabled",
+    "windows_firewall_private": "enabled",
+    "windows_firewall_public": "enabled",
+    "defender_realtime": "enabled",
+    "uac_enabled": "Yes",
+    "pending_updates_count": 0,
+    "pwpolicy_min_length": 12
+  },
+  "security_tools": [
+    { "id": "defender-for-endpoint", "name": "Microsoft Defender for Endpoint" }
+  ],
+  "apps": [
+    {
+      "name": "Microsoft Edge",
+      "version": "124.0.2478.97",
+      "identifier": "Microsoft Edge",
+      "publisher": "Microsoft Corporation",
+      "architecture": "x86_64"
+    },
+    {
+      "name": "7-Zip 23.01 (x64)",
+      "version": "23.01",
+      "identifier": "{23170F69-40C1-2702-2301-000001000000}",
+      "publisher": "Igor Pavlov",
+      "architecture": "x86_64"
+    }
+  ],
+  "pending_updates": [
+    {
+      "label": "KB5040442",
+      "title": "2024-07 Cumulative Update for Windows 11",
+      "version": "22631.3880",
+      "action": null,
+      "recommended": true
+    }
+  ],
+  "kernel_drivers": {"schema_version":1,"collection_status":"complete","errors":[],"enforcement":{"vulnerable_driver_blocklist":"enabled","hvci":"running","smart_app_control":"off","code_integrity_policy":"off","blocklist_enforced":"yes"},"drivers":[{"path":"C:\\Vendor\\vendorfs.sys","sources":["service"],"service_name":"vendorfs","service_type":"file_system","start_type":"demand","loaded":false,"hash_status":"unhashed","unhashed_reason":"file_missing"},{"path":"C:\\Windows\\System32\\drivers\\flat.sys","sources":["drivers_directory"],"loaded":false,"hash_status":"hashed","size_bytes":34,"sha256":"357c27a02e97161fc2fbb97dc21a8b3d60053a591a1f1d760d91159fcc507cf1","sha1":"d348d0ef0d72cf831c6cbfb9479ff27318bc8715"},{"path":"C:\\Windows\\System32\\drivers\\pe.sys","sources":["drivers_directory","service","loaded"],"service_name":"pe","service_type":"kernel","start_type":"system","loaded":true,"hash_status":"hashed","size_bytes":712,"sha256":"cd6ac90baf05f488c05f7ac2397bf0d2c40ed842bf4587f3f78c4af7f357857b","sha1":"7f7cd97c3162150aa4a205cc41efcad2f8c682bb","authenticode_sha256":"8812f0c849e0e9537b5060dd011057885eaf9047af11842840b97d8444eff841","authenticode_sha1":"49eb0bea78d9946ac607558732d912e74bb8dade","version":"10.0.22621.2506"}]}
+}

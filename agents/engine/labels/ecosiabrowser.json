@@ -1,0 +1,24 @@
+{
+  "label": "ecosiabrowser",
+  "name": "Ecosia Browser",
+  "type": "dmg",
+  "app_path": "/Applications/Ecosia Browser.app",
+  "expected_team_id": "33YMRSYD2L",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://ams.ecosia-browser.net/api/getLatest/144548e4-670e-46ef-be30-8d14ad305f19/mac/?update=false&channelprofilename=PROD&arch=x64"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

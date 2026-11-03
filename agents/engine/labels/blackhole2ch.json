@@ -1,0 +1,27 @@
+{
+  "label": "blackhole2ch",
+  "name": "BlackHole",
+  "type": "pkg",
+  "app_path": "/Applications/BlackHole.app",
+  "expected_team_id": "Q5C99V536K",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/ExistentialAudio/BlackHole/releases/latest",
+    "asset_pattern": "BlackHole2ch"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "coreaudiod"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "PAT-464: migrated from formulae.brew.sh (vendor-api) to GitHub releases (ExistentialAudio/BlackHole). Team ID and URL require human review before setting allowlisted=true."
+  }
+}

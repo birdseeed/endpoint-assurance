@@ -1,0 +1,23 @@
+{
+  "label": "youleanloudnessmeter2",
+  "name": "Youlean Loudness Meter 2",
+  "type": "pkginzip",
+  "app_path": "/Applications/Youlean Loudness Meter 2.app",
+  "expected_team_id": "S7KN6P3F95",
+  "download": {
+    "method": "static",
+    "url": "https://cdn.youlean.co/wp-content/uploads/2023/03/Youlean-Loudness-Meter-2-V2.4.4-macOS.zip"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

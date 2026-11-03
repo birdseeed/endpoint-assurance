@@ -1,0 +1,26 @@
+name: test-install-log-retention
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/auth.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/test-install-log-retention.zsh'
+      - 'macos/patched-collect.sh'
+  pull_request:
+    paths:
+      - 'macos/lib/auth.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/test-install-log-retention.zsh'
+      - 'macos/patched-collect.sh'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh (install.log retention collector tests exercise a real zsh script)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run install.log retention collector tests
+        run: zsh macos/lib/test-install-log-retention.zsh

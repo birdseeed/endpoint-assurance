@@ -1,0 +1,26 @@
+{
+  "label": "promiseutility",
+  "name": "Promise Utility",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "root-unique-pkg"
+  },
+  "app_path": "/Applications/Promise Utility.app",
+  "expected_team_id": "268CCUR4WN",
+  "download": {
+    "method": "static",
+    "url": "https://www.promise.com/DownloadFile.aspx?DownloadFileUID=6533"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

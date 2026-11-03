@@ -1,0 +1,8 @@
+{% extends "report_email_base.html" %}
+{% from "report_email_macros.html" import action %}
+{% block content %}
+<p style="margin:0 0 12px;color:#334155;">Your security report for <strong>{{ tenant_name }}</strong> covering {{ period_start }} to {{ period_end }} is ready.</p>
+<p style="margin:0;color:#334155;">Report: {{ schedule_name }}</p>
+{{ action(download_url, "Download report (XLSX)") }}
+<p style="margin:16px 0 0;color:#475569;font-size:13px;">This link expires in 30 days and can only be used once.</p>
+{% endblock %}

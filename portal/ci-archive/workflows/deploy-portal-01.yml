@@ -1,0 +1,200 @@
+name: deploy-portal-01
+
+# PAT-1151: portal-01 previously had no deploy path at all - /opt/patched-portal
+# was hand-copied out of a working tree. This workflow pushes the checkout to
+# patched-portal-01 over Tailscale and runs deploy/deploy-portal-01.sh there.
+# Mirrors deploy-api-01.yml's connection pattern (same org secrets, same
+# tailscale/github-action).
+#
+# patched-portal-01 runs BOTH services this repo ships (see AGENTS.md "Two
+# services in this repo"): portal (main.py, app.patched.im) and scan (scan/,
+# scan.patched.im). One push deploys both from the same commit so they never
+# drift apart - see deploy/deploy-portal-01.sh.
+#
+# MANUAL TRIGGER ONLY. This workflow does not run on push (PAT-1979). It used
+# to: `build-test` ran on every push to main while the sibling `deploy` job
+# was gated on workflow_dispatch, so a push built, tested, skipped the deploy
+# and still reported the whole run green under the name `deploy-portal-01`.
+# A workflow named as a promise to deploy reported success when it
+# deliberately did not deploy - the exact shape PAT-1970 fixed in
+# deploy-api-01.yml on 2026-09-21.
+#
+# The Andy-gate is unchanged and is still the point: shipping to portal-01 is
+# a deliberate `gh workflow run deploy-portal-01.yml`. What changed is that
+# the eager push build now lives in its own honestly named workflow,
+# `portal-build`, which this one calls via `workflow_call` so the lint/test
+# steps are defined once. The Actions run list therefore reads:
+#   `portal-build`      -> tested, nothing shipped
+#   `deploy-portal-01`  -> a deploy was actually asked for; run-name below
+#                          says whether it shipped or was a test-only run
+#
+# PAT-617: deploy keys are disabled org-wide, so the box cannot fetch from
+# GitHub. This workflow only ever pushes files to the box over SSH; the box
+# never reaches out to GitHub itself.
+#
+# Required GitHub secrets (org-level, same ones deploy-api-01.yml uses -
+# PAT-1151 bootstrap: confirm they are scoped to this repo too, see
+# docs/DEPLOY.md):
+#   TS_OAUTH_CLIENT_ID / TS_OAUTH_SECRET - Tailscale OAuth client (tag:ci, ephemeral)
+#   DEPLOY_SSH_KEY                        - ed25519 private key authorised as
+#                                            root on patched-portal-01
+#
+# One-time bootstrap needed before this can reach the box - see docs/DEPLOY.md
+# for the exact commands:
+#   1. DEPLOY_SSH_KEY's public key added to /root/.ssh/authorized_keys on
+#      patched-portal-01 (it is not there yet as of PAT-1151 - only Andy's
+#      personal key is).
+#   2. Tailnet ACL (api-vps-artefacts/tailscale-acl.json in the patched.im
+#      repo) extended with a tag:ci -> tag:portal:22 grant, both the network
+#      accept rule and the ssh{} block. tag:portal is currently "admin SSH
+#      in only" (PAT-410) and does not admit tag:ci.
+#   3. /opt/patched-deploy-staging/portal created on first run (this workflow's
+#      rsync step creates it; no manual step needed).
+#
+# No environment/required-reviewer setup: this repo is private on a Team
+# plan, where that protection is unavailable, so the gate is the manual
+# workflow_dispatch trigger instead (same reasoning as deploy-api-01.yml).
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy after testing; set false to run the checks only
+        required: false
+        type: boolean
+        default: true
+
+# The run list shows this string, not the workflow name, so the one place
+# someone glances at says what the run did. Evaluated before any job starts,
+# from exactly the same two facts the `deploy` job's `if:` below tests, so
+# the title cannot disagree with what the run went on to do. `deploy=false`,
+# or a dispatch against a non-main ref, is a supported test-only path and is
+# labelled as such rather than failed: a red run on a supported, deliberate
+# path teaches people to wave red runs through.
+run-name: >-
+  ${{ (inputs.deploy && github.ref == 'refs/heads/main')
+      && format('deploy-portal-01: SHIPPING to patched-portal-01 ({0})', github.ref_name)
+      || format('deploy-portal-01: TEST ONLY, nothing shipped ({0})', github.ref_name) }}
+
+permissions:
+  contents: read
+
+# One deploy at a time - overlapping deploys would rsync into the same
+# staging dir and could restart services mid-swap from a partial checkout.
+concurrency:
+  group: deploy-portal-01
+  cancel-in-progress: false
+
+jobs:
+  build-test:
+    # The single definition of the lint/test steps lives in portal-build.yml,
+    # which is also what a push to main runs on its own. Calling it here
+    # keeps one copy of those steps.
+    uses: ./.github/workflows/portal-build.yml
+    permissions:
+      contents: read
+
+  deploy:
+    needs: build-test
+    runs-on: ubuntu-latest
+    # Production deploys are Andy-gated by requiring a MANUAL trigger: this job
+    # only runs on workflow_dispatch, never on push. A normal merge runs the
+    # separate `portal-build` workflow (CI validation) and never reaches this
+    # file at all; shipping to the box is always a deliberate
+    # `gh workflow run deploy-portal-01.yml` (or the Actions "Run workflow"
+    # button). The `github.event_name` test below is redundant today, since
+    # workflow_dispatch is this workflow's only trigger, and is kept
+    # deliberately: if a push trigger is ever re-added to the `on:` block
+    # above, its absence would silently turn every merge into a production
+    # deploy (the exact PAT-1970/PAT-1979 shape). `github.ref == refs/heads/main`
+    # is the same belt-and-suspenders check deploy-api-01.yml carries - a
+    # dispatch against a branch or tag cannot deploy, whatever `deploy` is
+    # set to. `environment: production` is kept for provenance and so the
+    # gate upgrades automatically if the org ever moves to a plan where
+    # required-reviewer protection is enforced; it does not gate on its own
+    # today, because this repo is private on a Team plan.
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy && github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          # Ephemeral - node is removed from the tailnet when the job ends.
+
+      - name: Write deploy key
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -m 600 <(printf '%s' "$SSH_KEY") /tmp/portal01_key
+
+      - name: Stage checkout on patched-portal-01
+        run: |
+          # --no-owner --no-group: the runner checks out as its own UID (1001
+          # on GitHub-hosted ubuntu-latest), and -a would otherwise preserve
+          # that numeric owner onto the box. install.sh/install-scan.sh's
+          # ownership check (PAT-1237) requires the staged tree be owned by
+          # root or $SUDO_UID, so without these flags every deploy fails that
+          # check and rolls back (PAT-1526). Root-owned files are exactly
+          # what staging should produce anyway: this is a transient,
+          # root-validated tree, not a mirror of CI's own ownership.
+          rsync -av --no-owner --no-group --delete --mkpath \
+            --exclude '.git' --exclude '.venv' --exclude 'venv' --exclude '__pycache__' \
+            --exclude '.pytest_cache' --exclude '.ruff_cache' \
+            -e "ssh -i /tmp/portal01_key -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15" \
+            ./ root@patched-portal-01:/opt/patched-deploy-staging/portal/
+        # deploy/install.sh and deploy/install-scan.sh already exclude tests/
+        # and caches when they rsync onward into the live app dirs, so staging
+        # the whole checkout here (tests/ included) is harmless and keeps this
+        # step a single plain rsync rather than a second exclude list to keep
+        # in sync with theirs.
+
+      - name: Run deploy-portal-01.sh on patched-portal-01
+        run: |
+          ssh -i /tmp/portal01_key \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-portal-01 \
+            "bash /opt/patched-deploy-staging/portal/deploy/deploy-portal-01.sh ${{ github.sha }}"
+
+  no-deploy-notice:
+    # The test-only path (deploy=false, or a dispatch against a non-main ref)
+    # leaves `deploy` skipped and the run green. That is correct - it is a
+    # supported, deliberately requested run - but "green run named
+    # deploy-portal-01" is the exact shape that motivated PAT-1970 and this
+    # ticket (PAT-1979), so it has to say so out loud rather than leaving the
+    # reader to notice one skipped job. The run-name above already carries it
+    # in the run list; this puts it on the run's own page too, as a warning
+    # annotation and a summary block.
+    #
+    # The condition is the negation of the `deploy` job's `if:`, minus the
+    # event_name test that is constant here, so exactly one of the two runs.
+    needs: build-test
+    if: ${{ !(inputs.deploy && github.ref == 'refs/heads/main') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say plainly that nothing was shipped
+        # Both values go through env, never straight into the script body: a
+        # git ref may legally contain quotes, and interpolating one into a
+        # shell string is a script-injection hole in a workflow that holds
+        # the production deploy key.
+        env:
+          DEPLOY_REQUESTED: ${{ inputs.deploy }}
+          RUN_REF: ${{ github.ref }}
+        run: |
+          REASON='deploy=false was requested, so this run only linted and tested.'
+          if [ "$DEPLOY_REQUESTED" = "true" ]; then
+            REASON="deploy=true was requested, but this run is on ${RUN_REF}, not refs/heads/main. Non-main refs cannot deploy, so nothing was shipped."
+          fi
+          # ::warning:: is a workflow command parsed only from STDOUT, and it
+          # surfaces on the run page where a skipped job does not.
+          echo "::warning::NOTHING WAS DEPLOYED. $REASON patched-portal-01 is running whatever it was running before this run started."
+          printf '## Nothing was deployed\n\n%s\n\n' "$REASON" >> "$GITHUB_STEP_SUMMARY"
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          `patched-portal-01` is still running whatever it was running before this run started.
+          Do not record this run as a production deploy.
+          SUMMARY

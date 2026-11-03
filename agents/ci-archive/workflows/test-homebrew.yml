@@ -1,0 +1,31 @@
+name: test-homebrew
+
+# PAT-2012: the Homebrew collector's contract tests, including the static
+# guard that fails if the collector gains a Homebrew invocation, a network
+# client or a process launch, and the guard that pins the block on the wire
+# (PAT-2032) while still exercising the off path.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/homebrew.sh'
+      - 'macos/lib/test-homebrew.zsh'
+      - 'macos/patched-collect.sh'
+      - '.github/workflows/test-homebrew.yml'
+  pull_request:
+    paths:
+      - 'macos/lib/homebrew.sh'
+      - 'macos/lib/test-homebrew.zsh'
+      - 'macos/patched-collect.sh'
+      - '.github/workflows/test-homebrew.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh (the collector and its tests are zsh)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run Homebrew collector tests
+        run: zsh macos/lib/test-homebrew.zsh

@@ -1,0 +1,23 @@
+{
+  "label": "acorn",
+  "name": "Acorn",
+  "type": "zip",
+  "app_path": "/Applications/Acorn.app",
+  "expected_team_id": "WZCN9HJ4VP",
+  "download": {
+    "method": "static",
+    "url": "https://flyingmeat.com/download/Acorn.zip"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

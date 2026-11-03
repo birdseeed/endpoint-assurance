@@ -1,0 +1,41 @@
+{
+  "ticket": "PAT-2370",
+  "observed_date": "2026-10-03",
+  "scope": "local synthetic evidence plus bounded installed monitoring probe; incomplete acceptance",
+  "synthetic_restore": {
+    "database": "owned local PostgreSQL 16 loopback cluster",
+    "data": "synthetic-only fixture, 17 rows",
+    "result": "custom-format dump restored; schema, constraints, and ordered rows matched",
+    "timing_scope": "database-only fixture timing; no service RTO or service recovery",
+    "source_receipt": "/Users/example/Development/Patched.im/.claude/linear-runs/evidence/codex-queue-20261003/PAT-2370-synthetic/receipt.json"
+  },
+  "alert_capture": {
+    "result": "loopback-generated alert events captured locally",
+    "external_delivery": false,
+    "customer_messages": false
+  },
+  "installed_probe": {
+    "observation_time_utc": "approximately 2026-10-03T20:23Z",
+    "metrics_script_sha256": "40317681ffb1fc224dbbec63646e6fcf7cfb6a185f6716d952432b6a1d320971",
+    "metrics_script_matches_expected_source": false,
+    "prometheus_rules_sha256": "c5e87f928e7900b42947fd30911b9c322d220a1321ad2c2e791c990f9a1c566c",
+    "prometheus_rules_match_expected": true,
+    "prod_alerter_sha256": "767caf77afad89e321f59422e87dc5e9fd5bbb6a415e0c8d73fb5d1926729f0a",
+    "prod_alerter_matches_expected": true,
+    "aggregate_up": "count(up)=6; min(up)=1",
+    "newest_sample_age_seconds_approx": 0.22,
+    "freshness_scope": "newest observed sample only; not proof every target is fresh"
+  },
+  "known_gap": "lag-query-only failure can still report db_up=1 and lag=0",
+  "not_proven": [
+    "real backup retrieval or restore",
+    "service recovery or service RTO",
+    "all-target freshness",
+    "external notification delivery",
+    "complete report-generation failure visibility",
+    "evaluator database tests; recorded checks skipped"
+  ],
+  "hold": "PAT-2378 remains on hold",
+  "recommendation": "authorised isolated rehearsal with a real backup and named test-notification destination, plus service readiness and missing acceptance evidence",
+  "limitations": "No production data, credentials, environment contents, provider URLs, or recipient identities included."
+}

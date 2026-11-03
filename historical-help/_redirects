@@ -1,0 +1,8 @@
+/policy             /remediation-guide.html 301
+/policy.html        /remediation-guide.html 301
+/request            /using-your-portal.html 301
+/request.html       /using-your-portal.html 301
+/verification       /security.html          301
+/verification.html  /security.html          301
+/antivirus          /security.html          301
+/antivirus.html     /security.html          301

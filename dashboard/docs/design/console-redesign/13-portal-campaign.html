@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Patched customer portal — Removal campaign, live</title>
+<!-- Design reference for the customer portal (PAT-1602). Static mockup, invented data.
+     Ruling 12 Sept 2026: the customer watches a removal campaign while it runs, with per
+     device state. A device that has not reported yet must read as not yet reported and
+     never as a failure, because devices that are asleep or off the network will sit
+     incomplete for hours and would otherwise generate a support call.
+     Design decision taken here and open to reversal: the customer can pause a campaign
+     they authorised. Pausing is not a disposition, it is withdrawal of their own
+     authorisation, so it does not breach the staff-only disposition rule. -->
+<style>
+    body { margin:0; font-family:system-ui,-apple-system,'Segoe UI',sans-serif; font-size:14px; color:#0f1115; background:#f5f5f3; -webkit-font-smoothing:antialiased; }
+    .lbl { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:#7d8089; }
+    .mono { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; }
+    .num { font-weight:700; letter-spacing:-.02em; }
+    .pill { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; padding:2px 6px; border-radius:4px; white-space:nowrap; }
+    .card { background:#fff; border:1px solid rgba(15,17,21,.12); border-radius:6px; }
+    .navitem { display:flex; align-items:center; gap:10px; padding:7px 14px; color:rgba(255,255,255,.72); font-size:13px; border-left:2px solid transparent; }
+    .navitem--on { background:rgba(255,255,255,.07); color:#fff; border-left-color:#f5530a; font-weight:500; }
+    .th { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#7d8089; padding:9px 14px; text-align:left; }
+    .td { padding:10px 14px; border-top:1px solid rgba(15,17,21,.07); font-size:13px; }
+  </style>
+</head>
+<body>
+<div style="display:flex; width:1440px; height:900px; overflow:hidden; background:#f5f5f3;">
+
+  <div style="width:216px; flex-shrink:0; background:#0f1115; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:center; gap:9px; padding:18px 16px 22px;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="#f5530a" stroke-width="2.4"/><circle cx="10" cy="10" r="2.2" fill="#ffffff"/></svg>
+      <span style="font-weight:700; font-size:15px; color:#fff;">Patched</span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:1px;">
+      <div class="navitem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>Your estate</div>
+      <div class="navitem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/></svg>Findings</div>
+      <div class="navitem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v11H4z"/><path d="M9 20h6"/></svg>Devices</div>
+      <div class="navitem navitem--on"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 10h8M8 14h5"/></svg>Software</div>
+      <div class="navitem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l5 5v13H6z"/><path d="M14 3v6h6"/></svg>Reports</div>
+    </div>
+    <div style="margin-top:auto; padding:14px 16px; border-top:1px solid rgba(255,255,255,.09);">
+      <div class="lbl" style="color:rgba(255,255,255,.34);">Your specialist</div>
+      <div style="display:flex; align-items:center; gap:9px; margin-top:9px;">
+        <div style="width:26px; height:26px; border-radius:50%; background:#2a2d33; color:#fff; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center;">AB</div>
+        <div><div style="font-size:12px; color:#fff;">Example specialist</div><div class="mono" style="font-size:10px; color:rgba(255,255,255,.5);">specialist@example.invalid</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex-grow:1; display:flex; flex-direction:column; min-width:0;">
+    <div style="height:56px; flex-shrink:0; background:#fff; border-bottom:1px solid rgba(15,17,21,.12); display:flex; align-items:center; padding:0 24px; gap:11px;">
+      <span class="mono" style="font-size:11px; color:#7d8089;">SOFTWARE /</span>
+      <h1 style="margin:0; font-size:18px; font-weight:700; letter-spacing:-.015em;">Removing Tailscale</h1>
+      <span class="pill" style="background:#fff7ed; color:#c2410c;">IN PROGRESS</span>
+      <span class="mono" style="font-size:10px; color:#c93f04; background:#fff4ed; border:1px solid rgba(201,63,4,.22); padding:3px 7px; border-radius:4px;">MANAGED</span>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:11px;">
+        <span class="mono" style="font-size:11px; color:#7d8089;">REFRESHED 40 SECONDS AGO</span>
+        <div style="display:flex; border:1px solid rgba(15,17,21,.12); border-radius:6px; overflow:hidden;"><span class="mono" style="font-size:10px; font-weight:600; padding:5px 9px; background:#0f1115; color:#fff;">LIGHT</span><span class="mono" style="font-size:10px; font-weight:600; padding:5px 9px; color:#7d8089;">DARK</span></div>
+        <div style="border:1px solid rgba(185,28,28,.3); color:#b91c1c; border-radius:6px; padding:6px 11px; font-size:12px; font-weight:600;">Pause this campaign</div>
+      </div>
+    </div>
+
+    <div style="padding:20px 24px; display:flex; flex-direction:column; gap:15px; overflow:hidden;">
+
+      <!-- WHAT YOU AUTHORISED -->
+      <div class="card" style="padding:17px 19px; border-left:3px solid #c93f04;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:24px;">
+          <div style="max-width:760px;">
+            <div class="lbl" style="color:#0f1115; font-size:11px;">What you authorised</div>
+            <div style="font-size:13px; color:#2a2d33; line-height:1.6; margin-top:8px;">
+              Remove <strong>Tailscale 1.72.1</strong> from the 9 devices it was found on, after a dry run on 10 September showed no shared components and no dependent software. Running copies with unsaved work are left alone and retried, never closed underneath somebody.
+            </div>
+            <div style="display:flex; gap:26px; margin-top:13px;">
+              <div><div class="lbl">Authorised by</div><div style="font-size:12px; margin-top:3px;">Rachel Okonkwo, IT Manager</div></div>
+              <div><div class="lbl">Authorised</div><div class="mono" style="font-size:12px; margin-top:3px;">11 SEP 2026, 16:42</div></div>
+              <div><div class="lbl">Dry run</div><div class="mono" style="font-size:12px; margin-top:3px;">DR-4417, 10 SEP</div></div>
+              <div><div class="lbl">Started</div><div class="mono" style="font-size:12px; margin-top:3px;">12 SEP 2026, 08:00</div></div>
+            </div>
+          </div>
+          <div style="flex-shrink:0; text-align:right;">
+            <div class="lbl">Protected from removal</div>
+            <div style="font-size:12px; color:#7d8089; line-height:1.6; margin-top:5px;">Security, management, backup<br>and monitoring agents.<br><span class="mono" style="font-size:11px;">NO CAMPAIGN CAN TOUCH THESE</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WHERE IT HAS GOT TO -->
+      <div style="display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:12px;">
+        <div class="card" style="padding:14px 16px;">
+          <div class="lbl">Removed</div><div class="num" style="font-size:27px; margin-top:6px; color:#15803d;">5</div>
+          <div style="font-size:11px; color:#7d8089; margin-top:2px;">verified afterwards</div>
+        </div>
+        <div class="card" style="padding:14px 16px;">
+          <div class="lbl">Running now</div><div class="num" style="font-size:27px; margin-top:6px;">1</div>
+          <div style="font-size:11px; color:#7d8089; margin-top:2px;">in the next few minutes</div>
+        </div>
+        <div class="card" style="padding:14px 16px; border-color:rgba(15,17,21,.2);">
+          <div class="lbl">Not reported yet</div><div class="num" style="font-size:27px; margin-top:6px; color:#7d8089;">2</div>
+          <div style="font-size:11px; color:#7d8089; margin-top:2px;">asleep or off the network</div>
+        </div>
+        <div class="card" style="padding:14px 16px;">
+          <div class="lbl">Waiting for the user</div><div class="num" style="font-size:27px; margin-top:6px; color:#c2410c;">1</div>
+          <div style="font-size:11px; color:#7d8089; margin-top:2px;">open with unsaved work</div>
+        </div>
+        <div class="card" style="padding:14px 16px;">
+          <div class="lbl">Failed</div><div class="num" style="font-size:27px; margin-top:6px;">0</div>
+          <div style="font-size:11px; color:#7d8089; margin-top:2px;">nothing needs you</div>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:11px; padding:11px 15px; background:#fff; border:1px solid rgba(15,17,21,.12); border-radius:6px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7d8089" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <div style="font-size:13px; color:#2a2d33; line-height:1.5;">
+          Two devices have not reported yet. <strong>That is not a failure.</strong> A laptop that is asleep, shut or off the network picks the job up the next time it checks in, usually within a working day. We only raise it with you if it is still outstanding after seven days.
+        </div>
+      </div>
+
+      <!-- DEVICE BY DEVICE -->
+      <div class="card" style="overflow:hidden;">
+        <div style="display:flex; align-items:center; padding:12px 16px; border-bottom:1px solid rgba(15,17,21,.07);">
+          <div class="lbl" style="color:#0f1115; font-size:11px;">Device by device</div>
+          <span class="mono" style="font-size:11px; color:#7d8089; margin-left:10px;">9 DEVICES</span>
+          <span class="mono" style="font-size:11px; color:#c93f04; margin-left:auto;">DOWNLOAD THE EVIDENCE &rarr;</span>
+        </div>
+        <table style="width:100%; border-collapse:collapse;">
+          <thead><tr>
+            <th class="th">Device</th><th class="th">Who uses it</th><th class="th">Platform</th><th class="th">State</th><th class="th">Last contact</th><th class="th">What happened</th>
+          </tr></thead>
+          <tbody>
+            <tr><td class="td mono">MT-LP-0114</td><td class="td">R. Okonkwo</td><td class="td mono" style="color:#7d8089;">macOS 15.6</td><td class="td"><span class="pill" style="background:#f0fdf4; color:#15803d;">REMOVED</span></td><td class="td mono" style="color:#7d8089;">09:12</td><td class="td" style="color:#2a2d33;">Gone, and verified gone on the next check in</td></tr>
+            <tr><td class="td mono">MT-LP-0208</td><td class="td">J. Fenwick</td><td class="td mono" style="color:#7d8089;">Windows 11</td><td class="td"><span class="pill" style="background:#f0fdf4; color:#15803d;">REMOVED</span></td><td class="td mono" style="color:#7d8089;">09:04</td><td class="td" style="color:#2a2d33;">Gone, and verified gone on the next check in</td></tr>
+            <tr><td class="td mono">MT-LP-0231</td><td class="td">A. Vasquez</td><td class="td mono" style="color:#7d8089;">Windows 11</td><td class="td"><span class="pill" style="background:#f0fdf4; color:#15803d;">REMOVED</span></td><td class="td mono" style="color:#7d8089;">08:51</td><td class="td" style="color:#2a2d33;">Gone, and verified gone on the next check in</td></tr>
+            <tr><td class="td mono">MT-DT-0042</td><td class="td">Shared, reception</td><td class="td mono" style="color:#7d8089;">Windows 11</td><td class="td"><span class="pill" style="background:#fff7ed; color:#c2410c;">RUNNING</span></td><td class="td mono" style="color:#7d8089;">09:39</td><td class="td" style="color:#2a2d33;">Started three minutes ago</td></tr>
+            <tr><td class="td mono">MT-LP-0177</td><td class="td">D. Hargreaves</td><td class="td mono" style="color:#7d8089;">macOS 15.5</td><td class="td"><span class="pill" style="background:#fff7ed; color:#c2410c;">WAITING FOR THE USER</span></td><td class="td mono" style="color:#7d8089;">09:31</td><td class="td" style="color:#2a2d33;">Open with unsaved work, so we left it and will retry tonight</td></tr>
+            <tr><td class="td mono">MT-LP-0093</td><td class="td">S. Brennan</td><td class="td mono" style="color:#7d8089;">macOS 14.7</td><td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">NOT REPORTED YET</span></td><td class="td mono" style="color:#7d8089;">10 SEP, 17:22</td><td class="td" style="color:#7d8089;">Asleep or off the network. Nothing is wrong with it</td></tr>
+            <tr><td class="td mono">MT-LP-0155</td><td class="td">Unassigned</td><td class="td mono" style="color:#7d8089;">Windows 11</td><td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">NOT REPORTED YET</span></td><td class="td mono" style="color:#7d8089;">3 SEP, 08:47</td><td class="td" style="color:#7d8089;">Quiet since 3 September, already on your findings list</td></tr>
+          </tbody>
+        </table>
+        <div style="padding:11px 16px; border-top:1px solid rgba(15,17,21,.07); font-size:12px; color:#7d8089;">Two more devices completed earlier. <span class="mono" style="color:#c93f04;">SHOW ALL NINE &rarr;</span></div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:13px;">
+        <div class="card" style="padding:14px 16px;">
+          <div class="lbl">When it finishes</div>
+          <div style="font-size:12px; color:#2a2d33; line-height:1.55; margin-top:7px;">Tailscale moves to removed on your software list, and the nine devices are re-checked to confirm it is actually gone rather than just deregistered.</div>
+        </div>
+        <div class="card" style="padding:14px 16px;">
+          <div class="lbl">What you will get</div>
+          <div style="font-size:12px; color:#2a2d33; line-height:1.55; margin-top:7px;">A signed record of what was removed, from which device, when, and on whose authority. It goes into your next report and into any assessor pack you build.</div>
+        </div>
+        <div class="card" style="padding:14px 16px;">
+          <div class="lbl">If you change your mind</div>
+          <div style="font-size:12px; color:#2a2d33; line-height:1.55; margin-top:7px;">Pausing stops any device that has not started. Removals already done are not undone, because a removal is not reversible. Reinstalling is a separate piece of work.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

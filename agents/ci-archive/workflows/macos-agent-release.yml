@@ -1,0 +1,689 @@
+name: macos-agent-release
+
+# Builds the interim, unsigned macOS-agent distribution and publishes it as a
+# GitHub Release asset. This is the deploy path until the signed .pkg (Apple
+# Developer ID + notarisation) is available post-incorporation.
+#
+# Moved here verbatim from patched.im under PAT-384 (collector consolidated
+# into updater/macos/); only the source paths were repointed (macos-agent/ ->
+# macos/). Tag convention (macos-agent-v*) preserved so PAT-267's documented
+# release procedure still resolves. The collector artifact is distinct from the
+# updater *endpoint* signed via sign-notarize.yml (endpoint-v* tags); folding
+# the collector into that signed pipeline is a follow-up (PAT-9 / PAT-267).
+#
+# Trigger:
+#   - push a tag matching `macos-agent-v*`  (e.g. macos-agent-v0.6.0)
+#   - or run manually (workflow_dispatch) with a version input
+#
+# Output (attached to the Release):
+#   patched-agent-macos-<version>.tar.gz   — install.sh + uninstall.sh +
+#       bundled collector + uploader + both LaunchDaemons + INSTALL.txt
+#   SHA256SUMS                              — integrity digest (matters: unsigned)
+#   patched-updater-endpoint-<version>.pkg — OPTIONAL: attached only when the
+#       sign-pkg job (below) actually produced a Developer-ID-signed,
+#       notarised .pkg for the endpoint bundle. Absent on every run today
+#       (PAT-1073) because Developer ID signing is blocked on Andy's Apple
+#       enrollment (PAT-6/7/9) — see the sign-pkg job for why that job fails
+#       loudly rather than silently omitting or mislabeling this asset.
+#
+# PAT-507 / PAT-1092: the publish job below references a GitHub Environment
+# named "release-gate", but that environment currently has zero protection
+# rules configured, so it does not pause publishing for approval. This is
+# not a config oversight: private repos need GitHub Enterprise for the
+# "required reviewers" protection rule, and this repo is on a Team plan
+# (confirmed by a 422 - "Please ensure the billing plan supports the
+# required reviewers protection rule" - when attempting to configure one).
+# Today, every tag push publishes with no automated approval pause. This is
+# a deliberate, accepted interim state pending an Enterprise upgrade (Andy's
+# cost decision) or estate-wide gate restoration under PAT-941, not a bug.
+# See docs/agent-release-runbook.md.
+
+on:
+  push:
+    tags:
+      - 'macos-agent-v*-beta.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Beta tag version (e.g. 0.6.0-beta.1)'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version:       ${{ steps.ver.outputs.version }}
+      tag_version:   ${{ steps.ver.outputs.tag_version }}
+      channel:       ${{ steps.ver.outputs.channel }}
+      tarball:       ${{ steps.pkg.outputs.tarball }}
+      sha256:        ${{ steps.pkg.outputs.sha256 }}
+      artifact_hmac: ${{ steps.sign.outputs.artifact_hmac }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            V="${{ github.event.inputs.version }}"
+          else
+            V="${GITHUB_REF_NAME#macos-agent-v}"
+          fi
+          if [[ "$V" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-beta\.([1-9][0-9]?)$ ]]; then
+            WIRE_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}.${BASH_REMATCH[4]}"
+          else
+            echo "expected X.Y.Z-beta.N (N=1..99); stable releases must use the promote workflow" >&2
+            exit 1
+          fi
+          {
+            echo "version=$WIRE_VERSION"
+            echo "tag_version=$V"
+            echo "channel=beta"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Lint installer scripts
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y shellcheck
+          shellcheck --shell=bash macos/install.sh macos/uninstall.sh macos/build-bundle.sh
+          shellcheck --shell=bash endpoint/install.sh endpoint/uninstall.sh
+
+      - name: Build single-file collector + uploader bundles
+        run: |
+          cd macos
+          bash build-bundle.sh --agent-version "${{ steps.ver.outputs.version }}"
+          test -s dist/patched-collect.sh
+          test -s dist/patched-upload.sh
+
+      # PAT-1126: collector-only stopped being a supported end state — a
+      # macOS box with only the collector installed never sees a
+      # decommission directive and never self-removes. Every macOS release
+      # now bundles endpoint/ (the update + decommission-poll daemons)
+      # alongside the collector, using the exact same bundler
+      # (tools/build-bundle.sh) release-endpoint.yml uses, so the two
+      # release pipelines stay byte-for-byte consistent on how the endpoint
+      # bundle itself is built and hash-pinned.
+      - name: Install Python dependencies (endpoint bundle build)
+        run: pip install jsonschema --quiet
+
+      - name: Build endpoint bundle
+        run: bash tools/build-bundle.sh
+
+      - name: Assemble release tarball
+        id: pkg
+        run: |
+          V="${{ steps.ver.outputs.version }}"
+          STAGE="patched-agent-macos-$V"
+          mkdir -p "$STAGE"
+
+          # Bundled collector + bundled uploader (no lib/ needed at runtime
+          # for either) + daemons.
+          cp macos/dist/patched-collect.sh "$STAGE/patched-collect.sh"
+          cp macos/dist/patched-upload.sh   "$STAGE/patched-upload.sh"
+          cp macos/com.patched.collect.plist "$STAGE/"
+          cp macos/com.patched.upload.plist  "$STAGE/"
+          cp macos/install.sh                "$STAGE/"
+          cp macos/uninstall.sh              "$STAGE/"
+
+          # PAT-1126: the endpoint bundle, always. dist/install.sh here is
+          # endpoint/install.sh with EXPECTED_MANIFEST_HASH/EXPECTED_DAEMON_HASH
+          # already stamped by tools/build-bundle.sh above — renamed so it
+          # doesn't collide with the collector's own install.sh/uninstall.sh
+          # (both repos ship a file literally called that). macos/install.sh
+          # locates it by this exact sibling name (endpoint-install.sh) and
+          # requires it to be present — a tarball missing it is refused
+          # rather than silently producing a decommission-incapable install.
+          cp -r dist/patched-updater         "$STAGE/patched-updater"
+          cp dist/install.sh                 "$STAGE/endpoint-install.sh"
+          cp dist/uninstall.sh               "$STAGE/endpoint-uninstall.sh"
+          # Shared enrollment.json stamp-point (PAT-546): both install.sh and
+          # endpoint-install.sh auto-detect this exact filename alongside
+          # themselves — one file at STAGE root serves both.
+          cp dist/enrollment.json            "$STAGE/enrollment.json"
+
+          chmod +x "$STAGE/install.sh" "$STAGE/uninstall.sh" "$STAGE/patched-collect.sh" "$STAGE/patched-upload.sh"
+          chmod +x "$STAGE/endpoint-install.sh" "$STAGE/endpoint-uninstall.sh"
+
+          echo "$V" > "$STAGE/VERSION"
+
+          cat > "$STAGE/INSTALL.txt" <<EOF
+          patched.im macOS agent — interim unsigned build $V
+
+          Install (run as an admin in Terminal):
+            tar xzf patched-agent-macos-$V.tar.gz
+            cd patched-agent-macos-$V
+            sudo ./install.sh --tenant-id <uuid> --bearer-token <token> --hmac-secret <base64>
+
+          install.sh installs the collector (inventory) AND the endpoint
+          bundle (update + decommission-poll daemons) together — every
+          install produced by this script is decommission-capable
+          (PAT-1126); there is no collector-only mode.
+
+          The agent collects on install + daily and uploads every 15 minutes.
+          Verify:  sudo launchctl list | grep com.patched
+          Remove:  sudo ./uninstall.sh   (add --purge to also drop credentials;
+                   also removes the endpoint bundle installed alongside it)
+
+          NOTE: unsigned. Run install.sh from a terminal as admin; do not
+          double-click. The signed .pkg path supersedes this post-incorporation.
+          EOF
+
+          TARBALL="patched-agent-macos-$V.tar.gz"
+          tar czf "$TARBALL" "$STAGE"
+          SHA=$(shasum -a 256 "$TARBALL" | awk '{print $1}')
+          echo "$SHA  $TARBALL" > SHA256SUMS
+          echo "tarball=$TARBALL"  >> "$GITHUB_OUTPUT"
+          echo "sha256=$SHA"       >> "$GITHUB_OUTPUT"
+          echo "Built $TARBALL"
+          echo "SHA-256: $SHA"
+
+      - name: Sign artifact with HMAC-SHA256
+        id: sign
+        env:
+          ARTIFACT_SIGNING_KEY: ${{ secrets.ARTIFACT_SIGNING_KEY }}
+        run: |
+          TARBALL="${{ steps.pkg.outputs.tarball }}"
+          if [ -z "$ARTIFACT_SIGNING_KEY" ]; then
+            echo "WARN: ARTIFACT_SIGNING_KEY not set — skipping HMAC signing"
+            echo "artifact_hmac=" >> "$GITHUB_OUTPUT"
+          else
+            HMAC=$(openssl dgst -sha256 -hmac "$ARTIFACT_SIGNING_KEY" -hex "$TARBALL" | awk '{print $2}')
+            echo "$HMAC" > "$TARBALL.hmac"
+            echo "artifact_hmac=$HMAC" >> "$GITHUB_OUTPUT"
+            echo "HMAC-SHA256: $HMAC"
+          fi
+
+      # Hard-fail if signing was EXPECTED but did not happen. Signing is expected
+      # on the canonical repo (not a fork); a missing HMAC there means
+      # ARTIFACT_SIGNING_KEY is unset, scoped away, or typo'd on the org secret
+      # - fail loudly rather than publishing an unsigned release (PAT-687, PAT-889).
+      - name: Assert artifact was signed when expected
+        id: assert_signed
+        env:
+          SIGNING_EXPECTED: ${{ github.repository == 'Patched-LTD/updater' }}
+          SIGN_HMAC: ${{ steps.sign.outputs.artifact_hmac }}
+        run: |
+          HAS_HMAC=false
+          [ -n "$SIGN_HMAC" ] && HAS_HMAC=true
+          echo "Signing gate: expected=$SIGNING_EXPECTED signed=$HAS_HMAC"
+          if [ "$SIGNING_EXPECTED" = "true" ] && [ "$HAS_HMAC" != "true" ]; then
+            echo "::error::ARTIFACT_SIGNING_KEY was expected but no HMAC was produced. The secret is likely unset, scoped away, or misconfigured - refusing to publish an unsigned release."
+            exit 1
+          fi
+
+      # PAT-892: publish the .hmac signature alongside the tarball and
+      # SHA256SUMS so verify-agent-release.py can fetch and check it. If
+      # signing was skipped (fork without ARTIFACT_SIGNING_KEY), the .hmac
+      # file will not exist - if-no-files-found: warn keeps that case from
+      # failing the upload; the signing-expected gate above already hard
+      # fails the canonical repo in that situation.
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: macos-agent-${{ steps.ver.outputs.version }}
+          path: |
+            ${{ steps.pkg.outputs.tarball }}
+            ${{ steps.pkg.outputs.tarball }}.hmac
+            SHA256SUMS
+          if-no-files-found: warn
+          retention-days: 7
+
+  # PAT-1073: Developer-ID code-signing for the endpoint component, as an
+  # OPTIONAL additional release asset alongside the interim unsigned tarball
+  # built above. This job is deliberately independent of `build`/`publish`:
+  # it does not gate them and its failure does not block the tarball
+  # release. That split matters because Developer ID signing genuinely is
+  # NOT available yet — it is blocked on Andy's Apple Developer ID
+  # enrollment (PAT-6/7/9) — while the interim unsigned tarball IS the
+  # working, needed-today release path (merged fixes must keep shipping
+  # while enrollment is pending; that gap is the whole reason PAT-1073
+  # exists).
+  #
+  # Packages dist/patched-updater (the endpoint bundle `build` above also
+  # assembles into the tarball) via tools/build-pkg.sh — the exact same
+  # tool and dist/ layout sign-notarize.yml already uses for endpoint-v*
+  # releases. It does NOT (yet) also package the macOS collector
+  # (macos/patched-collect.sh, macos/patched-upload.sh, their
+  # LaunchDaemons): tools/pkg-scripts/postinstall only knows how to lay
+  # down the endpoint bundle at /usr/local/patched-updater, and teaching it
+  # to also install the collector is a real packaging-semantics decision
+  # (where collector files land, how the two postinstall paths interact)
+  # that belongs with Andy, not something to guess at while scaffolding
+  # this pipeline. Extending pkg-scripts to cover the full agent is a
+  # follow-up once this narrower endpoint-only signed .pkg is validated.
+  #
+  # Unlike sign-notarize.yml — which quietly skips signing and builds an
+  # UNSIGNED .pkg when certs are absent, a reviewed and accepted behaviour
+  # for ITS OWN endpoint-v* pipeline (see that file's header) — this job
+  # fails loudly and explicitly when the signing secret is missing, so a
+  # run of this job never silently produces a .pkg that looks signed but
+  # isn't, and never publishes one. Until PAT-6/7/9 land, this job is
+  # EXPECTED to fail red on every macos-agent-v* release: that failure is
+  # the honest, visible status of "designed and scaffolded now, gated on
+  # Andy's cert enrollment" (see docs/agent-release-runbook.md), not a bug
+  # in this workflow.
+  #
+  # ⚠ GitHub-Non-Author-Review: signing is security-sensitive. This job imports private key
+  # material into a temporary keychain and cleans it up unconditionally
+  # (the "Delete keychain" step runs on always()). Review any changes here
+  # under GitHub-Non-Author-Review.
+  sign-pkg:
+    needs: build
+    runs-on: macos-latest
+    permissions:
+      contents: read
+    env:
+      # Checked at job start. Empty secret evaluates to 'false'; set secret
+      # to 'true'. Step conditions use env.* rather than secrets.* directly
+      # (GHA security pattern — matches sign-notarize.yml).
+      INSTALLER_CERT_SET: ${{ secrets.DEVELOPER_ID_INSTALLER_CERT_P12_B64 != '' }}
+      NOTARY_KEY_SET:     ${{ secrets.APPLE_ASC_API_KEY_P8_B64 != '' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # Fail loudly, immediately, before touching a keychain — this is the
+      # difference this ticket exists to establish (see job comment above).
+      - name: Assert Developer ID signing secret is configured
+        run: |
+          echo "Developer ID Installer cert configured: $INSTALLER_CERT_SET"
+          if [ "$INSTALLER_CERT_SET" != "true" ]; then
+            echo "::error::DEVELOPER_ID_INSTALLER_CERT_P12_B64 is not set. Developer ID code-signing is blocked on Andy's Apple Developer ID enrollment (PAT-6/7/9) - refusing to silently build or publish an unsigned .pkg from this job. The interim unsigned tarball (build/publish jobs above) is unaffected and remains the release path until this secret is configured. See docs/agent-release-runbook.md 'Signing path (future)' for the full secret list."
+            exit 1
+          fi
+
+      - name: Install Python dependencies (bundle build)
+        run: pip install jsonschema --quiet
+
+      - name: Build endpoint bundle
+        run: bash tools/build-bundle.sh
+
+      - name: Create temporary keychain
+        env:
+          KC_PW: ${{ secrets.SIGNING_KEYCHAIN_PASSWORD }}
+        run: |
+          KC="$RUNNER_TEMP/signing.keychain-db"
+          security create-keychain -p "$KC_PW" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$KC_PW" "$KC"
+          echo "KC_PATH=$KC" >> "$GITHUB_ENV"
+
+      - name: Import Developer ID Installer cert
+        env:
+          CERT_B64: ${{ secrets.DEVELOPER_ID_INSTALLER_CERT_P12_B64 }}
+          CERT_PW:  ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
+          KC_PW:    ${{ secrets.SIGNING_KEYCHAIN_PASSWORD }}
+        run: |
+          CERT_FILE="$RUNNER_TEMP/installer-cert.p12"
+          echo "$CERT_B64" | base64 --decode > "$CERT_FILE"
+          security import "$CERT_FILE" -P "$CERT_PW" -A -t cert -f pkcs12 -k "$KC_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KC_PW" "$KC_PATH"
+
+      - name: Build and sign endpoint .pkg
+        id: pkg
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          V="${{ needs.build.outputs.version }}"
+          PKG="patched-updater-endpoint-${V}.pkg"
+          # Sign by Team ID alone — matches the single Developer ID
+          # Installer cert in this job's keychain by its CN substring, same
+          # as sign-notarize.yml. Keeps a future signing-account transfer a
+          # pure APPLE_TEAM_ID secret swap.
+          bash tools/build-pkg.sh --version "$V" --pkg "$PKG" --sign "$TEAM_ID"
+          echo "pkg=$PKG" >> "$GITHUB_OUTPUT"
+
+      - name: Notarize .pkg
+        if: env.NOTARY_KEY_SET == 'true'
+        env:
+          ASC_KEY_B64: ${{ secrets.APPLE_ASC_API_KEY_P8_B64 }}
+          ASC_KEY_ID:  ${{ secrets.APPLE_ASC_API_KEY_ID }}
+          ASC_ISSUER:  ${{ secrets.APPLE_ASC_API_KEY_ISSUER_ID }}
+        run: |
+          KEY_FILE="$RUNNER_TEMP/asc-api-key.p8"
+          echo "$ASC_KEY_B64" | base64 --decode > "$KEY_FILE"
+          xcrun notarytool submit "${{ steps.pkg.outputs.pkg }}" \
+            --key     "$KEY_FILE" \
+            --key-id  "$ASC_KEY_ID" \
+            --issuer  "$ASC_ISSUER" \
+            --wait \
+            --output-format plist \
+            --verbose
+
+      # Signed-but-not-notarized fails Gatekeeper on a fresh Mac just like
+      # unsigned does — publishing that as if it were a finished, deployable
+      # asset is exactly the "looks done but isn't" trap this ticket is
+      # about avoiding. Fail loud here too rather than uploading a .pkg that
+      # LOOKS complete but will be blocked at install time.
+      - name: Assert notarization was expected
+        if: always() && steps.pkg.outcome == 'success'
+        run: |
+          if [ "$NOTARY_KEY_SET" != "true" ]; then
+            echo "::error::APPLE_ASC_API_KEY_P8_B64/_ID/_ISSUER_ID not set - the .pkg was signed but not notarized, so Gatekeeper will still block it on a fresh Mac. Refusing to upload or publish this as a finished signed release asset."
+            exit 1
+          fi
+
+      - name: Staple notarization ticket
+        if: env.NOTARY_KEY_SET == 'true'
+        run: xcrun stapler staple "${{ steps.pkg.outputs.pkg }}"
+
+      - name: Verify signed & notarized .pkg
+        if: env.NOTARY_KEY_SET == 'true'
+        run: |
+          echo "=== pkgutil --check-signature ==="
+          pkgutil --check-signature "${{ steps.pkg.outputs.pkg }}"
+          echo ""
+          echo "=== spctl --assess --type install ==="
+          spctl --assess --type install --verbose "${{ steps.pkg.outputs.pkg }}"
+
+      - name: Upload signed .pkg artifact
+        if: env.NOTARY_KEY_SET == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: macos-agent-endpoint-pkg-${{ needs.build.outputs.version }}
+          path: ${{ steps.pkg.outputs.pkg }}
+          retention-days: 7
+
+      # ── Cleanup (always, even on failure) ─────────────────────────────
+      - name: Delete temporary keychain and signing material
+        if: always()
+        run: |
+          [ -n "${KC_PATH:-}" ] && security delete-keychain "$KC_PATH" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/installer-cert.p12"
+
+  publish:
+    # sign-pkg is intentionally NOT a hard prerequisite: publish must still
+    # ship the interim unsigned tarball (the working, needed-today release
+    # path) even when sign-pkg fails, which is its expected state until
+    # Andy's Apple Developer ID enrollment (PAT-6/7/9) lands. `!cancelled()`
+    # + the explicit build-success check runs publish whenever build
+    # succeeded, regardless of sign-pkg's outcome; the pkg-download step
+    # below is best-effort and only adds the signed .pkg as a bonus asset
+    # when sign-pkg actually produced one.
+    needs: [build, sign-pkg]
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    environment: release-gate   # PAT-1092: no protection rules configured (Team-plan billing limit) - does not pause for approval
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download release artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: macos-agent-${{ needs.build.outputs.version }}
+
+      # Best-effort: sign-pkg is expected to fail (job-level, not a step
+      # here) until Andy's Apple Developer ID enrollment lands (PAT-6/7/9),
+      # in which case it never uploaded this artifact and there is nothing
+      # to download. continue-on-error keeps that the normal, silent case —
+      # NOT a publish failure — while still picking up the signed .pkg as a
+      # bonus asset on the runs where sign-pkg did succeed.
+      - name: Download signed .pkg (if produced)
+        id: download_pkg
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: macos-agent-endpoint-pkg-${{ needs.build.outputs.version }}
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${{ needs.build.outputs.version }}"
+          TAG="macos-agent-v${{ needs.build.outputs.tag_version }}"
+          SHA="${{ needs.build.outputs.sha256 }}"
+          TARBALL="${{ needs.build.outputs.tarball }}"
+          PKG="patched-updater-endpoint-${V}.pkg"
+
+          # Ensure a tag exists for manual runs.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            HEAD_SHA=$(git rev-parse 'HEAD^{}')
+            if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+              EXISTING_SHA=$(git rev-parse "$TAG^{}")
+              [ "$EXISTING_SHA" = "$HEAD_SHA" ] || { echo "::error::Tag $TAG points at $EXISTING_SHA, not built commit $HEAD_SHA"; exit 1; }
+            else
+              git tag "$TAG"
+            fi
+            REMOTE_SHA=$(git ls-remote origin "refs/tags/$TAG" | awk '{print $1}')
+            if [ -n "$REMOTE_SHA" ]; then
+              [ "$REMOTE_SHA" = "$HEAD_SHA" ] || { echo "::error::Remote tag $TAG points at $REMOTE_SHA, not built commit $HEAD_SHA"; exit 1; }
+            else
+              git push origin "$TAG"
+            fi
+          fi
+
+          # Build notes with printf to avoid YAML literal-block-scalar parsing
+          # issues: unindented lines in a run: | block end the block, causing
+          # YAML to interpret "**SHA-256:**" as an invalid alias reference.
+          # shellcheck disable=SC2016
+          if [ -f "$PKG" ]; then
+            PKG_NOTE=$(printf '\n\nAlso attached: `%s` - a Developer-ID-signed, notarised .pkg for the endpoint component only (not the collector). Verify with `pkgutil --check-signature %s` and `spctl --assess --type install %s`.' "$PKG" "$PKG" "$PKG")
+          else
+            PKG_NOTE=""
+          fi
+          # shellcheck disable=SC2016
+          NOTES=$(printf 'Interim unsigned macOS agent. Download the tarball, extract, and run `sudo ./install.sh` as an admin.\n\n**SHA-256:** `%s  %s`\n\nVerify before installing:\n```sh\nshasum -a 256 -c SHA256SUMS\n```\n\nOr verify manually:\n```sh\necho '"'"'%s  %s'"'"' | shasum -a 256 -c\n```\n\nA %s.hmac asset carries the HMAC-SHA256 signature. Verify it with tools/verify-agent-release.py before deploying - see docs/agent-release-runbook.md for the full procedure.\n\nSuperseded by the signed .pkg path post-incorporation (PAT-7 / PAT-9).%s' \
+            "$SHA" "$TARBALL" "$SHA" "$TARBALL" "$TARBALL" "$PKG_NOTE")
+
+          NOTES=$(printf '**Channel:** beta\n\n**Installable version:** %s\n\n%s' "$V" "$NOTES")
+
+          # PAT-892: attach the .hmac signature asset when the sign step
+          # produced one. Not present on forks without ARTIFACT_SIGNING_KEY;
+          # the signing-expected gate above already hard fails the canonical
+          # repo in that case, so a missing file here is never silent on
+          # Patched-LTD/updater.
+          ASSETS=("$TARBALL" SHA256SUMS)
+          [ -f "$TARBALL.hmac" ] && ASSETS+=("$TARBALL.hmac")
+          # PAT-1073: attach the signed .pkg only when sign-pkg actually
+          # produced one (see the download step above) - never required,
+          # never faked when absent.
+          [ -f "$PKG" ] && ASSETS+=("$PKG")
+
+          gh release create "$TAG" \
+            "${ASSETS[@]}" \
+            --title "macOS agent $V (beta, interim unsigned)" \
+            --notes "$NOTES" \
+            --prerelease \
+            --verify-tag 2>/dev/null \
+          || gh release create "$TAG" \
+            "${ASSETS[@]}" \
+            --title "macOS agent $V (beta, interim unsigned)" \
+            --notes "$NOTES" \
+            --prerelease
+
+      - name: Setup Tailscale
+        uses: tailscale/github-action@780049a30b6ff5c378a9e7b389d15ece7a204888 # v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret:    ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Configure SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/box_key
+          chmod 600 ~/.ssh/box_key
+
+      - name: Upload beta tarball to authenticated artifact store
+        env:
+          ADMIN_API_URL: ${{ vars.ADMIN_API_URL }}
+        run: |
+          set -euo pipefail
+          V="${{ needs.build.outputs.version }}"
+          TARBALL="${{ needs.build.outputs.tarball }}"
+          test -n "$ADMIN_API_URL"
+          PROD01_IP=$(sudo "$(command -v tailscale)" ip -4 patched-prod-01)
+          REMOTE_SCRIPT_FILE="$RUNNER_TEMP/pat2003-macos-upload.sh"
+          cat <<'REMOTE_EOF' > "$REMOTE_SCRIPT_FILE"
+            set -eu
+            umask 0077
+            BODY_FILE=$(mktemp)
+            CFG_FILE=$(mktemp)
+            RESP_FILE=$(mktemp)
+            trap 'rm -f "$BODY_FILE" "$CFG_FILE" "$RESP_FILE"' EXIT
+            cat > "$BODY_FILE"
+            ADMIN_API_TOKEN=$(sed -n 's/^ADMIN_API_TOKEN=//p' /etc/patched-dashboard/dashboard.env | head -n 1 | tr -d '\r')
+            case "$ADMIN_API_TOKEN" in
+              \"*\") ADMIN_API_TOKEN=${ADMIN_API_TOKEN#\"}; ADMIN_API_TOKEN=${ADMIN_API_TOKEN%\"} ;;
+              \'*\') ADMIN_API_TOKEN=${ADMIN_API_TOKEN#\'}; ADMIN_API_TOKEN=${ADMIN_API_TOKEN%\'} ;;
+            esac
+            case "$ADMIN_API_TOKEN" in ''|*[!A-Za-z0-9._~-]*) exit 1 ;; esac
+            {
+              printf 'url = "__ADMIN_API_URL__/admin/agent-versions/macos/beta/__VERSION__/artifact"\n'
+              printf 'request = "PUT"\n'
+              printf 'header = "Content-Type: application/octet-stream"\n'
+              printf 'header = "Authorization: Bearer %s"\n' "$ADMIN_API_TOKEN"
+              printf 'data-binary = @%s\n' "$BODY_FILE"
+              printf 'silent\nshow-error\ninsecure\n'
+            } > "$CFG_FILE"
+            CODE=$(curl -K "$CFG_FILE" -o "$RESP_FILE" -w '%{http_code}')
+            [ "$CODE" -ge 200 ] && [ "$CODE" -lt 300 ] || { echo "beta artifact upload failed: HTTP $CODE"; head -c 300 "$RESP_FILE"; exit 1; }
+          REMOTE_EOF
+          REMOTE_SCRIPT=$(cat "$REMOTE_SCRIPT_FILE")
+          rm -f "$REMOTE_SCRIPT_FILE"
+          REMOTE_SCRIPT=${REMOTE_SCRIPT/__ADMIN_API_URL__/$ADMIN_API_URL}
+          REMOTE_SCRIPT=${REMOTE_SCRIPT/__VERSION__/$V}
+          cat "$TARBALL" | ssh -i ~/.ssh/box_key -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes root@"$PROD01_IP" "$REMOTE_SCRIPT"
+
+      - name: Register artifact with dashboard
+        env:
+          ADMIN_API_URL: ${{ vars.ADMIN_API_URL }}
+        run: |
+          V="${{ needs.build.outputs.version }}"
+          SHA="${{ needs.build.outputs.sha256 }}"
+          HMAC="${{ needs.build.outputs.artifact_hmac }}"
+          # Mac clients use the same authenticated artifact route as Windows;
+          # GitHub Releases remain an audit/download record, not the endpoint
+          # delivery path.
+          RELEASE_URL="https://api.patched.im/v1/agent/artifact/download?platform=macos&channel=beta&version=${V}"
+
+          if [ -z "$ADMIN_API_URL" ]; then
+            echo "::error::ADMIN_API_URL is not set - cannot register this release with the dashboard"
+            exit 1
+          fi
+
+          # Admin API is Tailscale-only; tag:ci cannot reach tag:api directly.
+          # SSH into prod-01 (tag:main, which can reach tag:api:8443) and curl from there.
+          # Caddy uses an internal CA cert — pass -k to skip cert verification.
+          PROD01_IP=$(sudo "$(command -v tailscale)" ip -4 patched-prod-01)
+
+          # PAT-987: POST /admin/agent-versions requires an Authorization
+          # header (requireAdminToken) - every call since 757ce5ba had been
+          # returning 401, silently, because `curl -sk` has no -f. Fix: the
+          # admin token never crosses the SSH boundary from CI. It is
+          # extracted on prod-01 itself from
+          # /etc/patched-dashboard/dashboard.env (root-only, mode 0600) and
+          # handed to curl via a 0600 config file - never as a CLI argument
+          # (so it never appears in `ps`), never echoed. All temp files are
+          # removed by trap on every exit path, including failure. The HTTP
+          # status is checked explicitly and any non-2xx response fails
+          # this job.
+          # NOTE: this heredoc is redirected to a file, not wrapped in
+          # $(cat <<'EOF' ... EOF). Bash's command-substitution parser does
+          # naive parenthesis counting even inside a quoted heredoc body -
+          # the unbalanced `)` characters in the `case` patterns below
+          # (e.g. \"*\") would be misread as closing the $( ) early,
+          # truncating the script and leaving the rest parsed as top-level
+          # shell code (syntax error at the first stray `;;`). A plain
+          # redirect has no such parsing risk; the file is read back into a
+          # variable via $(cat "$file") afterwards, which is safe because
+          # that substitution's body is just a path, not the script text.
+          REMOTE_SCRIPT_FILE="$RUNNER_TEMP/pat987-remote-register.sh"
+          cat <<'REMOTE_EOF' > "$REMOTE_SCRIPT_FILE"
+            set -eu
+            umask 0077
+            BODY_FILE=""
+            CFG_FILE=""
+            RESP_FILE=""
+            trap 'rm -f "$BODY_FILE" "$CFG_FILE" "$RESP_FILE"' EXIT
+            BODY_FILE=$(mktemp)
+            CFG_FILE=$(mktemp)
+            RESP_FILE=$(mktemp)
+
+            cat > "$BODY_FILE"
+
+            # dashboard.env is systemd EnvironmentFile= format, not shell
+            # syntax - other keys in it (e.g. TURNSTILE_SECRET) hold values
+            # with unescaped shell metacharacters, so `. dashboard.env`
+            # aborts under `set -eu` before ADMIN_API_TOKEN is ever set.
+            # Extract just this one key instead: no sourcing, no eval, no
+            # word splitting. Strip a single layer of surrounding quotes
+            # (systemd permits quoted values); tr -d '\r' clears any CR
+            # byte in the value (there's normally at most one, trailing,
+            # picked up from a CRLF-terminated file).
+            ADMIN_API_TOKEN=$(sed -n 's/^ADMIN_API_TOKEN=//p' /etc/patched-dashboard/dashboard.env | head -n 1 | tr -d '\r')
+            case "$ADMIN_API_TOKEN" in
+              \"*\") ADMIN_API_TOKEN=${ADMIN_API_TOKEN#\"}; ADMIN_API_TOKEN=${ADMIN_API_TOKEN%\"} ;;
+              \'*\') ADMIN_API_TOKEN=${ADMIN_API_TOKEN#\'}; ADMIN_API_TOKEN=${ADMIN_API_TOKEN%\'} ;;
+            esac
+            if [ -z "${ADMIN_API_TOKEN:-}" ]; then
+              echo "::error::ADMIN_API_TOKEN not found (or empty) in /etc/patched-dashboard/dashboard.env on prod-01"
+              exit 1
+            fi
+
+            # Defence in depth: refuse a credential outside a conservative
+            # expected alphabet rather than risk sending a header corrupted
+            # by curl's config-file quoting rules. A malformed token should
+            # be a loud failure here, not a 401 rediscovered later.
+            case "$ADMIN_API_TOKEN" in
+              *[!A-Za-z0-9._~-]*)
+                echo "::error::ADMIN_API_TOKEN contains unexpected characters - refusing to send a possibly-corrupted credential"
+                exit 1
+                ;;
+            esac
+
+            # curl's config-file grammar interprets backslash escapes
+            # inside double-quoted values (\\, \", \t, \n, \r, \v); an
+            # un-escaped token containing a backslash or double quote would
+            # be silently corrupted or inject control characters into the
+            # header. The alphabet check above already excludes both
+            # characters, but escape defensively anyway in case that check
+            # is ever loosened. (curl's unquoted config-value form was
+            # considered instead but rejected: it splits on whitespace, so
+            # a multi-word value like "Authorization: Bearer <token>"
+            # silently loses the header entirely - verified against a real
+            # curl binary during review.)
+            ESCAPED_TOKEN=$(printf '%s' "$ADMIN_API_TOKEN" | sed 's/\\/\\\\/g; s/"/\\"/g')
+
+            {
+              printf 'url = "__ADMIN_API_URL__/admin/agent-versions"\n'
+              printf 'request = "POST"\n'
+              printf 'header = "Content-Type: application/json"\n'
+              printf 'header = "Authorization: Bearer %s"\n' "$ESCAPED_TOKEN"
+              printf 'data-binary = @%s\n' "$BODY_FILE"
+              printf 'silent\n'
+              printf 'show-error\n'
+              printf 'insecure\n'
+            } > "$CFG_FILE"
+            chmod 600 "$CFG_FILE"
+
+            HTTP_CODE=$(curl -K "$CFG_FILE" -o "$RESP_FILE" -w '%{http_code}')
+            if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+              RESP_SIZE=$(wc -c < "$RESP_FILE" 2>/dev/null | tr -d ' ' || echo 0)
+              SNIPPET=$(head -c 300 "$RESP_FILE" 2>/dev/null | LC_ALL=C tr -c '[:print:]' ' ' | sed 's/::/: :/g')
+              echo "::error::Dashboard registration failed with HTTP $HTTP_CODE"
+              echo "Response snippet (first 300 bytes, sanitised): $SNIPPET"
+              if [ "$RESP_SIZE" -gt 300 ]; then
+                echo "(response truncated - $RESP_SIZE bytes total)"
+              fi
+              exit 1
+            fi
+            echo "Dashboard registration succeeded: HTTP $HTTP_CODE"
+          REMOTE_EOF
+          REMOTE_SCRIPT=$(cat "$REMOTE_SCRIPT_FILE")
+          rm -f "$REMOTE_SCRIPT_FILE"
+          REMOTE_SCRIPT="${REMOTE_SCRIPT/__ADMIN_API_URL__/$ADMIN_API_URL}"
+
+          python3 -c "import json,sys; print(json.dumps({
+            'platform':'macos','channel':'beta','version':sys.argv[1],
+            'artifact_url':sys.argv[2],'artifact_sha256':sys.argv[3],
+            'artifact_hmac':sys.argv[4],'released_by':'ci-github-actions'
+          }))" "$V" "$RELEASE_URL" "$SHA" "$HMAC" \
+          | ssh -i ~/.ssh/box_key \
+                -o StrictHostKeyChecking=accept-new \
+                -o IdentitiesOnly=yes \
+                root@"$PROD01_IP" \
+              "$REMOTE_SCRIPT"

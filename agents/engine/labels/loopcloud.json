@@ -1,0 +1,24 @@
+{
+  "label": "loopcloud",
+  "name": "Loopcloud",
+  "type": "pkginzip",
+  "app_path": "/Applications/Loopcloud.app",
+  "expected_team_id": "6J526HR25E",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.loopmasters.com/cloud/autoupdate/mac/release/appcast.xml"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

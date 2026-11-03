@@ -1,0 +1,22 @@
+{% extends "report_email_base.html" %}
+{% from "report_email_macros.html" import action %}
+{% block content %}
+<p style="margin:0 0 16px;color:#a15c07;font-weight:bold;">{{ stale_count }} not reporting | More than {{ threshold_days }} days</p>
+<p style="margin:0 0 20px;color:#334155;">The following {{ stale_count }} endpoint{{ 's' if stale_count != 1 else '' }} in your estate haven't checked in for more than {{ threshold_days }} days. Devices that stop reporting may be switched off, off the network, or no longer running the agent. Their compliance and patch status can't be verified until they check in again.</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:14px;color:#334155;">
+<caption style="text-align:left;font-weight:bold;padding-bottom:8px;color:#0f172a;">Stale endpoints</caption>
+<thead><tr>
+<th scope="col" width="42%" style="padding:10px 6px;text-align:left;background-color:#f1f5f9;border-bottom:1px solid #e2e8f0;">Device</th>
+<th scope="col" width="34%" style="padding:10px 6px;text-align:left;background-color:#f1f5f9;border-bottom:1px solid #e2e8f0;">Last seen</th>
+<th scope="col" width="24%" style="padding:10px 6px;text-align:left;background-color:#f1f5f9;border-bottom:1px solid #e2e8f0;">Days stale</th>
+</tr></thead><tbody>
+{% for d in devices %}<tr>
+<td style="padding:12px 6px;vertical-align:top;border-bottom:1px solid #e2e8f0;overflow-wrap:anywhere;word-wrap:break-word;word-break:break-word;">{{ d.hostname }}</td>
+<td style="padding:12px 6px;vertical-align:top;border-bottom:1px solid #e2e8f0;">{{ d.last_seen_date }}</td>
+<td style="padding:12px 6px;vertical-align:top;border-bottom:1px solid #e2e8f0;font-weight:bold;color:#a15c07;">{{ d.days_stale }}d</td>
+</tr>{% endfor %}
+</tbody></table>
+<p style="margin:20px 0 0;color:#334155;">Check whether these devices are still in use. If a device has been retired, let us know so it can be removed from your estate.</p>
+{{ action(console_url, "View device health") }}
+{% endblock %}
+{% block footer %}<p style="margin:8px 0 0;">Sent weekly when one or more endpoints stop reporting. To change these settings, contact Patched.</p>{% endblock %}

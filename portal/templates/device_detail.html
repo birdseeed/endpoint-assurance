@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% from "_macros.html" import assurance_badge, device_page_head, device_collection_issues, retirement_pills, device_result_notice %}
+{% block content %}
+{{ device_page_head(device, tabs, cve_tile, issues_tile) }}
+
+{{ device_result_notice(device_result) }}
+
+{{ device_collection_issues(degraded_health, compact=true) }}
+
+<section class="card device-card" aria-labelledby="device-card-title">
+  <h2 id="device-card-title" class="visually-hidden">Device</h2>
+  <div class="device-overview-grid">
+  <div class="device-card__col" id="identification" aria-labelledby="identification-title">
+    <h3 id="identification-title" class="visually-hidden">Identification</h3>
+    {% if not device_identity.present %}
+    <p class="empty">Identification is not available on this device page yet.</p>
+    {% else %}
+    {#- PAT-2256: one font rule for this block. Monospace is for identifiers
+        only (serial number, model identifier); dates, versions, names and the
+        freshness line are prose and stay in the system sans. -#}
+    <p class="evidence-inline">
+      <span class="pill pill-{{ 'ok' if device_identity.evidence.freshness == 'fresh' else 'warn' if device_identity.evidence.freshness == 'stale' else 'muted' }}">{{ device_identity.evidence.freshness | capitalize }}</span>
+      <span>Observed {% if device_identity.evidence.observed_at %}<time datetime="{{ device_identity.evidence.observed_at }}" title="{{ device_identity.evidence.observed_at }}">{{ device_identity.evidence.observed_at | humandate(true) }}</time>{% else %}Unknown{% endif %} (UTC)</span>
+    </p>
+    {% if device_identity.complete %}
+    <dl class="kv device-identity-facts">
+      <dt>Serial</dt><dd class="mono">{{ device_identity.serial or 'Not collected' }}</dd>
+      <dt>Model identifier</dt><dd class="mono">{{ device_identity.hardware_model or 'Not collected' }}</dd>
+      <dt>Computer name</dt><dd>{{ device_identity.computer_name or 'Not collected' }}</dd>
+      <dt>Architecture</dt><dd>{{ device_identity.architecture or 'Not collected' }}</dd>
+      <dt>Operating system</dt><dd>{{ device_identity.os_line or 'Not collected' }}</dd>
+      <dt>Agent version</dt><dd>{{ device_identity.agent_version or 'Not collected' }}</dd>
+      <dt>First seen</dt><dd>{% if device_identity.first_seen %}<time datetime="{{ device_identity.first_seen }}" title="{{ device_identity.first_seen }}">{{ device_identity.first_seen | humandate(true) }}</time>{% else %}Not collected{% endif %}</dd>
+      <dt>Last seen</dt><dd>{% if device_identity.last_seen %}<time datetime="{{ device_identity.last_seen }}" title="{{ device_identity.last_seen }}">{{ device_identity.last_seen | humandate(true) }}</time>{% else %}Not collected{% endif %}</dd>
+    </dl>
+    {% else %}
+    <p class="empty">{{ device_identity.status_label }}. This device has not sent an inventory report yet.</p>
+    {% endif %}
+    {% endif %}
+  </div>
+  <div class="device-card__col device-assurance" id="device-assurance" aria-labelledby="device-assurance-title">
+    <h3 id="device-assurance-title" class="device-card__subhead">Device assurance</h3>
+  {% set dt = device | device_type %}
+  <dl class="kv">
+    {% if dt.label %}<dt>Type</dt><dd>{{ dt.label }}</dd>{% endif %}
+    {% if dt.os_name %}<dt>Windows version</dt><dd>{{ dt.os_name }}{% if device.os_version %} &middot; <span class="nowrap">{{ device.os_version }}</span>{% endif %}</dd>{% endif %}
+    {#- PAT-2256: the score is the same percentage the Devices list shows. -#}
+    <dt>CIS Level 1 score</dt><dd>{% if dt.is_server %}<span class="note-muted">Not available for servers yet</span>{% else %}{{ ((device.cis_score | round | int) ~ '%') if device.cis_score is not none else '-' }}{% endif %}</dd>
+    <dt>Disk encryption</dt><dd>{{ assurance_badge(device.encryption_ok, 'Encrypted', 'pill-ok', 'Not encrypted', 'pill-bad', 'Not assessed', 'Encryption', device.is_stale) }}</dd>
+    {#- PAT-2297: the platform projects update evidence for either OS. Device
+        reporting staleness is separate and still takes priority. -#}
+    <dt>Update state</dt><dd>{% if not device.is_stale and device.patch_pending is not boolean %}<span class="note-muted">This device hasn't reported a recent update state.</span>{% else %}{{ assurance_badge(device.patch_pending, 'Updates pending', 'pill-warn', 'Up to date', 'pill-ok', "This device hasn't reported a recent update state.", 'Update', device.is_stale) }}{% endif %}</dd>
+  </dl>
+  </div>
+  </div>
+  {#- PAT-2135: retire/unretire lives here, the primary place - a compact
+      action area within the Device card, not its own top-level page. -#}
+  <div class="device-card__col" id="retirement" aria-labelledby="retirement-title">
+    <h3 id="retirement-title" class="device-card__subhead">Retirement</h3>
+    {% if device.retirement_view.retired %}
+    <p class="evidence-inline">
+      {{ retirement_pills(device.retirement_view) }}
+    </p>
+    {% if device.retirement_view.retired_by or device.retirement_view.reason %}
+    <p class="meta">{% if device.retirement_view.retired_by %}Retired by {{ device.retirement_view.retired_by }}.{% endif %}{% if device.retirement_view.reason %} {{ device.retirement_view.reason }}{% endif %}</p>
+    {% endif %}
+    {% if can_edit %}
+    <details class="retire-panel">
+      <summary class="ask-link">Return to active &rarr;</summary>
+      <form class="retire-form" method="post" action="/devices/retirement">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="device_id" value="{{ device.device_id }}">
+        <input type="hidden" name="return_to" value="{{ return_to }}">
+        <input type="hidden" name="retired" value="false">
+        <label class="visually-hidden" for="unretire-reason">Reason (optional)</label>
+        <input class="search retire-form__note" type="text" id="unretire-reason" name="reason" maxlength="500" placeholder="Reason (optional)" autocomplete="off">
+        <button type="submit" class="btn btn-small">Return to active</button>
+      </form>
+    </details>
+    {% elif role_unavailable %}
+    <p class="empty">Your role could not be checked, so retirement controls are not shown right now.</p>
+    {% endif %}
+    {% else %}
+    <p class="meta">Active. Retirement keeps the device and records the decision in its history and future reports.</p>
+    {% if can_edit %}
+    <details class="retire-panel">
+      <summary class="ask-link">Retire device &rarr;</summary>
+      <form class="retire-form" method="post" action="/devices/retirement">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="device_id" value="{{ device.device_id }}">
+        <input type="hidden" name="return_to" value="{{ return_to }}">
+        <input type="hidden" name="retired" value="true">
+        <label class="visually-hidden" for="retire-reason">Reason (optional)</label>
+        <input class="search retire-form__note" type="text" id="retire-reason" name="reason" maxlength="500" placeholder="Reason (optional)" autocomplete="off">
+        <button type="submit" class="btn btn-small">Retire device</button>
+      </form>
+    </details>
+    {% elif role_unavailable %}
+    <p class="empty">Your role could not be checked, so retirement controls are not shown right now.</p>
+    {% endif %}
+    {% endif %}
+    {% if retirement_history %}
+    <details class="retire-history">
+      <summary>Retirement history ({{ retirement_history | length }})</summary>
+      <ul class="retire-history__list">
+        {% for h in retirement_history %}
+        <li><span class="pill pill-muted">{{ 'Retired' if h.action == 'retire' else 'Returned to active' }}</span> <span class="mono">{{ h.decided_at | humandate(true) if h.decided_at else 'Unknown date' }} UTC</span> by {{ h.actor_email or 'unknown' }}{% if h.reason %} - {{ h.reason }}{% endif %}</li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

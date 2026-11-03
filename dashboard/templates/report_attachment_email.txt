@@ -1,0 +1,6 @@
+{{ report_label }} | {{ tenant_name }}
+{{ period }}
+
+Please find your {{ report_label }} for {{ tenant_name }} attached as a PDF.
+
+Patched | {{ tenant_name }}

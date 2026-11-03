@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patched.im/schemas/uninstall-status.schema.json",
+  "title": "Patched Uninstall Engine — endpoint uninstall status",
+  "description": "Written atomically to /Library/Application Support/Patched/uninstall-status.json by patched-uninstall.sh after each run. World-readable (mode 644). Mirrors the update-status.json pattern.",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "last_run", "removals"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "last_run": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "started_at": { "type": "string", "format": "date-time" },
+        "finished_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "removals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["entry_id", "name", "outcome", "verify_result", "method", "recorded_at"],
+        "additionalProperties": false,
+        "properties": {
+          "entry_id": {
+            "type": "integer",
+            "description": "tenant_allowlists.id from the platform allowlist store (PAT-375). 0 is the sentinel when an uninstall trigger was refused before tenant allowlist resolution, so no tenant_allowlists row was inspected or selected."
+          },
+          "name": { "type": "string", "description": "App name as it appears in the allowlist entry." },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "removed",
+              "removed_residual",
+              "already_removed",
+              "manual_removal_required",
+              "deferred_app_running",
+              "failed_transient",
+              "failed_hard",
+              "authority_refused",
+              "skipped_baseline_protected",
+              "unknown"
+            ],
+            "description": "removed: gone+verified. removed_residual: app bundle gone but receipts remain. already_removed: not present at run time. manual_removal_required: no method resolved. deferred_app_running: app was running and did not quit; retry next cycle. failed_transient: still present; classified as transient (retry next cycle). failed_hard: still present; OS-protected or MDM-managed. authority_refused: signed execution authority was absent, stale or revoked; terminal and not retryable as an app-running condition. skipped_baseline_protected: safety guard prevented removal of an Apple/MS baseline app."
+          },
+          "verify_result": {
+            "type": ["string", "null"],
+            "enum": ["gone", "residual", "still_present", "not_checked", null],
+            "description": "Result of post-execution re-inspection. not_checked when removal was not attempted."
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "pkg_receipts", "vendor_uninstaller", "catalogue", "app_bundle",
+              "registry_quiet_uninstall", "registry_uninstall", "winget", "msi",
+              "none", "unresolvable"
+            ],
+            "description": "Resolved removal method. macOS: pkg_receipts | vendor_uninstaller | app_bundle. Windows (PAT-379): registry_quiet_uninstall | registry_uninstall | winget | msi. catalogue and none/unresolvable are shared. none when no attempt was made."
+          },
+          "recorded_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

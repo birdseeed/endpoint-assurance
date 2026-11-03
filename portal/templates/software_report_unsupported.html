@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% from "_macros.html" import kpi_summary %}
+{% block content %}
+<p class="crumb"><a href="/reports">Reports</a> / Unsupported software</p>
+<div class="page-head">
+  <h1>Unsupported software</h1>
+  <p class="meta">Every installed product and operating system version past its vendor's end of support, or within 90 days of it, by device. Cyber Essentials requires in-scope software to be supported.</p>
+</div>
+
+{% call kpi_summary(summary.kpi_items, summary.installation_count ~ ' installation' ~ ('' if summary.installation_count == 1 else 's') ~ ' assessed in total, across every state below.') %}<a class="btn btn-small" href="{{ pdf_url }}">Download PDF</a> <a class="btn btn-small" href="{{ csv_url }}">Download CSV</a>{% endcall %}
+
+<div class="card" aria-labelledby="sam-basis-title">
+  <h2 id="sam-basis-title">Basis</h2>
+  {% if not basis.complete %}
+  <div class="notice">Coverage is partial. {{ basis.statement }}</div>
+  {% elif basis.statement %}
+  <p class="meta">{{ basis.statement }}</p>
+  {% endif %}
+  <dl class="kv">
+    <dt>Evidence collected</dt>
+    <dd class="mono">{% if basis.evidence_oldest_at %}{{ basis.evidence_oldest_at | humandate_nowrap(true) }}{% else %}Unknown{% endif %} to {% if basis.evidence_newest_at %}{{ basis.evidence_newest_at | humandate_nowrap(true) }}{% else %}Unknown{% endif %} (UTC)</dd>
+    <dt>Devices assessed</dt>
+    <dd>{{ basis.devices_assessed if basis.devices_assessed is not none else 'Unknown' }} of {{ basis.devices_total if basis.devices_total is not none else 'Unknown' }}</dd>
+    <dt>Stale devices included</dt>
+    <dd>{{ basis.devices_stale if basis.devices_stale is not none else 'Unknown' }}</dd>
+    {% if basis.retired_devices_excluded %}
+    <dt>Retired devices excluded</dt>
+    <dd>{{ basis.devices_retired if basis.devices_retired is not none else 0 }}</dd>
+    {% endif %}
+    <dt>Lifecycle source</dt>
+    <dd>{{ basis.lifecycle_source or 'Unknown' }}</dd>
+    <dt>Lifecycle last checked</dt>
+    <dd class="mono">{% if basis.lifecycle_checked_oldest_at %}{{ basis.lifecycle_checked_oldest_at | humandate_nowrap(true) }}{% else %}-{% endif %} to {% if basis.lifecycle_checked_newest_at %}{{ basis.lifecycle_checked_newest_at | humandate_nowrap(true) }}{% else %}-{% endif %} (UTC)</dd>
+  </dl>
+  {% if basis.not_counted %}
+  <p class="meta">Not counted in this report, and why:</p>
+  <ul>
+    {% for item in basis.not_counted %}
+    <li>{{ item.description or item.reason }}{% if item.count %} ({{ item.count }}){% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+
+{% if cyber_essentials %}
+<div class="card" aria-labelledby="sam-ce-title">
+  <h2 id="sam-ce-title">Cyber Essentials</h2>
+  <p>{{ cyber_essentials.statement }}</p>
+  <p class="meta">
+    {{ cyber_essentials.unsupported_installation_count if cyber_essentials.unsupported_installation_count is not none else 'An unknown number of' }} install{{ '' if cyber_essentials.unsupported_installation_count == 1 else 's' }} unsupported across {{ cyber_essentials.devices_with_unsupported_software if cyber_essentials.devices_with_unsupported_software is not none else 'an unknown number of' }} device{{ '' if cyber_essentials.devices_with_unsupported_software == 1 else 's' }}{% if cyber_essentials.devices_assessed is not none %} (of {{ cyber_essentials.devices_assessed }} assessed){% endif %}.
+    {%- if cyber_essentials.devices_with_unknown_support %} Support could not be determined for {{ cyber_essentials.devices_with_unknown_support }} device{{ '' if cyber_essentials.devices_with_unknown_support == 1 else 's' }}, which is not evidence they are compliant.{% endif %}
+  </p>
+</div>
+{% else %}
+<div class="card" aria-labelledby="sam-ce-title">
+  <h2 id="sam-ce-title">Cyber Essentials</h2>
+  <p class="empty">Cyber Essentials evidence is not available right now.</p>
+</div>
+{% endif %}
+
+<nav class="view-tabs" aria-label="Filter by state">
+  <a href="{{ filter_urls[''] }}"{% if not state_filter %} class="tab-active" aria-current="true"{% endif %}>All</a>
+  {% for s in summary.states %}
+  <a href="{{ filter_urls[s.state] }}"{% if state_filter == s.state %} class="tab-active" aria-current="true"{% endif %}>{{ s.label }} ({{ s.installation_count }})</a>
+  {% endfor %}
+</nav>
+
+<div class="card card-table">
+  {% if products %}
+  <div class="table-scroll">
+  <table class="data-table table-stack" id="sam-products-table">
+    <colgroup>
+      <col><col><col class="col-secondary"><col><col><col><col class="col-secondary"><col>
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Product</th><th>Version</th><th class="col-secondary">Platform</th><th>State</th>
+        <th>End of support</th><th>Devices</th><th class="col-secondary">Source</th><th>Last checked</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in products %}
+      <tr>
+        <td data-label="Product">
+          <a class="cell-anywrap" href="{{ p.devices_url }}">{{ p.name }}</a>
+          <span class="cell-subtle">{{ p.kind_label }}{% if p.edition %} &middot; {{ p.edition }}{% endif %}</span>
+          {% if p.unknown_reason_text %}<span class="cell-subtle">{{ p.unknown_reason_text }}</span>{% endif %}
+          {% if p.note %}<span class="cell-subtle">{{ p.note }}</span>{% endif %}
+        </td>
+        <td class="mono" data-label="Version">{{ p.version or '-' }}</td>
+        <td class="col-secondary" data-label="Platform">{{ p.platform | platform_display if p.platform else '-' }}</td>
+        <td data-label="State"><span class="pill {{ p.pill_class }}">{{ p.state_label }}</span></td>
+        <td class="mono" data-label="End of support"><span class="nowrap">{{ p.eol_date or '-' }}</span></td>
+        <td data-label="Devices">{{ p.device_count }}{% if p.stale_device_count %} <span class="cell-subtle">({{ p.stale_device_count }} stale)</span>{% endif %}</td>
+        <td class="col-secondary" data-label="Source">{% if p.source_url %}<a href="{{ p.source_url }}" target="_blank" rel="noopener noreferrer">{{ p.source_name }}</a>{% else %}{{ p.source_name or '-' }}{% endif %}</td>
+        <td class="mono cell-evidence" data-label="Last checked">
+          {%- if p.last_checked_at -%}
+          <span class="cell-evidence__main nowrap">{{ p.last_checked_at | humandate }}</span><span class="cell-subtle">{{ p.last_checked_at | humantime }} UTC</span>
+          {%- else -%}-{%- endif -%}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">No products match this filter.</p>
+  {% endif %}
+</div>
+
+{% if total_pages > 1 %}
+<nav class="pager" aria-label="Unsupported software pages">
+  {% if page > 1 %}
+  <a class="btn btn-small" href="{{ prev_url }}">&larr; Previous</a>
+  {% else %}
+  <span class="btn btn-small btn-disabled" aria-disabled="true">&larr; Previous</span>
+  {% endif %}
+  <span class="pager-status">Page {{ page }} of {{ total_pages }}</span>
+  {% if page < total_pages %}
+  <a class="btn btn-small" href="{{ next_url }}">Next &rarr;</a>
+  {% else %}
+  <span class="btn btn-small btn-disabled" aria-disabled="true">Next &rarr;</span>
+  {% endif %}
+</nav>
+{% endif %}
+<p class="toolbar-hint">This is an estimate from the software and operating system versions your devices reported, compared with public end of support dates. It is not an audit or a compliance position.</p>
+{% endblock %}

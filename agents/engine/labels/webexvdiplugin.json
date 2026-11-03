@@ -1,0 +1,24 @@
+{
+  "label": "webexvdiplugin",
+  "name": "Cisco Webex VDI Plugin",
+  "type": "pkg",
+  "app_path": "/Applications/Cisco Webex VDI Plugin.app",
+  "expected_team_id": "DE8Y96K9QP",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://help.webex.com/en-us/article/ntp1us7/Webex-App-%7C-VDI-release-notes#reference-template_e92f9ad6-4f8c-4f69-b967-8615da1788ad"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

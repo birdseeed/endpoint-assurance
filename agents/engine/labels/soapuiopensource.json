@@ -1,0 +1,24 @@
+{
+  "label": "soapuiopensource",
+  "name": "SoapUI",
+  "type": "dmg",
+  "app_path": "/Applications/SoapUI.app",
+  "expected_team_id": "HVA5GNL2LF",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://github.com/SmartBear/soapui/releases/latest"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

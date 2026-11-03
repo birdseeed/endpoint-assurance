@@ -1,0 +1,27 @@
+name: test-trigger-parsing
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'endpoint/patched-update.sh'
+      - 'endpoint/test-trigger-parsing.zsh'
+      - 'endpoint/test-os-update-state.zsh'
+  pull_request:
+    paths:
+      - 'endpoint/patched-update.sh'
+      - 'endpoint/test-trigger-parsing.zsh'
+      - 'endpoint/test-os-update-state.zsh'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh (trigger-parsing tests exercise a real zsh script)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run trigger-parsing tests
+        run: zsh endpoint/test-trigger-parsing.zsh
+      # PAT-2133: section 3b never reads up_to_date when the latest version is unknown.
+      - name: Run os_update state tests
+        run: zsh endpoint/test-os-update-state.zsh

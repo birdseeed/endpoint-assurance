@@ -1,0 +1,24 @@
+{
+  "label": "sdnotary",
+  "name": "SD Notary",
+  "type": "zip",
+  "app_path": "/Applications/SD Notary.app",
+  "expected_team_id": "Z7S6X96M3X",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://latenightsw.com/sd-notary-notarizing-made-easy/"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

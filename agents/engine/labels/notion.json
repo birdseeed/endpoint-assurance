@@ -1,0 +1,33 @@
+{
+  "label": "notion",
+  "name": "Notion",
+  "type": "dmg",
+  "app_path": "/Applications/Notion.app",
+  "expected_team_id": "LBQJ96FQ8D",
+  "download": {
+    "method": "static",
+    "url": "https://www.notion.so/desktop/mac/download"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [
+    "Notion"
+  ],
+  "pinned_sha256": null,
+  "cross_hash_sources": [
+    {
+      "type": "homebrew_cask",
+      "id": "notion"
+    }
+  ],
+  "patched": {
+    "allowlisted": true,
+    "mirror": false,
+    "tier": "standard",
+    "reviewed_by": "andy",
+    "reviewed_at": null,
+    "notes": "Stable redirect URL (307 to versioned CDN DMG). Previous URL (desktop-release.notion-static.com/Notion-universal-latest.dmg) went 404. Team ID LBQJ96FQ8D confirmed against Apple (codesign + spctl). Notarized.",
+    "mirror_eula_approved": false
+  }
+}

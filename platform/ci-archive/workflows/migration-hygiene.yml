@@ -1,0 +1,30 @@
+name: migration-hygiene
+
+# M — migration hygiene. Forward-only: enforce unique version numbers,
+# transaction wrapping, and schema_migrations bookkeeping on NEW migrations
+# (version > 0055). Historical duplicates/omissions are grandfathered — see
+# go-service/migrations/README.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'go-service/migrations/**'
+      - '.github/workflows/migration-hygiene.yml'
+  pull_request:
+    paths:
+      - 'go-service/migrations/**'
+      - '.github/workflows/migration-hygiene.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: shellcheck the guard
+        run: shellcheck go-service/migrations/check-hygiene.sh
+      - name: Check migration hygiene
+        run: bash go-service/migrations/check-hygiene.sh

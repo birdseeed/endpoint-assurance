@@ -1,0 +1,25 @@
+{
+  "label": "lastpass",
+  "name": "LastPass",
+  "type": "dmg",
+  "app_path": "/Applications/LastPass.app",
+  "expected_team_id": "N24REP3BMN",
+  "download": {
+    "method": "static",
+    "url": "https://download.cloud.lastpass.com/mac/LastPass.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true.",
+    "mirror_eula_approved": false,
+    "ring_policy": "immediate"
+  }
+}

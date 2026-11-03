@@ -1,0 +1,38 @@
+{
+  "_comment": "Tests the empty-array vs absent-key distinction. security_tools/system_extensions/background_items/apps/certificates/patches are present but empty — distinct from absent. pending_updates is intentionally absent (not present at all). The extractor draws different conclusions: present-empty can mean prune-all (certificates) or upsert-nothing (apps); absent means no-op.",
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.3.0",
+  "tenant_id": "88888888-8888-8888-8888-888888888888",
+  "collected_at": "2026-12-01T00:00:00Z",
+  "device": {
+    "serial": "C00000000002",
+    "hw_uuid": "22222222-AAAA-BBBB-CCCC-DDDDDDDDDDDD",
+    "hostname": "empty-arrays-host",
+    "hw_model": "Mac14,2",
+    "arch": "arm64",
+    "last_boot": "2026-12-01T00:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M2",
+    "cpu_cores": 8,
+    "ram_gb": 8,
+    "disk_total_gb": 256.0,
+    "disk_free_gb": 128.0
+  },
+  "os": {
+    "name": "macOS",
+    "version": "15.4.1",
+    "build": "24E263"
+  },
+  "compliance": {},
+  "security_tools": [],
+  "system_extensions": [],
+  "background_items": [],
+  "icloud": {
+    "signed_in": "Unknown"
+  },
+  "apps": [],
+  "patches": [],
+  "certificates": []
+}

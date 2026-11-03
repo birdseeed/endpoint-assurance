@@ -1,0 +1,56 @@
+name: semgrep-swift
+
+# Semgrep SAST for the Swift menubar + Self Service app (PAT-510).
+# No build step required — Semgrep analyses source files directly.
+# Rules: p/swift (injection, insecure crypto, URL construction from untrusted
+# input) + p/secrets (hardcoded credentials).
+#
+# Results are uploaded as a SARIF artifact. Currently non-blocking (exit 0)
+# to allow initial triage of findings. Once findings are suppressed or fixed,
+# uncomment `--error` to make the gate blocking.
+
+on:
+  push:
+    branches: [main]
+    paths: ['menubar/**']
+  pull_request:
+    paths: ['menubar/**']
+  schedule:
+    - cron: '0 6 * * 1'
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install semgrep
+        run: pip install semgrep
+
+      - name: Scan Swift (p/swift)
+        run: |
+          semgrep scan \
+            --config p/swift \
+            --sarif \
+            --output semgrep-swift.sarif \
+            menubar/ || true
+
+      - name: Scan for hardcoded secrets
+        run: |
+          semgrep scan \
+            --config p/secrets \
+            --sarif \
+            --output semgrep-secrets.sarif \
+            menubar/ || true
+
+      - name: Upload SARIF artifacts
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: semgrep-swift-sarif
+          path: |
+            semgrep-swift.sarif
+            semgrep-secrets.sarif

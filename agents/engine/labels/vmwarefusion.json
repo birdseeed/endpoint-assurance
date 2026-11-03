@@ -1,0 +1,26 @@
+{
+  "label": "vmwarefusion",
+  "name": "VMware Fusion",
+  "type": "dmg",
+  "app_path": "/Applications/VMware Fusion.app",
+  "expected_team_id": "EG7KH642X6",
+  "download": {
+    "method": "static",
+    "url": "https://www.vmware.com/go/getfusion"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "mirror_eula_approved": true,
+    "vendor_only": true,
+    "vendor_only_reason": "vendor-cdn-versioned-path-no-static-checksum",
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "PAT-662: mirror_eula_approved=true — artifact size was previously hitting the 400 MB cap; cap raised to 2 GB. VMware Fusion DMG is several GB. VMware Fusion is free for personal and commercial use since November 2023. PAT-719: vendor_only=true — download URL https://www.vmware.com/go/getfusion redirects to a versioned path at download3.vmware.com (e.g. /software/FUS-1351/VMware-Fusion-X.Y.Z-BUILD_universal.dmg) that changes with each release; no static SHA-256 corroboration source exists. Cannot be mirrored until Broadcom exposes a stable checksum endpoint. The go/getfusion URL itself resolves correctly; the DOWNLOAD_ERROR in run 28757023812 was a transient GHA DNS failure. PAT-1380 (2026-08-15): alerted again under catalogue-scope verification (PAT-1296), same error shape ('URLError: ... nodename nor servname provided, or not known'). This time it is not runner-local flake -- reproduced live from a different network entirely, and traced past this agent to the exact hop: www.vmware.com/go/getfusion redirects fine (HTTP 301, confirmed live) to https://download3.vmware.com/software/FUS-1351/VMware-Fusion-13.5.1-23298085_universal.dmg, but download3.vmware.com itself does not resolve -- confirmed NXDOMAIN against three independent public resolvers (1.1.1.1, 8.8.8.8, 9.9.9.9), not just the local one. download1/2/4.vmware.com all resolve fine, so this looks like a real, narrow vendor-side DNS gap on that one CDN alias, not a broad outage and not anything on Patched's end. Nothing to fix in this label -- the declared URL is correct and the redirect it produces is correct; the break is one hop further, entirely outside this record. Left alerting: re-check on the next scheduled run, and if download3.vmware.com is still unresolvable after a few cycles, this needs escalating to VMware/Broadcom directly since there is no way to route around a redirect target the vendor controls."
+  }
+}

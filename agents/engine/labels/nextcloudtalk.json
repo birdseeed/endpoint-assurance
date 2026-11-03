@@ -1,0 +1,23 @@
+{
+  "label": "nextcloudtalk",
+  "name": "Nextcloud Talk",
+  "type": "dmg",
+  "app_path": "/Applications/Nextcloud Talk.app",
+  "expected_team_id": "NKUJUXUJ3B",
+  "download": {
+    "method": "static",
+    "url": "https://github.com/nextcloud-releases/talk-desktop/releases/latest/download/Nextcloud.Talk-macos-universal.dmg"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

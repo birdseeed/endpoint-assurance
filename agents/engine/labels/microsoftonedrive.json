@@ -1,0 +1,25 @@
+{
+  "label": "microsoftonedrive",
+  "name": "OneDrive",
+  "type": "pkg",
+  "app_path": "/Applications/OneDrive.app",
+  "expected_team_id": "UBF8T346G9",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://oneclient.sfx.ms/Mac/Prod/b9de6823d5a66c7cc845b2dbf90f4935c002aeaf.xml"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true.",
+    "mirror_eula_approved": false
+  }
+}

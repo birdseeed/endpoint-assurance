@@ -1,0 +1,249 @@
+/*
+ * Patched Brand Kit v3.0.0 - Brand v3 (PAT-2180)
+ * GENERATED from kit/tokens.json by tools/brand-v3/build_tokens.py. Do not edit by hand.
+ *
+ * Light values are in :root. Dark values apply via prefers-color-scheme
+ * and [data-theme="dark"] / .dark on <html>. Invariant values (brand blue
+ * ramp, navy, signal, fonts, radii, shadows) do not change with the theme.
+ *
+ * Blue is the primary brand and action colour. Navy/slate are structure.
+ * Signal orange is rationed emphasis, never a status. Status and severity
+ * tokens are semantic and never borrow a brand colour.
+ * Migration from v2 (ring mark, orange primary): see guidelines/brand-v3.md.
+ */
+
+:root {
+  --blue-50: #EFF6FF;
+  --blue-100: #DBEAFE;
+  --blue-400: #60A5FA;
+  --blue-500: #3B82F6;
+  --blue-600: #2563EB;
+  --blue-700: #1D4ED8;
+  --blue-800: #1E40AF;
+  --cyan-400: #22D3EE;
+  --navy: #0F172A;
+  --navy-2: #1E293B;
+  --navy-rule: rgba(255, 255, 255, 0.12);
+  --signal: #F5530A;
+  --signal-deep: #C93F04;
+  --brand-gradient: linear-gradient(135deg, #2563EB 0%, #3B82F6 55%, #22D3EE 100%);
+  --font-display: Inter, "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: Inter, "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.05), 0 8px 24px -12px rgba(15, 23, 42, 0.14);
+  --shadow-float: 0 2px 6px rgba(15, 23, 42, 0.06), 0 32px 64px -28px rgba(15, 23, 42, 0.38);
+
+  --snow: #FFFFFF;
+  --paper: #F8FAFC;
+  --slate: #0F172A;
+  --graphite: #334155;
+  --mute: #6B7280;
+  --slate-100: #F1F5F9;
+  --slate-200: #E2E8F0;
+  --slate-400: #94A3B8;
+  --slate-600: #475569;
+  --slate-800: #1E293B;
+  --slate-900: #0F172A;
+  --rule: rgba(15, 23, 42, 0.12);
+  --hair: rgba(15, 23, 42, 0.07);
+  --blue: #2563EB;
+  --blue-hover: #1D4ED8;
+  --blue-press: #1E40AF;
+  --blue-wash: rgba(37, 99, 235, 0.08);
+  --on-blue: #FFFFFF;
+  --signal-wash: rgba(245, 83, 10, 0.08);
+  --success: #15803D;
+  --success-solid: #16A34A;
+  --success-wash: rgba(22, 163, 74, 0.08);
+  --warning: #A15C07;
+  --warning-solid: #F59E0B;
+  --warning-wash: rgba(245, 158, 11, 0.12);
+  --danger: #B91C1C;
+  --danger-solid: #DC2626;
+  --danger-wash: rgba(220, 38, 38, 0.08);
+  --info: #0369A1;
+  --info-solid: #0EA5E9;
+  --info-wash: rgba(14, 165, 233, 0.10);
+  --unknown: #6D4FC2;
+  --unknown-wash: rgba(109, 79, 194, 0.09);
+  --not-assessed: #64748B;
+  --neutral: #6B7280;
+  --neutral-wash: rgba(15, 23, 42, 0.05);
+  --disabled: #94A3B8;
+  --sev-critical: #B91C1C;
+  --sev-high: #C2410C;
+  --sev-medium: #854D0E;
+  --sev-low: #475569;
+  --surface-inverse: #0F172A;
+
+  --primary: var(--blue);
+  --primary-hover: var(--blue-hover);
+  --primary-press: var(--blue-press);
+  --primary-wash: var(--blue-wash);
+  --on-primary: var(--on-blue);
+  --link: var(--blue);
+  --link-hover: var(--blue-hover);
+  --focus-ring: var(--blue);
+  --nav-active: var(--blue);
+  --nav-active-wash: var(--blue-wash);
+  --accent: var(--primary);
+  --accent-press: var(--primary-press);
+  --accent-wash: var(--primary-wash);
+  --surface: var(--snow);
+  --surface-sunken: var(--paper);
+  --surface-card: var(--snow);
+  --text-strong: var(--slate);
+  --text-body: var(--graphite);
+  --text-muted: var(--mute);
+  --text-on-dark: #FFFFFF;
+  --border: var(--rule);
+  --border-faint: var(--hair);
+  --uv: var(--signal);
+  --uv-deep: var(--signal-deep);
+  --uv-wash: var(--signal-wash);
+  --cell-closed: var(--slate);
+  --cell-closing: var(--blue);
+  --cell-open: var(--hair);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --snow: #0F172A;
+    --paper: #1E293B;
+    --slate: #F8FAFC;
+    --graphite: #CBD5E1;
+    --mute: #94A3B8;
+    --slate-100: #1E293B;
+    --slate-200: #334155;
+    --slate-400: #64748B;
+    --slate-600: #94A3B8;
+    --slate-800: #E2E8F0;
+    --slate-900: #F8FAFC;
+    --rule: rgba(255, 255, 255, 0.12);
+    --hair: rgba(255, 255, 255, 0.07);
+    --blue: #60A5FA;
+    --blue-hover: #93C5FD;
+    --blue-press: #BFDBFE;
+    --blue-wash: rgba(96, 165, 250, 0.14);
+    --on-blue: #0F172A;
+    --signal-wash: rgba(245, 83, 10, 0.12);
+    --success: #4ADE80;
+    --success-solid: #16A34A;
+    --success-wash: rgba(74, 222, 128, 0.14);
+    --warning: #FBBF24;
+    --warning-solid: #F59E0B;
+    --warning-wash: rgba(251, 191, 36, 0.14);
+    --danger: #F87171;
+    --danger-solid: #DC2626;
+    --danger-wash: rgba(248, 113, 113, 0.14);
+    --info: #38BDF8;
+    --info-solid: #0EA5E9;
+    --info-wash: rgba(56, 189, 248, 0.14);
+    --unknown: #B4A2F5;
+    --unknown-wash: rgba(180, 162, 245, 0.14);
+    --not-assessed: #94A3B8;
+    --neutral: #94A3B8;
+    --neutral-wash: rgba(255, 255, 255, 0.06);
+    --disabled: #64748B;
+    --sev-critical: #F87171;
+    --sev-high: #FB923C;
+    --sev-medium: #FBBF24;
+    --sev-low: #94A3B8;
+    --surface-inverse: #020617;
+  }
+}
+
+[data-theme="light"] {
+  --snow: #FFFFFF;
+  --paper: #F8FAFC;
+  --slate: #0F172A;
+  --graphite: #334155;
+  --mute: #6B7280;
+  --slate-100: #F1F5F9;
+  --slate-200: #E2E8F0;
+  --slate-400: #94A3B8;
+  --slate-600: #475569;
+  --slate-800: #1E293B;
+  --slate-900: #0F172A;
+  --rule: rgba(15, 23, 42, 0.12);
+  --hair: rgba(15, 23, 42, 0.07);
+  --blue: #2563EB;
+  --blue-hover: #1D4ED8;
+  --blue-press: #1E40AF;
+  --blue-wash: rgba(37, 99, 235, 0.08);
+  --on-blue: #FFFFFF;
+  --signal-wash: rgba(245, 83, 10, 0.08);
+  --success: #15803D;
+  --success-solid: #16A34A;
+  --success-wash: rgba(22, 163, 74, 0.08);
+  --warning: #A15C07;
+  --warning-solid: #F59E0B;
+  --warning-wash: rgba(245, 158, 11, 0.12);
+  --danger: #B91C1C;
+  --danger-solid: #DC2626;
+  --danger-wash: rgba(220, 38, 38, 0.08);
+  --info: #0369A1;
+  --info-solid: #0EA5E9;
+  --info-wash: rgba(14, 165, 233, 0.10);
+  --unknown: #6D4FC2;
+  --unknown-wash: rgba(109, 79, 194, 0.09);
+  --not-assessed: #64748B;
+  --neutral: #6B7280;
+  --neutral-wash: rgba(15, 23, 42, 0.05);
+  --disabled: #94A3B8;
+  --sev-critical: #B91C1C;
+  --sev-high: #C2410C;
+  --sev-medium: #854D0E;
+  --sev-low: #475569;
+  --surface-inverse: #0F172A;
+}
+
+[data-theme="dark"],
+.dark {
+  --snow: #0F172A;
+  --paper: #1E293B;
+  --slate: #F8FAFC;
+  --graphite: #CBD5E1;
+  --mute: #94A3B8;
+  --slate-100: #1E293B;
+  --slate-200: #334155;
+  --slate-400: #64748B;
+  --slate-600: #94A3B8;
+  --slate-800: #E2E8F0;
+  --slate-900: #F8FAFC;
+  --rule: rgba(255, 255, 255, 0.12);
+  --hair: rgba(255, 255, 255, 0.07);
+  --blue: #60A5FA;
+  --blue-hover: #93C5FD;
+  --blue-press: #BFDBFE;
+  --blue-wash: rgba(96, 165, 250, 0.14);
+  --on-blue: #0F172A;
+  --signal-wash: rgba(245, 83, 10, 0.12);
+  --success: #4ADE80;
+  --success-solid: #16A34A;
+  --success-wash: rgba(74, 222, 128, 0.14);
+  --warning: #FBBF24;
+  --warning-solid: #F59E0B;
+  --warning-wash: rgba(251, 191, 36, 0.14);
+  --danger: #F87171;
+  --danger-solid: #DC2626;
+  --danger-wash: rgba(248, 113, 113, 0.14);
+  --info: #38BDF8;
+  --info-solid: #0EA5E9;
+  --info-wash: rgba(56, 189, 248, 0.14);
+  --unknown: #B4A2F5;
+  --unknown-wash: rgba(180, 162, 245, 0.14);
+  --not-assessed: #94A3B8;
+  --neutral: #94A3B8;
+  --neutral-wash: rgba(255, 255, 255, 0.06);
+  --disabled: #64748B;
+  --sev-critical: #F87171;
+  --sev-high: #FB923C;
+  --sev-medium: #FBBF24;
+  --sev-low: #94A3B8;
+  --surface-inverse: #020617;
+}

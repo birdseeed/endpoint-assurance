@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <h1>Alerts</h1>
+  <p class="meta">Unapproved software observed on your estate, tracked from when it was first seen through acknowledgement to resolution. Open alerts are shown first.</p>
+</div>
+
+{% if alert_result %}
+<div class="notice{% if not alert_result.error %} notice-ok{% endif %}" id="alert-result" role="status" tabindex="-1">
+  {% if alert_result.error %}
+  <p><strong>{{ alert_result.error }}</strong></p>
+  {% elif alert_result.already_acknowledged %}
+  <p><strong>That alert was already acknowledged.</strong> Nothing changed.</p>
+  {% elif alert_result.changed %}
+  <p><strong>Alert acknowledged.</strong></p>
+  {% endif %}
+</div>
+{% endif %}
+
+<nav class="view-tabs alerts-tabs" aria-label="Alert status">
+  {% for value, label, count, tone in status_tabs %}
+  <a href="{{ tab_urls[value] }}"{% if status_filter == value %} class="tab-active" aria-current="true"{% endif %}{% if tone %} data-tone="{{ tone }}"{% endif %}>{{ label }} ({{ count }}){% if tone %}<span class="visually-hidden">, alert</span>{% endif %}</a>
+  {% endfor %}
+</nav>
+
+{#- PAT-2155: the two ID text boxes ("Product key", "Device ID") asked for
+   values no customer knows. The platform's own filter (contracts/
+   portal-api.md "GET /v1/portal/software-alerts") only takes an exact
+   product_key/device_id, and there is no name-search endpoint to map a
+   typed product name onto one server-side, so product search runs client-
+   side over these already-rendered rows instead (data-table-search, the
+   same idiom /devices, /findings and /exceptions already use) - the page
+   is at most ALERT_PAGE_SIZE rows, never a real pagination cost. The
+   device picker IS a real server round trip: it is built from the
+   tenant's own device roster (main.py's _alert_device_options, the same
+   get_device_roster() /devices reads), so its <option> values are real
+   device_ids the contract already accepts - a customer only ever sees
+   and picks a hostname. -#}
+<form method="get" action="/software/alerts" class="alerts-filter-form">
+  <input type="hidden" name="status" value="{{ status_filter }}">
+  <label class="visually-hidden" for="alerts-search-product">Search product</label>
+  <input type="search" id="alerts-search-product" class="search" data-table-search="#alerts-table" placeholder="Search product" aria-label="Search alerts by product, device or status" autocomplete="off">
+  <label class="visually-hidden" for="alerts-filter-device">Device</label>
+  <select class="search" id="alerts-filter-device" name="device">
+    <option value="">All devices</option>
+    {% for d in device_options %}
+    <option value="{{ d.device_id }}"{% if d.device_id == device_filter %} selected{% endif %}>{{ d.hostname }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-small">Filter</button>
+  {% if product_filter or device_filter %}<a class="btn btn-small" href="{{ clear_url }}">Clear filters</a>{% endif %}
+</form>
+
+{% set show_raised = status_filter != 'all' %}
+{% set show_ack = status_filter == 'acknowledged' %}
+{% set show_resolved = status_filter == 'resolved' %}
+{% set show_last_updated = status_filter == 'all' %}
+{% set show_actions = can_edit and status_filter == 'open' %}
+
+<div class="card card-table">
+  {% if alerts %}
+  <div class="table-scroll">
+  <table class="data-table alerts-table table-stack" id="alerts-table">
+    <colgroup>
+      <col class="alerts-col-product"><col class="alerts-col-device"><col class="alerts-col-status">
+      {% if show_raised %}<col class="alerts-col-date">{% endif %}
+      {% if show_ack or show_resolved %}<col class="alerts-col-detail">{% endif %}
+      {% if show_last_updated %}<col class="alerts-col-date">{% endif %}
+      {% if show_actions %}<col class="alerts-col-actions">{% endif %}
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Device</th>
+        <th>Status</th>
+        {% if show_raised %}<th>Raised</th>{% endif %}
+        {% if show_ack %}<th>Acknowledged</th>{% endif %}
+        {% if show_resolved %}<th>Resolved</th>{% endif %}
+        {% if show_last_updated %}<th>Last updated</th>{% endif %}
+        {% if show_actions %}<th><span class="visually-hidden">Acknowledge</span></th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in alerts %}
+      <tr>
+        <td class="cell-product" data-label="Product">
+          <a class="cell-anywrap" href="/software/alerts/{{ a.id }}{% if return_to %}?return_to={{ return_to | urlencode }}{% endif %}">{{ a.product.name }}</a>
+          <span class="cell-subtle">{{ a.product.kind | capitalize }}{% if a.product.platform %} &middot; {{ a.product.platform | platform_display }}{% endif %}</span>
+        </td>
+        <td data-label="Device">{% if a.device.device_id %}<a class="cell-anywrap" href="/devices/{{ a.device.device_id }}">{{ a.device.hostname }}</a>{% else %}{{ a.device.hostname }}{% endif %}</td>
+        <td data-label="Status"><span class="pill {{ 'pill-bad' if a.status == 'open' else ('pill-warn' if a.status == 'acknowledged' else 'pill-ok') }}">{{ a.status_label }}</span></td>
+        {% if show_raised %}
+        <td class="mono cell-evidence" data-label="Raised">
+          {%- if a.raised_at -%}
+          <span class="cell-evidence__main nowrap">{{ a.raised_at | humandate }}</span><span class="cell-subtle">{{ a.raised_at | humantime }} UTC</span>
+          {%- else -%}-{%- endif -%}
+        </td>
+        {% endif %}
+        {% if show_ack %}
+        <td class="cell-evidence" data-label="Acknowledged">
+          {%- if a.acknowledged_at -%}
+          <span class="mono cell-evidence__main nowrap">{{ a.acknowledged_at | humandate }}</span><span class="mono cell-subtle">{{ a.acknowledged_at | humantime }} UTC</span><span class="cell-subtle cell-anywrap">{{ a.acknowledged_by or 'Not recorded' }}</span>
+          {%- else -%}-{%- endif -%}
+        </td>
+        {% endif %}
+        {% if show_resolved %}
+        <td class="cell-evidence" data-label="Resolved">
+          {%- if a.resolved_at -%}
+          <span class="mono cell-evidence__main nowrap">{{ a.resolved_at | humandate }}</span><span class="mono cell-subtle">{{ a.resolved_at | humantime }} UTC</span>{% if a.resolved_reason %}<span class="cell-subtle">{{ a.resolved_reason }}</span>{% endif %}
+          {%- else -%}-{%- endif -%}
+        </td>
+        {% endif %}
+        {% if show_last_updated %}
+        <td class="mono cell-evidence" data-label="Last updated">
+          {%- if a.status_changed_at -%}
+          <span class="cell-evidence__main nowrap">{{ a.status_changed_at | humandate }}</span><span class="cell-subtle">{{ a.status_changed_at | humantime }} UTC</span>
+          {%- else -%}-{%- endif -%}
+        </td>
+        {% endif %}
+        {% if show_actions %}
+        <td class="cell-actions" data-label="Acknowledge">
+          {% if a.can_acknowledge %}
+          <form method="post" action="/software/alerts/{{ a.id }}/acknowledge" class="alert-ack-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="return_to" value="{{ return_to }}">
+            <input class="search alert-ack-form__note" type="text" name="note" maxlength="1000" placeholder="Note (optional)" autocomplete="off" aria-label="Note for acknowledging {{ a.product.name }}">
+            <button type="submit" class="btn btn-small">Acknowledge</button>
+          </form>
+          {% endif %}
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="empty" data-filter-empty hidden>No alerts match this search.</p>
+  {% else %}
+  <p class="empty">No alerts match this filter.</p>
+  {% endif %}
+</div>
+{% if not can_edit %}
+{% if role_unavailable %}
+<p class="toolbar-hint">The Acknowledge control is unavailable right now because your account role could not be checked.</p>
+{% else %}
+<p class="toolbar-hint">Your account can view alerts and their history. An administrator on your account can acknowledge them.</p>
+{% endif %}
+{% endif %}
+
+{% if total_pages > 1 %}
+<nav class="pager" aria-label="Alert pages">
+  {% if page > 1 %}
+  <a class="btn btn-small" href="{{ prev_url }}">&larr; Previous</a>
+  {% else %}
+  <span class="btn btn-small btn-disabled" aria-disabled="true">&larr; Previous</span>
+  {% endif %}
+  <span class="pager-status">Page {{ page }} of {{ total_pages }}</span>
+  {% if page < total_pages %}
+  <a class="btn btn-small" href="{{ next_url }}">Next &rarr;</a>
+  {% else %}
+  <span class="btn btn-small btn-disabled" aria-disabled="true">Next &rarr;</span>
+  {% endif %}
+</nav>
+{% endif %}
+<p class="toolbar-hint">Acknowledging an alert does not remove, block or resolve it. It records that you have seen it. An alert resolves on its own once the platform next observes the product is gone or approved.</p>
+{% endblock %}
+{% block scripts %}<script src="{{ static_url('js/portal.js') }}"></script>{% endblock %}

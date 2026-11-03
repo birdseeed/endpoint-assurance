@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Patched — Ring Mark Rollout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --snow:#FFFFFF; --paper:#F5F5F3; --slate:#0F1115;
+    --signal:#F5530A; --signal-deep:#C93F04;
+    --rule:rgba(15,17,21,.12); --hair:rgba(15,17,21,.07);
+    --slate-400:rgba(15,17,21,.40); --slate-500:rgba(15,17,21,.55);
+    --page-margin:56px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{background:var(--paper); color:var(--slate); font-family:'Inter',sans-serif; font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;}
+  .mono{font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:.12em; font-size:11px; color:var(--slate-500);}
+  .wrap{max-width:1180px; margin:0 auto; padding:var(--page-margin);}
+
+  header.head{border-bottom:1px solid var(--rule); padding-bottom:28px;}
+  .eyebrow{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:22px;}
+  h1{font-family:'Archivo',sans-serif; font-weight:700; letter-spacing:-.02em; font-size:34px; line-height:1.05; margin:0 0 14px;}
+  .lede{max-width:66ch; color:var(--slate-500); font-size:15.5px;}
+  .lede b{color:var(--slate); font-weight:600;}
+
+  section.block{margin-top:58px;}
+  .sec-head{display:flex; align-items:baseline; gap:16px; border-bottom:1px solid var(--rule); padding-bottom:12px; margin-bottom:28px;}
+  .sec-head h2{font-family:'Archivo',sans-serif; font-weight:600; font-size:20px; letter-spacing:-.01em; margin:0;}
+  .sec-head .n{font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--slate-400); letter-spacing:.1em;}
+  .sec-head .grow{flex:1;}
+  .note{color:var(--slate-500); font-size:13.5px; max-width:60ch; margin:0 0 26px;}
+  .note b{color:var(--slate); font-weight:600;}
+
+  /* system recap */
+  .sys{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--rule); border:1px solid var(--rule);}
+  .sys .c{background:var(--snow); padding:40px; display:flex; flex-direction:column; align-items:center; gap:20px; text-align:center;}
+  .sys .c .stage{height:120px; display:flex; align-items:center; justify-content:center;}
+  .sys .c h3{font-family:'Archivo',sans-serif; font-weight:600; font-size:16px; margin:0;}
+  .sys .c p{font-size:12.5px; color:var(--slate-500); margin:0; max-width:34ch;}
+  .sys .c .tag{font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.1em; color:var(--slate-400); text-transform:uppercase;}
+
+  /* generic panel */
+  .panel{border:1px solid var(--rule); background:var(--snow);}
+  .panel.dark{background:var(--slate); border:none;}
+  .pad{padding:38px;}
+
+  /* macOS dock */
+  .desktop{border-radius:12px; overflow:hidden; border:1px solid var(--rule); position:relative; min-height:340px;
+    background:linear-gradient(160deg,#3a4a63 0%,#46506b 40%,#5b4a63 100%);}
+  .desktop .menubar{height:26px; background:rgba(255,255,255,.16); backdrop-filter:blur(8px); display:flex; align-items:center; gap:16px; padding:0 14px;}
+  .desktop .menubar .l{font-size:11px; color:#fff; font-weight:600;}
+  .desktop .menubar .l.reg{font-weight:400;}
+  .desktop .menubar .sp{flex:1;}
+  .desktop .menubar .mark{display:flex; align-items:center;}
+  .dock{position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
+    display:flex; align-items:flex-end; gap:12px; padding:9px 14px; border-radius:18px;
+    background:rgba(255,255,255,.26); backdrop-filter:blur(16px); box-shadow:0 14px 36px -10px rgba(0,0,0,.4), inset 0 0 0 .5px rgba(255,255,255,.4);}
+  .dock .app{width:52px; height:52px; border-radius:12px; box-shadow:0 5px 12px -3px rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center; overflow:hidden;}
+  .dock .app.ours{box-shadow:0 7px 16px -3px rgba(0,0,0,.5), 0 0 0 .5px rgba(0,0,0,.2);}
+  .dock .sep{width:1px; height:48px; background:rgba(255,255,255,.35); margin:0 2px;}
+  .dot-run{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.8); margin:4px auto 0;}
+
+  /* iOS home */
+  .ios{width:300px; border-radius:30px; padding:16px; background:linear-gradient(170deg,#1b2330,#2c2533); box-shadow:0 24px 60px -24px rgba(0,0,0,.5); border:5px solid #0c0e12;}
+  .ios .grid{display:grid; grid-template-columns:repeat(4,1fr); gap:18px 16px; padding:14px 6px 22px;}
+  .ios .ic{display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .ios .ic .sq{width:54px;height:54px;border-radius:13px; box-shadow:0 3px 8px -2px rgba(0,0,0,.4); display:flex;align-items:center;justify-content:center; overflow:hidden;}
+  .ios .ic .lab{font-size:10px;color:#fff; opacity:.9;}
+
+  /* Windows taskbar + tile */
+  .win{border-radius:10px; overflow:hidden; border:1px solid var(--rule);}
+  .win .wall{height:150px; background:linear-gradient(120deg,#0b3a66,#1466a8 60%,#2b8fd6); position:relative;}
+  .win .tile{position:absolute; left:26px; top:32px; width:84px; height:84px; border-radius:6px; box-shadow:0 8px 20px -6px rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; overflow:hidden;}
+  .win .tile .lab{position:absolute; left:8px; bottom:6px; font-size:11px; color:#fff; font-weight:500;}
+  .win .bar{height:46px; background:rgba(24,26,33,.92); backdrop-filter:blur(10px); display:flex; align-items:center; gap:16px; padding:0 16px;}
+  .win .bar .start{width:22px;height:22px;border-radius:3px; background:conic-gradient(from 0deg,#34a0ff,#34a0ff);} 
+  .win .bar .ic{width:30px;height:30px;border-radius:5px; display:flex;align-items:center;justify-content:center; overflow:hidden;}
+  .win .bar .ic.app{box-shadow:0 0 0 1px rgba(255,255,255,.08);}
+  .win .bar .sp{flex:1;}
+  .win .bar .tray{display:flex; align-items:center; gap:12px;}
+  .win .bar .tray .g{width:5px;height:5px;border-radius:50%;background:#9b9ba1;}
+  .win .bar .clk{font-size:10px;color:#cdcdd2;text-align:right;line-height:1.2;}
+
+  /* browser tabs */
+  .browser{border-radius:10px 10px 0 0; overflow:hidden; border:1px solid var(--rule); border-bottom:none;}
+  .tabsbar{background:#dee1e6; display:flex; align-items:flex-end; gap:0; padding:8px 8px 0;}
+  .tab{display:flex; align-items:center; gap:8px; padding:9px 14px; background:#f1f3f4; border-radius:9px 9px 0 0; font-size:12px; color:#3c4043; max-width:200px;}
+  .tab.active{background:#fff;}
+  .tab .fav{width:16px;height:16px;display:flex;align-items:center;justify-content:center;flex:none;}
+  .tab .x{margin-left:4px;color:#80868b;font-size:12px;}
+  .tab .t{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .urlbar{background:#fff; height:42px; display:flex; align-items:center; gap:10px; padding:0 14px; border-top:1px solid #e3e3e3;}
+  .urlbar .pill{flex:1; height:26px; background:#f1f3f4; border-radius:13px; display:flex; align-items:center; gap:8px; padding:0 12px; font-size:11.5px; color:#5f6368;}
+
+  /* favicon size set */
+  .favset{display:flex; align-items:flex-end; gap:34px; flex-wrap:wrap;}
+  .favset .f{display:flex; flex-direction:column; align-items:center; gap:10px;}
+  .favset .f .lab{font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--slate-400); letter-spacing:.08em;}
+  .favset .f .stage{display:flex; align-items:flex-end; justify-content:center;}
+
+  /* website */
+  .site{border-radius:10px; overflow:hidden; border:1px solid var(--rule); background:var(--snow);}
+  .sitenav{display:flex; align-items:center; padding:20px 30px; border-bottom:1px solid var(--rule);}
+  .sitenav .brand{display:flex; align-items:center; gap:12px;}
+  .sitenav .brand .wm{font-family:'Archivo',sans-serif; font-weight:600; font-size:21px; letter-spacing:-.03em;}
+  .sitenav .links{margin-left:auto; display:flex; align-items:center; gap:30px; font-size:13.5px; color:var(--slate-500);}
+  .sitenav .links a{color:var(--slate-500); text-decoration:none;}
+  .sitenav .links .cta{color:var(--slate); font-weight:600;}
+  .sitehero{display:grid; grid-template-columns:1.05fr .95fr; gap:0;}
+  .sitehero .copy{padding:64px 30px 64px 30px;}
+  .sitehero .copy .eb{font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:.14em; font-size:10.5px; color:var(--slate-400);}
+  .sitehero .copy h2{font-family:'Archivo',sans-serif; font-weight:700; font-size:54px; line-height:1.0; letter-spacing:-.03em; margin:18px 0 18px;}
+  .sitehero .copy p{font-size:15px; color:var(--slate-500); max-width:40ch; margin:0 0 26px;}
+  .sitehero .copy .row{display:flex; gap:12px;}
+  .sitehero .copy .b1{background:var(--slate); color:#fff; font-size:13.5px; font-weight:600; padding:12px 20px; border-radius:4px;}
+  .sitehero .copy .b2{border:1px solid var(--rule); color:var(--slate); font-size:13.5px; font-weight:600; padding:12px 20px; border-radius:4px;}
+  .sitehero .field{border-left:1px solid var(--rule); display:flex; align-items:center; justify-content:center; padding:36px; background:var(--slate); position:relative;}
+  .sitehero .field .score{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+  .sitehero .field .score .v{font-family:var(--d); font-weight:700; font-size:46px; letter-spacing:-.03em; color:#fff; line-height:1;}
+  .sitehero .field .score .k{font-family:var(--m); font-size:8.5px; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.5); margin-top:6px;}
+
+  /* self service compact */
+  .ssgrid{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
+  .device{border-radius:12px; overflow:hidden; border:1px solid var(--rule); box-shadow:0 20px 50px -30px rgba(15,17,21,.28); background:var(--snow);}
+  .winbar{height:36px; display:flex; align-items:center; gap:8px; padding:0 13px; border-bottom:1px solid var(--rule);}
+  .winbar .tl{width:11px;height:11px;border-radius:50%;}
+  .winbar .t1{background:#ff5f57;} .winbar .t2{background:#febc2e;} .winbar .t3{background:#28c840;}
+  .winbar .wt{flex:1; text-align:center; font-size:11px; color:var(--slate-500); font-weight:500; margin-right:34px;}
+  .appbody{display:flex; min-height:230px;}
+  .sidebar{width:176px; border-right:1px solid var(--rule); padding:16px 14px; display:flex; flex-direction:column; gap:5px; background:var(--paper);}
+  .brandrow{display:flex; align-items:center; gap:10px; padding:3px 3px 14px; margin-bottom:5px; border-bottom:1px solid var(--rule);}
+  .brandrow .wm{font-family:'Archivo',sans-serif; font-weight:600; font-size:16px; letter-spacing:-.03em; color:var(--slate);}
+  .navitem{display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--slate-500); padding:6px 8px; border-radius:5px;}
+  .navitem.active{background:var(--snow); color:var(--slate); font-weight:600; box-shadow:inset 0 0 0 1px var(--rule);}
+  .navitem .gl{width:13px;height:13px;border-radius:3px; border:1.5px solid var(--slate-400);}
+  .content{flex:1; padding:20px 22px;}
+  .content .eb{font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:.12em; font-size:9px; color:var(--slate-400);}
+  .content h3{font-family:'Archivo',sans-serif; font-weight:700; font-size:17px; letter-spacing:-.02em; margin:7px 0 4px;}
+  .content p{font-size:12px; color:var(--slate-500); margin:0 0 14px; max-width:32ch;}
+  .statusline{display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--slate); padding:9px 11px; border:1px solid var(--rule); border-radius:6px; max-width:210px;}
+  .statusline .ok{width:7px;height:7px;border-radius:50%;background:var(--signal);}
+  .device.dark{background:#15171C; border-color:rgba(255,255,255,.10);}
+  .device.dark .winbar{border-color:rgba(255,255,255,.08);}
+  .device.dark .winbar .wt{color:rgba(255,255,255,.5);}
+  .device.dark .sidebar{background:#0F1115; border-color:rgba(255,255,255,.08);}
+  .device.dark .brandrow{border-color:rgba(255,255,255,.10);}
+  .device.dark .brandrow .wm{color:#fff;}
+  .device.dark .navitem{color:rgba(255,255,255,.5);}
+  .device.dark .navitem.active{background:#1B1E25; color:#fff; box-shadow:inset 0 0 0 1px rgba(255,255,255,.10);}
+  .device.dark .navitem .gl{border-color:rgba(255,255,255,.4);}
+  .device.dark .content .eb{color:rgba(255,255,255,.4);}
+  .device.dark .content h3{color:#fff;}
+  .device.dark .content p{color:rgba(255,255,255,.5);}
+  .device.dark .statusline{color:#fff; border-color:rgba(255,255,255,.14);}
+
+  /* before/after */
+  .ba{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--rule); border:1px solid var(--rule);}
+  .ba .col{background:var(--snow); padding:34px; display:flex; flex-direction:column; align-items:center; gap:22px;}
+  .ba .col .tag{font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase;}
+  .ba .col.old .tag{color:var(--slate-400);}
+  .ba .col.new .tag{color:var(--signal-deep);}
+  .ba .row{display:flex; align-items:center; gap:24px;}
+  .ba .row .stage{display:flex;align-items:flex-end;justify-content:center;}
+
+  .legend{margin-top:48px; padding-top:24px; border-top:1px solid var(--rule); color:var(--slate-500); font-size:13px; max-width:72ch;}
+  .legend b{color:var(--slate); font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <div class="eyebrow">
+      <span class="mono">Patched — Brand</span>
+      <span class="mono">Ring mark · full rollout · MMXXVI</span>
+    </div>
+    <h1>One mark, across the whole suite.</h1>
+    <p class="lede">The locked ring mark, extended to everything we ship: <b>app &amp; Dock icons</b> (macOS), <b>Windows tiles</b>, <b>favicons</b>, the <b>patched.im</b> header, and the <b>self-service agent</b>. The system is one mark throughout — the ring mark used <b>bare</b> on light chrome and menu bars, and on a <b>slate tile</b> for app icons, the Dock and favicons. Rendered here for sign-off before anything is committed.</p>
+  </header>
+
+  <!-- A · SYSTEM -->
+  <section class="block">
+    <div class="sec-head"><span class="n">A</span><h2>The family</h2><span class="grow"></span><span class="mono">Bare · on tile</span></div>
+    <div class="sys">
+      <div class="c">
+        <span class="tag">Outline — UI &amp; menu bar</span>
+        <div class="stage" id="sysOutline"></div>
+        <h3>Ring mark</h3>
+        <p>In-product headers, the macOS menu-bar template, favicons on light chrome. Holds to 16px.</p>
+      </div>
+      <div class="c">
+        <span class="tag">On a tile — app · Dock · installer</span>
+        <div class="stage" id="sysTile"></div>
+        <h3>Ring mark · on tile</h3>
+        <p>The same ring mark on a slate tile — macOS app + Dock icon, iOS, the Windows tile, the 1024 store icon, favicons.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- B · APP & DOCK -->
+  <section class="block">
+    <div class="sec-head"><span class="n">B</span><h2>macOS app &amp; Dock</h2><span class="grow"></span><span class="mono">The app logo</span></div>
+    <p class="note">The <b>ring mark on a slate tile is the Patched app icon</b> — in the Dock, in Launchpad, in the menu bar. The identical mark used everywhere else, given a tile background for presence plus a deeper tile shadow as the brand allows for app icons.</p>
+    <div class="panel pad">
+      <div class="desktop">
+        <div class="menubar">
+          <span class="mark" id="macMenuMark"></span>
+          <span class="l">Patched</span>
+          <span class="l reg">File</span><span class="l reg">Posture</span><span class="l reg">Window</span>
+          <span class="sp"></span>
+          <span class="l reg" style="opacity:.85">100%</span>
+          <span class="l reg" style="opacity:.85">Thu 9:41</span>
+        </div>
+        <div class="dock">
+          <div class="app" style="background:linear-gradient(160deg,#2b2f3a,#1a1d25)"></div>
+          <div class="app" style="background:linear-gradient(160deg,#3478f6,#1f5fe0)"></div>
+          <div class="app" style="background:linear-gradient(160deg,#34c759,#23a047)"></div>
+          <div class="sep"></div>
+          <div class="app ours" id="dockTile"></div>
+          <div class="sep"></div>
+          <div class="app" style="background:linear-gradient(160deg,#ff9f0a,#f57c00)"></div>
+          <div class="app" style="background:linear-gradient(160deg,#8e8e93,#6a6a70)"></div>
+        </div>
+      </div>
+      <div style="display:flex; gap:30px; align-items:flex-end; margin-top:34px; flex-wrap:wrap;">
+        <div style="display:flex;flex-direction:column;gap:12px;align-items:center;">
+          <span id="hero1024"></span>
+          <span class="mono" style="font-size:9px;">1024 · store / about</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;align-items:center;">
+          <span id="app180"></span>
+          <span class="mono" style="font-size:9px;">180 · launchpad</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;align-items:center;">
+          <span id="app120"></span>
+          <span class="mono" style="font-size:9px;">120</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;align-items:center;">
+          <span id="app64"></span>
+          <span class="mono" style="font-size:9px;">64</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- iOS + Windows -->
+  <section class="block">
+    <div class="sec-head"><span class="n">C</span><h2>iOS home &amp; Windows</h2><span class="grow"></span><span class="mono">Tile, everywhere</span></div>
+    <div class="panel pad" style="display:flex; gap:40px; flex-wrap:wrap; justify-content:center;">
+      <div class="ios">
+        <div class="grid">
+          <div class="ic"><div class="sq" style="background:linear-gradient(160deg,#34c759,#23a047)"></div><span class="lab">Health</span></div>
+          <div class="ic"><div class="sq" style="background:linear-gradient(160deg,#0a84ff,#0060df)"></div><span class="lab">Mail</span></div>
+          <div class="ic"><div class="sq" id="iosTile"></div><span class="lab">Patched</span></div>
+          <div class="ic"><div class="sq" style="background:linear-gradient(160deg,#ff9f0a,#f57c00)"></div><span class="lab">Notes</span></div>
+          <div class="ic"><div class="sq" style="background:linear-gradient(160deg,#5e5ce6,#3a36c4)"></div><span class="lab">Music</span></div>
+          <div class="ic"><div class="sq" style="background:linear-gradient(160deg,#8e8e93,#6a6a70)"></div><span class="lab">Settings</span></div>
+          <div class="ic"><div class="sq" style="background:linear-gradient(160deg,#ff375f,#d61f45)"></div><span class="lab">Photos</span></div>
+          <div class="ic"><div class="sq" style="background:linear-gradient(160deg,#30b0c7,#1f8fa3)"></div><span class="lab">Files</span></div>
+        </div>
+      </div>
+      <div class="win" style="flex:1; min-width:360px; align-self:flex-start;">
+        <div class="wall">
+          <div class="tile" id="winTile"><span class="lab">Patched</span></div>
+        </div>
+        <div class="bar">
+          <div class="start"></div>
+          <div class="ic" style="background:#f1f3f4"></div>
+          <div class="ic app" id="winBarIco"></div>
+          <div class="ic" style="background:#f1f3f4"></div>
+          <div class="sp"></div>
+          <div class="tray">
+            <div class="ic app" id="winTrayIco" style="width:18px;height:18px;box-shadow:none;"></div>
+            <span class="g"></span>
+            <span class="clk">9:41 AM<br>6/20/2026</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- D · FAVICONS -->
+  <section class="block">
+    <div class="sec-head"><span class="n">D</span><h2>Favicons</h2><span class="grow"></span><span class="mono">Browser tab · size set</span></div>
+    <p class="note">The tile doubles as the favicon — it has enough presence to read on white browser chrome at 16px, where the outline alone would thin out.</p>
+    <div class="browser">
+      <div class="tabsbar">
+        <div class="tab active"><span class="fav" id="favTab"></span><span class="t">Patched — Turn the estate.</span><span class="x">×</span></div>
+        <div class="tab"><span class="fav" style="background:#34a853;border-radius:3px;width:14px;height:14px;"></span><span class="t">Inbox (3)</span><span class="x">×</span></div>
+        <div class="tab"><span class="fav" style="background:#4285f4;border-radius:3px;width:14px;height:14px;"></span><span class="t">Linear</span><span class="x">×</span></div>
+      </div>
+      <div class="urlbar">
+        <span style="color:#5f6368;">←</span><span style="color:#5f6368;">→</span><span style="color:#5f6368;">⟳</span>
+        <span class="pill">🔒 patched.im</span>
+      </div>
+    </div>
+    <div class="panel pad" style="border-top:none;">
+      <div class="favset" id="favset"></div>
+    </div>
+  </section>
+
+  <!-- E · WEBSITE -->
+  <section class="block">
+    <div class="sec-head"><span class="n">E</span><h2>patched.im</h2><span class="grow"></span><span class="mono">Header lockup + hero</span></div>
+    <p class="note">On the site, the ring mark anchors the nav and the <b>posture arc</b> — the mark's corner arc, scaled up — is the hero device (no pixel grid). The ring lockup is used across the board, including the nav.</p>
+    <div class="site">
+      <div class="sitenav">
+        <div class="brand"><span id="siteMark"></span><span class="wm">Patched</span></div>
+        <div class="links">
+          <a href="#">Posture</a><a href="#">Tiers</a><a href="#">Approach</a>
+          <a href="#" class="cta">Book a review →</a>
+        </div>
+      </div>
+      <div class="sitehero">
+        <div class="copy">
+          <span class="eb">Endpoint consultancy · MMXXVI</span>
+          <h2>Turn the estate.</h2>
+          <p>We close the gaps between MDM, identity and posture — and keep the dial pointed there.</p>
+          <div class="row"><span class="b1">Book a review →</span><span class="b2">See Posture</span></div>
+        </div>
+        <div class="field"><div id="estate"></div><div class="score"><div class="v">82</div><div class="k">Posture · +38</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- F · SELF SERVICE -->
+  <section class="block">
+    <div class="sec-head"><span class="n">F</span><h2>Self-service agent</h2><span class="grow"></span><span class="mono">mac / win · light / dark</span></div>
+    <div class="ssgrid">
+      <div class="device">
+        <div class="winbar"><span class="tl t1"></span><span class="tl t2"></span><span class="tl t3"></span><span class="wt">Patched Self-Service</span></div>
+        <div class="appbody">
+          <div class="sidebar">
+            <div class="brandrow"><span id="ssA"></span><span class="wm">Patched</span></div>
+            <div class="navitem active"><span class="gl"></span>Device posture</div>
+            <div class="navitem"><span class="gl"></span>Available updates</div>
+            <div class="navitem"><span class="gl"></span>Compliance</div>
+          </div>
+          <div class="content">
+            <span class="eb">Device · MacBook Pro</span>
+            <h3>You're nearly closed.</h3>
+            <p>Three items left before this endpoint is fully patched.</p>
+            <div class="statusline"><span class="ok"></span>Closing — 3 of 14 remaining</div>
+          </div>
+        </div>
+      </div>
+      <div class="device dark">
+        <div class="winbar"><span class="tl t1"></span><span class="tl t2"></span><span class="tl t3"></span><span class="wt">Patched Self-Service</span></div>
+        <div class="appbody">
+          <div class="sidebar">
+            <div class="brandrow"><span id="ssB"></span><span class="wm">Patched</span></div>
+            <div class="navitem active"><span class="gl"></span>Device posture</div>
+            <div class="navitem"><span class="gl"></span>Available updates</div>
+            <div class="navitem"><span class="gl"></span>Compliance</div>
+          </div>
+          <div class="content">
+            <span class="eb">Device · ThinkPad X1</span>
+            <h3>You're nearly closed.</h3>
+            <p>Three items left before this endpoint is fully patched.</p>
+            <div class="statusline"><span class="ok"></span>Closing — 3 of 14 remaining</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- G · BEFORE / AFTER -->
+  <section class="block">
+    <div class="sec-head"><span class="n">G</span><h2>Before / after</h2><span class="grow"></span><span class="mono">Pixel-P → ring mark</span></div>
+    <div class="ba">
+      <div class="col old">
+        <span class="tag">Now — pixel-P favicon</span>
+        <div class="row">
+          <div class="stage" id="old64"></div>
+          <div class="stage" id="old32"></div>
+          <div class="stage" id="old16"></div>
+        </div>
+      </div>
+      <div class="col new">
+        <span class="tag">New — ring mark</span>
+        <div class="row">
+          <div class="stage" id="new64"></div>
+          <div class="stage" id="new32"></div>
+          <div class="stage" id="new16"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="legend">
+    <b>What this replaces.</b> The ring mark supersedes the pixel-P favicon/app-icon across <b>app &amp; Dock (macOS), iOS, Windows tile, and favicons</b>. The pixel-P and pixel wordmark stay available for <b>marketing</b>. On approval I'll regenerate the full file set — <code>favicon.svg</code>, 16/32/48, apple-touch-icon 180, app-icon 512/1024, <code>.ico</code> — plus outlined SVGs, and update the build instructions + repo package.
+  </div>
+</div>
+
+<script>
+const SLATE="#0F1115", SIGNAL="#F5530A", SNOW="#FFFFFF";
+
+/* OUTLINE ring mark (locked 01) — inner paints, reused on tiles */
+function ringInner(size, ink, accent){
+  const t=Math.max(1.3,size*0.072), r=size*0.26, seg=size*0.26, fs=size*0.52;
+  let s=`<rect x="${t/2}" y="${t/2}" width="${size-t}" height="${size-t}" rx="${r}" fill="none" stroke="${ink}" stroke-width="${t}"/>`;
+  s+=`<path d="M ${size-r-seg} ${t/2} H ${size-r} A ${r} ${r} 0 0 1 ${size-t/2} ${r}" fill="none" stroke="${accent}" stroke-width="${t}" stroke-linecap="round"/>`;
+  s+=`<text x="${size/2}" y="${size*0.50+fs*0.355}" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="700" font-size="${fs}" letter-spacing="-0.04em" fill="${ink}">P</text>`;
+  return s;
+}
+function ring(size, o={}){
+  const ink=o.mono||o.ink||SLATE, accent=o.mono||o.accent||SIGNAL;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block">${ringInner(size,ink,accent)}</svg>`;
+}
+
+/* App-icon tile = the SAME ring mark on a slate tile, with normal mark padding
+   so it looks identical to the bare ring mark (just on a background) */
+function tile(size, o={}){
+  const light=!!o.light;
+  const bg = light? SNOW : SLATE;
+  const ink = light? SLATE : SNOW;
+  const accent = SIGNAL;
+  const r = size*(o.square ? 0.10 : 0.225);
+  const inset=size*0.155, rs=size-inset*2;
+  let s=`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" style="display:block">`;
+  s+=`<rect width="${size}" height="${size}" rx="${r}" fill="${bg}"/>`;
+  s+=`<g transform="translate(${inset},${inset})">${ringInner(rs, ink, accent)}</g>`;
+  return s+"</svg>";
+}
+
+/* current pixel-P favicon recreation (from assets/favicon/favicon.svg) */
+function pixelFav(size){
+  return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display:block">
+    <rect width="64" height="64" rx="14" fill="#0f1115"></rect>
+    <rect x="15" y="8" width="7" height="7" fill="#fff"></rect><rect x="22" y="8" width="7" height="7" fill="#fff"></rect><rect x="29" y="8" width="7" height="7" fill="#fff"></rect><rect x="36" y="8" width="7" height="7" fill="#fff"></rect>
+    <rect x="15" y="15" width="7" height="7" fill="#fff"></rect><rect x="43" y="15" width="7" height="7" fill="#fff"></rect>
+    <rect x="15" y="22" width="7" height="7" fill="#fff"></rect><rect x="43" y="22" width="7" height="7" fill="#fff"></rect>
+    <rect x="15" y="29" width="7" height="7" fill="#fff"></rect><rect x="22" y="29" width="7" height="7" fill="#fff"></rect><rect x="29" y="29" width="7" height="7" fill="#fff"></rect><rect x="36" y="29" width="7" height="7" fill="#f5530a"></rect>
+    <rect x="15" y="36" width="7" height="7" fill="#fff"></rect><rect x="15" y="43" width="7" height="7" fill="#fff"></rect><rect x="15" y="50" width="7" height="7" fill="#fff"></rect>
+  </svg>`;
+}
+
+/* posture arc motif (echoes the ring mark) */
+function estateField(){
+  const S=210, t=11, pad=t/2+5, x0=pad, y0=pad, w=S-pad*2, rr=S*0.26, seg=w*0.42;
+  let s=`<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block">`;
+  s+=`<rect x="${x0}" y="${y0}" width="${w}" height="${w}" rx="${rr}" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="${t}"/>`;
+  s+=`<path d="M ${x0+rr+w*0.06} ${y0} H ${x0+w-rr} A ${rr} ${rr} 0 0 1 ${x0+w} ${y0+rr} V ${y0+rr+seg}" fill="none" stroke="#F5530A" stroke-width="${t}" stroke-linecap="round"/>`;
+  return s+"</svg>";
+}
+
+const $=id=>document.getElementById(id);
+const set=(id,html)=>{const e=$(id); if(e) e.innerHTML=html;};
+
+/* A */
+set("sysOutline", ring(96));
+set("sysTile", tile(96));
+
+/* B macOS */
+set("macMenuMark", ring(17,{mono:"#FFFFFF"}));
+set("dockTile", tile(52));
+set("hero1024", tile(120));
+set("app180", tile(82));
+set("app120", tile(58));
+set("app64", tile(40));
+
+/* C iOS / Win */
+set("iosTile", tile(54,{radius:0.24}));
+set("winTile", tile(84,{square:true}));
+set("winBarIco", tile(30,{radius:0.16}));
+set("winTrayIco", tile(18,{radius:0.16}));
+
+/* D favicons */
+set("favTab", tile(16,{radius:0.22}));
+const favEl=$("favset");
+[16,32,48,64,128].forEach(px=>{
+  const d=document.createElement("div"); d.className="f";
+  d.innerHTML=`<div class="stage">${tile(px,{radius:px<=20?0.22:0.225})}</div><span class="lab">${px}px</span>`;
+  favEl.appendChild(d);
+});
+
+/* E site */
+set("siteMark", ring(30));
+set("estate", estateField());
+
+/* F self-service */
+set("ssA", ring(22));
+set("ssB", ring(22,{ink:SNOW}));
+
+/* G before/after */
+set("old64", pixelFav(64)); set("old32", pixelFav(32)); set("old16", pixelFav(16));
+set("new64", tile(64)); set("new32", tile(32)); set("new16", tile(16,{radius:0.22}));
+</script>
+</body>
+</html>

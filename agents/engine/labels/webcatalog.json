@@ -1,0 +1,23 @@
+{
+  "label": "webcatalog",
+  "name": "WebCatalog",
+  "type": "dmg",
+  "app_path": "/Applications/WebCatalog.app",
+  "expected_team_id": "36UJGA8U65",
+  "download": {
+    "method": "static",
+    "url": "https://desktop.webcatalog.io/api/download?platform=macos&arch=universal"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

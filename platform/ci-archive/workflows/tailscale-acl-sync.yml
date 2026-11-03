@@ -1,0 +1,77 @@
+name: tailscale-acl-sync
+
+# GitOps for the tailnet policy file.
+#
+# On merge to main that touches the ACL, push api-vps-artefacts/tailscale-acl.json
+# to the live tailnet via the Tailscale API. This makes the repo the ENFORCED
+# source of truth, so manually-applied console rules can no longer silently drift
+# or be lost on a full re-apply (that gap dropped tag:ci -> tag:main reachability
+# and broke CI deploys — see PAT-694 / PR #221).
+#
+# Runs ONLY on push to main (never on pull_request) so the policy_file-write
+# OAuth secret is never exposed to PR-submitted code. PR-time structural
+# validation stays in acl-validate.yml (jq, no secret needed).
+#
+# Requires org/repo secrets TS_OAUTH_CLIENT_ID + TS_OAUTH_SECRET on an OAuth
+# client that has the "policy_file" (write) scope.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'api-vps-artefacts/tailscale-acl.json'
+      - '.github/workflows/tailscale-acl-sync.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tailscale-acl-sync
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Apply tailnet policy file
+        env:
+          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
+          ACL_FILE: api-vps-artefacts/tailscale-acl.json
+        run: |
+          set -euo pipefail
+
+          if [ -z "${TS_OAUTH_CLIENT_ID:-}" ] || [ -z "${TS_OAUTH_SECRET:-}" ]; then
+            echo "::error::TS_OAUTH_CLIENT_ID / TS_OAUTH_SECRET are not set on this repo."
+            exit 1
+          fi
+
+          # 1. Exchange the OAuth client credentials for a short-lived access token.
+          token=$(curl -sf -u "${TS_OAUTH_CLIENT_ID}:${TS_OAUTH_SECRET}" \
+            -d 'grant_type=client_credentials' \
+            https://api.tailscale.com/api/v2/oauth/token | jq -r '.access_token // empty')
+          if [ -z "$token" ]; then
+            echo "::error::Could not obtain a Tailscale access token. Confirm the OAuth client has the policy_file (write) scope."
+            exit 1
+          fi
+          echo "::add-mask::$token"
+
+          # 2. Push the policy file. `-` = the token's default tailnet. HuJSON body
+          #    (// comments + trailing commas) is sent as application/hujson. The
+          #    apply endpoint validates server-side and 4xx's an invalid policy, so
+          #    an explicit HTTP-code check fails the job loudly rather than silently.
+          body=$(mktemp)
+          code=$(curl -s -o "$body" -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer ${token}" \
+            -H "Content-Type: application/hujson" \
+            --data-binary @"${ACL_FILE}" \
+            https://api.tailscale.com/api/v2/tailnet/-/acl)
+
+          if [ "$code" != "200" ]; then
+            echo "::error::Tailscale ACL apply failed (HTTP ${code}):"
+            cat "$body"
+            exit 1
+          fi
+          echo "Applied ${ACL_FILE} to the tailnet (HTTP 200)."

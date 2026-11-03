@@ -1,0 +1,24 @@
+{
+  "label": "fujifilmwebcam",
+  "name": "FUJIFILM X Webcam 2",
+  "type": "pkg",
+  "app_path": "/Applications/FUJIFILM X Webcam 2.app",
+  "expected_team_id": "34LRP8AV2M",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.fujifilm-x.com/en-us/support/download/software/x-webcam/"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

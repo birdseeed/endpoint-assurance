@@ -1,0 +1,47 @@
+{
+  "_comment": "PAT-808 stale device_apps pruning. Second scan for the same device as apps-prune-scan1.json: drops AppOne, keeps AppTwo, adds AppThree. After extraction AppOne's row must be gone.",
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.3.0",
+  "tenant_id": "99999999-9999-9999-9999-999999999999",
+  "collected_at": "2026-12-02T00:00:00Z",
+  "device": {
+    "serial": "C00000000099",
+    "hw_uuid": "99999999-AAAA-BBBB-CCCC-DDDDDDDDDDDD",
+    "hostname": "apps-prune-host",
+    "hw_model": "Mac14,2",
+    "arch": "arm64",
+    "last_boot": "2026-12-01T00:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M2",
+    "cpu_cores": 8,
+    "ram_gb": 8,
+    "disk_total_gb": 256.0,
+    "disk_free_gb": 128.0
+  },
+  "os": {
+    "name": "macOS",
+    "version": "15.0",
+    "build": "24A335"
+  },
+  "compliance": {},
+  "security_tools": [],
+  "system_extensions": [],
+  "background_items": [],
+  "icloud": {
+    "signed_in": "Unknown"
+  },
+  "apps": [
+    {
+      "name": "AppTwo",
+      "version": "1.0",
+      "bundle_id": "com.patchedtest.apptwo"
+    },
+    {
+      "name": "AppThree",
+      "version": "1.0",
+      "bundle_id": "com.patchedtest.appthree"
+    }
+  ]
+}

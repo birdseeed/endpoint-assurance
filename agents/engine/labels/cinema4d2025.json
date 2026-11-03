@@ -1,0 +1,25 @@
+{
+  "label": "cinema4d2025",
+  "name": "Cinema 4D",
+  "type": "dmg",
+  "app_path": "/Applications/Cinema 4D.app",
+  "expected_team_id": "4ZY22YGXQG",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.maxon.net/en/downloads",
+    "asset_pattern": "cinema-4d-2025"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "PAT-882: download.source was a regex-fragment auto-conversion artifact (https://[^\", captured from the fragment's grep pattern). Replaced with the real vendor downloads page the fragment scrapes (engine/fragments/labels/cinema4d2025.sh). Team ID and URL still require human review before setting allowlisted=true."
+  }
+}

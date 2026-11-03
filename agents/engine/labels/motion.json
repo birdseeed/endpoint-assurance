@@ -1,0 +1,24 @@
+{
+  "label": "motion",
+  "name": "Motion",
+  "type": "zip",
+  "app_path": "/Applications/Motion.app",
+  "expected_team_id": "6J5V225MV6",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/usemotion/desktopapp/releases/latest"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

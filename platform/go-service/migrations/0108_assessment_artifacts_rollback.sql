@@ -1,0 +1,12 @@
+BEGIN;
+DROP TRIGGER IF EXISTS trg_assessment_artifact_audit_append_only ON assessment_artifact_audit;
+DROP FUNCTION IF EXISTS assessment_artifact_audit_append_only();
+DROP TRIGGER IF EXISTS trg_assessment_download_token_use_once ON assessment_download_tokens;
+DROP FUNCTION IF EXISTS assessment_download_token_use_once();
+DROP TRIGGER IF EXISTS trg_assessment_artifact_reject_update ON assessment_artifacts;
+DROP FUNCTION IF EXISTS assessment_artifact_reject_update();
+DROP TABLE IF EXISTS assessment_artifact_audit;
+DROP TABLE IF EXISTS assessment_download_tokens;
+DROP TABLE IF EXISTS assessment_artifacts;
+DELETE FROM schema_migrations WHERE version = '0108_assessment_artifacts';
+COMMIT;

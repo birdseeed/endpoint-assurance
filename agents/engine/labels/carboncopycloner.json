@@ -1,0 +1,24 @@
+{
+  "label": "carboncopycloner",
+  "name": "Carbon Copy Cloner",
+  "type": "zip",
+  "app_path": "/Applications/Carbon Copy Cloner.app",
+  "expected_team_id": "L4F2DED5Q7",
+  "download": {
+    "method": "resolved",
+    "strategy": "http-redirect",
+    "source": "https://api.bombich.com/download/ccc?v=latest"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

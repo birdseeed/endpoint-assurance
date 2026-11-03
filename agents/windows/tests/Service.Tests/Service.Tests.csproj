@@ -1,0 +1,87 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Matches the Windows Service target framework. -->
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Patched.Service.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.4.0" />
+    <PackageReference Include="xunit" Version="2.9.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Service\Service.csproj" />
+    <!--
+      PAT-1983: the helper-timeout test needs a child process that outlives its
+      budget. Referenced only so it is always built alongside these tests; its
+      assembly is never referenced, so the two target frameworks stay independent.
+    -->
+    <ProjectReference Include="..\SpinForeverHelper\SpinForeverHelper.csproj"
+                      ReferenceOutputAssembly="false"
+                      Private="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <!--
+      PAT-1989: copy the shipping AdminEnforcer.cs next to the test binary so the
+      source guards in AdminEnforcerTests find it at AppContext.BaseDirectory whatever
+      the runner's working directory or checkout layout. Those guards hold the property
+      the ticket is about — that the local Administrators group is never resolved from a
+      localised display name — which cannot be exercised without a real PrincipalContext.
+      Copied from source on every build so it cannot go stale. None, not Compile: the
+      file is already compiled into Patched.Service via the project reference above.
+    -->
+    <None Include="..\..\src\Service\AdminEnforcer.cs"
+          Link="source\AdminEnforcer.cs"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <!--
+      PAT-2065: one contract checker for both suites. Compile, not None: it is test code that
+      lives in Shared.Tests and is not part of any shipped assembly. The schema it reads is
+      copied beside the test binary, as Shared.Tests does.
+    -->
+    <Compile Include="..\Shared.Tests\BrowserExtensionsStatusContract.cs"
+             Link="Shared\BrowserExtensionsStatusContract.cs" />
+    <None Include="..\..\..\contracts\inventory-browser-extensions-status.schema.json"
+          Link="contracts\%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <!--
+    Stage the spin-forever helper's whole output beside the test assembly, in its own
+    subdirectory so its runtimeconfig/deps files cannot collide with the test host's.
+    The test resolves it from AppContext.BaseDirectory, so the path is fixed by this
+    target rather than guessed from a relative walk out of bin/.
+  -->
+  <Target Name="CopySpinForeverHelperToOutput" AfterTargets="Build">
+    <MSBuild Projects="..\SpinForeverHelper\SpinForeverHelper.csproj" Targets="GetTargetPath">
+      <Output TaskParameter="TargetOutputs" ItemName="_SpinForeverHelperTarget" />
+    </MSBuild>
+    <ItemGroup>
+      <_SpinForeverHelperOutput Include="%(_SpinForeverHelperTarget.RootDir)%(_SpinForeverHelperTarget.Directory)**\*" />
+    </ItemGroup>
+    <Error Condition="'@(_SpinForeverHelperOutput)' == ''"
+           Text="SpinForeverHelper produced no output to stage; the helper-timeout test would fail with a missing executable." />
+    <Copy SourceFiles="@(_SpinForeverHelperOutput)"
+          DestinationFiles="@(_SpinForeverHelperOutput->'$(OutDir)SpinForeverHelper\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
+  <!--
+    DEPRECATED — PAT-1531: these tests exercise the retained installer/removal
+    source that the assurance Service intentionally does not compile or reference.
+    Keep them in the repository for a future separately reviewed actuation boundary,
+    but exclude them from the assurance test assembly so a Service test cannot
+    silently restore the Engine dependency.
+  -->
+  <ItemGroup>
+    <Compile Remove="DeviceRemovalRunnerTests.cs" />
+    <Compile Remove="InventoryCollectorTests.cs" />
+  </ItemGroup>
+</Project>

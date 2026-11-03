@@ -1,0 +1,26 @@
+{
+  "label": "nvivo13",
+  "name": "NVivo",
+  "type": "dmg",
+  "app_path": "/Applications/NVivo.app",
+  "expected_team_id": "A66L57342X",
+  "download": {
+    "method": "static",
+    "url": "https://download.qsrinternational.com/Software/NVivoforMac/NVivo.dmg"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [
+    "NVivo",
+    "NVivoHelper"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

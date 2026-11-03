@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.patched.config-poll — lightweight agent-config ETag poller.
+
+  Runs patched-fetch-config.sh every 15 minutes (StartInterval = 900 s).
+  The update daemon (com.patched.update) also calls patched-fetch-config.sh
+  at the top of each scan run, so in practice the config is always current.
+
+  RunAtLoad ensures the config is fetched immediately on install/boot, before
+  the first scan run, so the tier flag is available from the first scan.
+
+  Install to /Library/LaunchDaemons/ (root:wheel, mode 644), then:
+    sudo launchctl bootstrap system /Library/LaunchDaemons/com.patched.config-poll.plist
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.patched.config-poll</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/patched-updater/patched-fetch-config.sh</string>
+    </array>
+
+    <!-- Poll every 15 minutes. -->
+    <key>StartInterval</key>
+    <integer>900</integer>
+
+    <!-- Fetch immediately on bootstrap (install or reboot). -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/var/log/patched-update.out</string>
+    <key>StandardErrorPath</key>
+    <string>/var/log/patched-update.err</string>
+
+    <key>LowPriorityIO</key>
+    <true/>
+    <key>Nice</key>
+    <integer>10</integer>
+</dict>
+</plist>

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Security architecture - Patched documentation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Patched security architecture: collector trust boundary, authenticated inventory uploads, tenant isolation and endpoint release controls." />
+  <link rel="icon" href="/favicon.ico?v=20260926-brand-v3" sizes="32x32" />
+  <link rel="icon" href="/favicon.svg?v=20260926-brand-v3" type="image/svg+xml" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=20260926-brand-v3" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=20260926-brand-v3" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20260926-brand-v3" />
+  <link rel="mask-icon" href="/mask-icon.svg?v=20260926-brand-v3" color="#2563eb" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=20260926-brand-v3" />
+</head>
+<body>
+  <header class="nav">
+    <div class="nav__inner">
+      <a class="nav__logo" href="https://patched.im" aria-label="Patched.im home"><img src="/patched-lockup-horizontal.svg" width="132" height="27" alt="Patched" /></a>
+      <nav class="nav__links" aria-label="Primary">
+        <a href="/getting-started.html">Getting started</a>
+        <a href="/faq.html">FAQ</a>
+        <div class="nav__dropdown">
+          <button type="button" class="nav__dropdown-trigger" aria-haspopup="true" aria-expanded="false">Guides <svg class="nav__dropdown-chevron" width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="nav__dropdown-menu" role="menu">
+            <a role="menuitem" href="/agent-updater.html">Endpoint agent</a>
+            <a role="menuitem" href="/protected.html">Configuration assurance</a>
+            <a role="menuitem" href="/read-your-report.html">Reports and evidence</a>
+            <a role="menuitem" href="/remediation-guide.html">Remediation guide</a>
+            <a role="menuitem" href="/using-your-portal.html">Customer portal</a>
+            <a role="menuitem" href="/security.html">Security</a>
+            <a role="menuitem" href="/privacy.html">Data and privacy</a>
+          </div>
+        </div>
+      </nav>
+      <div class="nav__spacer"></div>
+      <div class="nav__cta"><a class="btn btn--primary" href="https://patched.im/pricing">Become a design partner</a></div>
+      <button class="nav__burger" type="button" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+  <main class="doc">
+    <div class="wrap"><div class="doc__inner"><a class="doc__back" href="/">&larr; All guides</a>
+      <article class="article">
+        <header><p class="kicker">Security</p><h1>Security architecture</h1><p class="lead">Patched receives evidence from software running on customer endpoints. That makes the agent, ingestion API and tenant boundary the controls that matter most.</p></header>
+        <h2>Collection boundary</h2>
+        <p>The Patched agent collects inventory and assurance evidence. It does not expose an inbound command channel, provide remote control or act as the customer’s endpoint-management authority.</p>
+        <ul>
+          <li>No screen sharing, device wipe, lock or arbitrary shell.</li>
+          <li>No proprietary installer repository or curated end-user app store.</li>
+          <li>Remediation remains in Intune, Jamf, patch-management or ticketing tools.</li>
+        </ul>
+        <h2>Authenticated inventory uploads</h2>
+        <p>Both platform agents POST a versioned, platform-neutral inventory payload to <code>api.patched.im</code> over HTTPS. Every request carries tenant credentials and an HMAC-SHA256 signature over the exact payload bytes. Timestamp and nonce checks reject replay.</p>
+        <div class="callout"><strong>Absence requires authority.</strong> Missing or stale collection cannot prove software is absent, close a finding or prove a control healthy. Reports retain collection time and evidence scope.</div>
+        <h2>Tenant and device identity</h2>
+        <p>Tenant credentials determine the ingestion boundary. Device identity is derived from stable hardware identifiers and enrolment context. The service validates the tenant before accepting or associating a payload, and customer-facing access is scoped to the authenticated tenant.</p>
+        <h2>Endpoint release trust</h2>
+        <p>Code shipped to customer endpoints is a supply-chain gate. Agent releases are versioned, provenance-sensitive and subject to a full code and security review before the first customer release. Customers control the channel used to deploy and update the collector.</p>
+        <h2>Legacy isolation</h2>
+        <p>Legacy packaging, deployment and end-user app-store code is being quarantined from the retained collector. Security and compatibility work may be required to isolate it safely, but it is not an active capability or a reason to broaden agent authority.</p>
+        <h2>Infrastructure boundary</h2>
+        <p>Public endpoints use TLS and edge protection. Administrative access to Patched servers is private-network only, and the database is not exposed publicly. Encrypted backups and operational access controls are part of the platform boundary.</p>
+        <h2>Report a vulnerability</h2>
+        <p>Email <a href="mailto:hello@patched.im?subject=Security%20disclosure">hello@patched.im</a> with “Security” in the subject. Include the affected component, observed behaviour and a safe reproduction where possible.</p>
+        <nav class="pager"><a href="/using-your-portal.html">&larr; Customer portal</a><a href="/privacy.html">Data and privacy &rarr;</a></nav>
+      </article>
+    </div></div>
+  </main>
+    <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__logo"><img src="/patched-lockup-horizontal-white.svg" width="132" height="27" alt="Patched" /></div>
+      <nav class="footer__links" aria-label="Footer"><a href="https://patched.im/cyber-essentials">Cyber Essentials</a><a href="https://patched.im/msp">For MSPs</a><a href="https://patched.im/pricing">Pricing</a><a href="https://patched.im/security.html">Security</a><a href="https://patched.im/about.html">About</a><a href="https://patched.im/blog">Blog</a><a href="https://docs.patched.im">Docs</a><a href="https://status.patched.im">Status</a><a href="https://patched.im/privacy.html">Privacy</a><a href="https://patched.im/cookies.html">Cookies</a><a href="mailto:hello@patched.im">Contact</a></nav>
+      <div class="footer__meta">&copy; <span data-year>2026</span> Patched.im Ltd · Isle of Man · Company No. 139269C</div>
+    </div>
+  </footer>
+  <script src="/app.js"></script>
+</body>
+</html>

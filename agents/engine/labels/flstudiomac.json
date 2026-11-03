@@ -1,0 +1,26 @@
+{
+  "label": "flstudiomac",
+  "name": "flstudiomac",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "root-unique-pkg"
+  },
+  "app_path": "/Applications/flstudiomac.app",
+  "expected_team_id": "N68WEP5ZZZ",
+  "download": {
+    "method": "static",
+    "url": "https://support.image-line.com/redirect/flstudio_mac_installer"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

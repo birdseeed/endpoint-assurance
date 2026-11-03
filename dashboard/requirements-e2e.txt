@@ -1,0 +1,13 @@
+# Browser-driven E2E dependencies (PAT-1021). Deliberately separate from
+# requirements-dev.txt so the normal `pip install -r requirements-dev.txt`
+# dev/CI path stays light and doesn't need a browser. Install this alongside
+# requirements.txt only when running e2e/ (the e2e CI job does NOT install
+# requirements-dev.txt, so pytest is listed here too; `requests`, used by
+# e2e/conftest.py and e2e/test_console_ui.py, already ships in
+# requirements.txt as a runtime dependency):
+#
+#   pip install -r requirements.txt -r requirements-e2e.txt
+#   python -m playwright install --with-deps chromium
+#   python -m pytest e2e/ -v
+pytest
+playwright==1.47.0

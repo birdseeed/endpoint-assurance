@@ -1,0 +1,64 @@
+{# Shared fields, autoescaped drafts and bounded private screenshot upload. #}
+{% macro feedback_form(csrf_token, route, draft=None, error=None, door="feedback", device_name=None) -%}
+{%- set draft = draft or {} -%}
+{%- set chosen_type = draft.get('type') or 'feature' -%}
+<form id="{{ door }}-form" class="feedback-form" action="/{{ door }}" method="post" enctype="multipart/form-data" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="route" data-feedback-route value="{{ route }}">
+  <div class="feedback-error" data-feedback-error role="alert"{% if not error %} hidden{% endif %}>{{ error or '' }}</div>
+  {% if door == 'support' %}
+  <input type="hidden" name="type" value="support">
+  <div class="feedback-field">
+    <label for="support-category">What do you need help with?</label>
+    <select id="support-category" name="category" required>
+      {% for value, label in (('not_working', 'Something is not working'), ('findings_or_reports', 'Question about my findings or reports'), ('account_billing', 'Account and billing')) %}
+      <option value="{{ value }}"{% if (draft.get('category') or 'not_working') == value %} selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% else %}
+  <div class="feedback-field">
+    <label for="feedback-type">What is this about?</label>
+    <select id="feedback-type" name="type" data-feedback-type required>
+      {% for value, label in (('feature', 'Feature request'), ('design', 'Design or usability')) %}
+      <option value="{{ value }}"{% if chosen_type == value %} selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="feedback-field">
+    <label for="feedback-title-input">Title</label>
+    <input id="feedback-title-input" name="title" type="text" minlength="5" maxlength="120" required value="{{ draft.get('title') or '' }}">
+    <p class="meta">5 to 120 characters</p>
+  </div>
+  {% endif %}
+  <div class="feedback-field">
+    <label for="{{ door }}-description">Description</label>
+    <textarea id="{{ door }}-description" name="description" rows="6" minlength="1" maxlength="5000" required>{{ draft.get('description') or '' }}</textarea>
+    <p class="meta">Up to 5,000 characters</p>
+  </div>
+  <div class="feedback-field">
+    <label for="{{ door }}-screenshot">Screenshot (optional)</label>
+    <input id="{{ door }}-screenshot" name="screenshot" type="file" accept="image/png,image/jpeg" data-feedback-screenshot>
+    <p class="meta">PNG or JPEG, up to 5 MiB.{% if draft %} Attach it again if you added one.{% endif %}</p>
+    <p class="feedback-warning">Screenshots are shared with the Patched team's issue tracker. Crop anything sensitive before attaching it.</p>
+    <div class="feedback-preview" data-feedback-preview hidden>
+      <img alt="Screenshot preview" data-feedback-preview-image>
+      <span data-feedback-preview-name></span>
+      <button type="button" class="btn btn-small" data-feedback-remove>Remove screenshot</button>
+    </div>
+  </div>
+  <details class="feedback-context">
+    <summary>What we send with this</summary>
+    <dl class="kv">
+      {% if device_name %}<dt>Device</dt><dd>{{ device_name }}</dd>{% endif %}
+      <dt>Page</dt><dd data-feedback-route-display>{{ route }}</dd>
+      <dt>Portal build</dt><dd>{{ portal_build }}</dd>
+      <dt>Browser</dt><dd data-feedback-browser>Your browser</dd>
+    </dl>
+  </details>
+  <div class="feedback-actions">
+    {{ caller() }}
+    <button type="submit" class="btn btn-primary">{% if door == 'support' %}Send support request{% else %}Send feedback{% endif %}</button>
+  </div>
+</form>
+{%- endmacro %}

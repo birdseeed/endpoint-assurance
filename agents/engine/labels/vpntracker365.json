@@ -1,0 +1,23 @@
+{
+  "label": "vpntracker365",
+  "name": "VPN Tracker 365",
+  "type": "zip",
+  "app_path": "/Applications/VPN Tracker 365.app",
+  "expected_team_id": "MJMRT6WJ8S",
+  "download": {
+    "method": "static",
+    "url": "https://www.vpntracker.com/goto/HPdownload/VPNT365Latest"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

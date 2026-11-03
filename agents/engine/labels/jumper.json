@@ -1,0 +1,24 @@
+{
+  "label": "jumper",
+  "name": "Jumper",
+  "type": "dmg",
+  "app_path": "/Applications/Jumper.app",
+  "expected_team_id": "PP557RNS84",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://download.getjumper.io/appcast.xml"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

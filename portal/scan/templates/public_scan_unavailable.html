@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Scan unavailable | Patched</title>
+  <link rel="icon" type="image/svg+xml" href="{{ static_url('favicon.svg') }}">
+  <link rel="stylesheet" href="{{ static_url('css/public-brand.css') }}">
+  <link rel="stylesheet" href="{{ static_url('css/site.css') }}">
+</head>
+<body>
+<div class="pub-page">
+{% include "_site_nav.html" %}
+  <main class="pub-main">
+    <div class="pub-prose-card">
+      <h1>The scan is not currently offered.</h1>
+      <p>Existing report and deletion links remain available.</p>
+      <p><a href="https://patched.im">Visit Patched</a></p>
+    </div>
+  </main>
+{% include "_site_footer.html" %}
+</div>
+<script>document.querySelectorAll('[data-year]').forEach(function(e){e.textContent=new Date().getFullYear();});</script>
+</body>
+</html>

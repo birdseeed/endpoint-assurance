@@ -1,0 +1,23 @@
+{
+  "label": "proxyman",
+  "name": "Proxyman",
+  "type": "dmg",
+  "app_path": "/Applications/Proxyman.app",
+  "expected_team_id": "3X57WP8E8V",
+  "download": {
+    "method": "static",
+    "url": "https://proxyman.io/release/osx/Proxyman_latest.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true. PAT-1380 (2026-08-15): alerted under catalogue-scope verification (PAT-1296) on 'VirusTotal: 1 malicious, 0 suspicious (of 75 engines)' for sha256 094615f2e42340d83ab2aef5f7f14ac2dfa6767e31d5cf4b203370f92b922497. Independently re-downloaded and hand-checked: the .io -> .com -> assets.proxyman.com redirect chain is genuine (all three hops verified live), codesign -dv on the mounted app shows TeamIdentifier=3X57WP8E8V (matches expected_team_id exactly), and `xcrun stapler validate` passes on the outer DMG. Same shape and same disposition as daisydisk and pdfexpert's PAT-1380 alerts: this agent's VT check (PAT-503) fails closed on any malicious>0, which is correct, but this session had no VT_API_KEY to see which engine flagged it or why. Left alerting: do not clear this without pulling the actual VT engine-level report."
+  }
+}

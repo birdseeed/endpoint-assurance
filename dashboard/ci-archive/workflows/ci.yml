@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt ruff==0.16.3
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Tests (pytest)
+        run: python -m pytest tests/
+
+      - name: Tests (deploy hook and rollback dry run)
+        # PAT-2311: the real deploy/post-receive and scripts/deploy.sh against
+        # a scratch mirror and checkout, with systemctl, systemd-analyze and
+        # sleep stubbed. Runs as the runner user: the code tree's owner is
+        # the invoking user there, so nothing in it needs root.
+        run: bash scripts/test-post-receive-rollback.sh
+
+      - name: Tests (console behaviour)
+        run: npm run test:console
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-e2e.txt
+
+      - name: Install Playwright browser
+        run: python -m playwright install --with-deps chromium
+
+      - name: Tests (browser-driven E2E)
+        run: python -m pytest e2e/ -v

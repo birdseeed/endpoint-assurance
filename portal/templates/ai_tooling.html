@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% from "_macros.html" import review_cell, approval_select, approval_select_head, notification_checkbox_field, filter_bar %}
+{% block content %}
+<div class="page-head">
+  <h1>AI Tooling</h1>
+  <p class="meta">AI applications, extensions, command-line tools, local runtimes and MCP servers recognised across your estate.</p>
+</div>
+
+{% if not available %}
+<aside class="notice" aria-label="AI Tooling view unavailable">
+  <p><strong>AI Tooling data isn't available yet.</strong> That doesn't mean no AI tooling is installed. The platform has not enabled this evidence view for your account yet.</p>
+</aside>
+{% else %}
+
+{% if approval_result %}
+<div class="notice approval-result{% if not approval_result.error %} notice-ok{% endif %}" id="approval-result" role="status" tabindex="-1" data-approval-result>
+  {% if approval_result.error %}
+  <p><strong>{{ approval_result.error }}</strong></p>
+  {% if approval_result.error_lines %}<ul class="approval-result__lines">{% for line in approval_result.error_lines %}<li>{{ line }}</li>{% endfor %}</ul>{% endif %}
+  {% else %}
+  <p><strong>{% if approval_result.changed is not none %}{{ approval_result.changed }} of {{ approval_result.requested }} product{{ '' if approval_result.requested == 1 else 's' }} changed to {{ approval_result.state_label }}.{% else %}Marked {{ approval_result.requested }} product{{ '' if approval_result.requested == 1 else 's' }} {{ approval_result.state_label }}.{% endif %}</strong>{% if approval_result.changed is not none and approval_result.changed < approval_result.requested %} The rest were already {{ approval_result.state_label }}.{% endif %}</p>
+  {% endif %}
+  <button type="button" class="approval-result__close" data-approval-result-close aria-label="Dismiss this notice" hidden>Dismiss</button>
+</div>
+{% endif %}
+
+<section class="ai-review-summary" aria-label="Estate summary">
+  {% for tile in summary_tiles %}
+  <a class="ai-summary__item{{ ' ai-summary__item--zero' if tile.zero }}" href="{{ tile.href }}" title="{{ tile.label }}: {{ tile.headline }}{{ '. ' ~ tile.support if tile.support }}">
+    <span>{{ tile.label }}</span> <strong>{{ tile.headline }}</strong>
+  </a>
+  {% endfor %}
+  {% if export_available %}<a class="btn btn-small" href="/ai-tooling.pdf">Download PDF</a> <a class="btn btn-small" href="/ai-tooling.csv">Download CSV</a>{% endif %}
+</section>
+{% if devices_error %}<p class="ai-coverage-notice" role="status">Device collection details are temporarily unavailable. The estate coverage summary remains separate.</p>{% endif %}
+{% if coverage_gaps %}<p class="ai-coverage-notice" role="status">Collection is incomplete or unavailable for some devices. Missing evidence does not mean no AI tooling. <a href="#collection">Review coverage</a>.</p>{% endif %}
+
+{% if empty_state == 'not_reported' %}
+<p class="empty">AI tooling has not been reported by these devices yet. This can include devices running an agent version that predates these collectors, so no absence claim is made.</p>
+{% elif empty_state == 'none_found' %}
+<p class="empty">No AI tooling was found in the evidence reported so far. Devices with failed, partial or missing collection remain coverage gaps.</p>
+{% endif %}
+
+<section class="approval-tools" aria-label="Mark AI tooling" data-approval-filters>
+{% if can_edit %}
+<form id="approval-form" class="bulk-bar" method="post" action="/software/approvals" data-bulk-bar>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="return_to" value="{{ return_to }}" data-approval-return>
+  <span class="bulk-bar__count" data-bulk-count aria-live="polite">Select products to mark several at once.</span>
+  <label class="bulk-bar__reason"><span class="visually-hidden">Reason (optional)</span><input class="search" type="text" name="reason" maxlength="1000" placeholder="Reason (optional)" autocomplete="off"></label>
+  <span class="bulk-bar__actions">
+    <button type="submit" class="btn btn-small" name="state" value="approved" data-bulk-submit>Approve</button>
+    <button type="submit" class="btn btn-small" name="state" value="unapproved" data-bulk-submit>Unapprove</button>
+    <button type="submit" class="btn btn-small" name="state" value="ignored" data-bulk-submit>Ignore</button>
+    <button type="button" class="btn btn-small bulk-bar__clear" data-bulk-clear hidden>Clear</button>
+  </span>
+</form>
+{% elif role_unavailable %}
+<p class="toolbar-hint">Approval controls are unavailable right now because your account role could not be checked. Existing decisions are still shown.</p>
+{% else %}
+<p class="toolbar-hint">Your account can view approval decisions. An administrator on your account can change them.</p>
+{% endif %}
+</section>
+
+<div class="card group-card" id="products">
+  <div class="group-card__head card-edge-muted">
+    <h2>Products</h2>
+    <span class="group-card__desc">Recognised AI tooling grouped by product identity.</span>
+  </div>
+  {% if products %}
+  {{ filter_bar('/ai-tooling', '', [], '', '', [], '', '', [], '', '',
+      'ai-tooling-search', '.ai-products-table', 'Search AI tooling',
+      ai_filter_bar.chips, ai_filter_bar.clear_url,
+      hidden_fields=ai_filter_bar.hidden_fields, search_value=ai_filter_bar.search,
+      multi_filters=ai_filter_bar.multi_filters) }}
+  <p class="meta ai-products-count">{{ products | length }} product{{ '' if (products | length) == 1 else 's' }} in this list.</p>
+  <div class="table-scroll" role="region" aria-label="AI tooling products table" tabindex="0">
+  <table class="data-table table-stack ai-products-table ai-review-table">
+    <thead><tr>{{ approval_select_head(can_edit) }}<th>Product and evidence</th><th class="ai-col-type">Type</th><th class="ai-col-count">Devices</th><th class="ai-col-assessment">Assessment</th><th class="ai-col-approval">Approval</th></tr></thead>
+    <tbody>
+      {% for product in products %}
+      <tr id="{{ product.row_id }}" class="{{ 'row-hide-filter' if product.hidden_filter }} {{ 'row-hide-search' if product.hidden_search }}" data-search="{{ product.search_text }}" data-filter-ai_type="{{ product.type }}" data-filter-ai_state="{{ product.approval_filter }}" data-filter-ai_vulnerability="{{ product.assessment.filter }}" data-approval-row data-approval-state="{{ product.approval_filter }}">
+        {{ approval_select(product, can_edit) }}
+        <td data-label="Product" class="cell-product">
+          <details class="ai-evidence">
+            <summary title="{{ product.name }}"><strong class="product-name" title="{{ product.name }}">{{ product.name }}</strong></summary>
+            <div class="ai-evidence__body">
+              <p><strong>{{ product.name }}</strong></p>
+              <dl>
+                <dt>Platform</dt><dd>{{ product.platforms | map('platform_display') | join(', ') }}</dd>
+                <dt>Vendor</dt><dd>{{ product.vendor }}{% if not product.vendor_verified %} · Observed, not verified{% endif %}</dd>
+                <dt>Versions</dt><dd>{{ product.versions | join(', ') if product.versions else 'No version evidence' }}</dd>
+                <dt>Users</dt><dd>{{ product.user_count if product.user_count is not none else 'Not collected' }}</dd>
+                <dt>First seen</dt><dd>{{ product.first_seen | humandate }}</dd>
+                <dt>Last used</dt><dd data-value="{{ product.last_used.value or '' }}">{% if product.last_used.value %}{{ product.last_used.value | humandate }}{% endif %}{% if product.last_used.label %} {{ product.last_used.label }}{% endif %}</dd>
+                <dt>Vulnerability findings</dt><dd>{{ product.assessment.label }}{% if product.assessment.reason %}. {{ product.assessment.reason }}{% endif %}</dd>
+              </dl>
+              {% if product.history_url %}<a href="{{ product.history_url }}" data-history-drawer>Approval history</a>{% endif %}
+              {% if product.approval_lock %}<p>{{ product.approval_lock }}</p>{% endif %}
+            </div>
+          </details>
+        </td>
+        <td data-label="Type"><span class="cell-line" title="{{ product.type_label }}">{{ product.type_label }}</span></td>
+        <td data-label="Devices">{{ product.device_count }}</td>
+        <td data-label="Vulnerability findings" data-value="{{ product.assessment.count if product.assessment.count is not none else -1 }}"><span class="pill {{ product.assessment.pill_class }}" title="{{ product.assessment.label }}">{{ product.assessment_label }}</span></td>
+        {{ review_cell(product, can_edit, csrf_token, return_to) }}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+  {% if products_error %}<p class="empty">Products are temporarily unavailable from the platform.</p>
+  {% elif estate_too_large %}<p class="empty">This estate is too large to aggregate safely in one view. No partial product list is shown. Complete CSV export is unavailable above 1,000 products.</p>
+  {% elif products is not none and not products and not empty_state %}<p class="empty">No recognised AI tooling products are available.</p>
+  {% elif products is not none and products_total > (products | length) %}<p class="meta">Showing {{ products | length }} of {{ products_total }} products. Complete CSV export is unavailable above 1,000 products, so no partial CSV is offered.</p>{% endif %}
+  <p class="empty filtered-empty" data-filter-empty{% if ai_filter_bar.visible_count or not products %} hidden{% endif %}>No products match these filters and search.</p>
+</div>
+
+<div class="card group-card" id="notifications">
+  <div class="group-card__head card-edge-muted">
+    <h2>First-seen notifications</h2>
+    <span class="group-card__desc">AI tooling and general new-software delivery are independent settings.</span>
+  </div>
+  {% if notification_saved %}<div class="notice notice-ok" role="status">Notification setting saved.</div>{% endif %}
+  {% if notifications_error %}
+  <p class="empty">Notification settings are temporarily unavailable. No setting is assumed.</p>
+  {% elif notifications %}
+  {#
+    PAT-2213: one Save for the whole card (one POST) rather than the old
+    per-row form-and-Save pair ("two saves for one form", Andy's complaint
+    on this ticket). `settings` names both raw keys this form covers;
+    main.py's _ai_tooling_notifications_multi reads one enabled_<key>
+    checkbox per row and saves each with its own sequential upstream PUT
+    (the unchanged single-setting contract below, just called twice) - see
+    that function's own docstring. Works with no JS: it is a plain GET-less
+    <form method="post">, same as every other guarded form in this repo.
+  #}
+  {% if can_edit %}
+  <form method="post" action="/ai-tooling/notifications">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="return_to" value="/ai-tooling">
+    <input type="hidden" name="settings" value="ai_tooling,new_software">
+    <div class="settings-list">
+      {{ notification_checkbox_field('enabled_ai_tooling', 'ai_tooling_notifications_enabled', 'AI tooling first seen', 'ai_tooling', notifications, can_edit) }}
+      {{ notification_checkbox_field('enabled_new_software', 'new_software_enabled', 'New software first seen', 'new_software', notifications, can_edit) }}
+    </div>
+    <p class="settings-actions"><button type="submit" class="btn btn-small">Save</button></p>
+  </form>
+  {% else %}
+  <div class="settings-list">
+    {{ notification_checkbox_field('enabled_ai_tooling', 'ai_tooling_notifications_enabled', 'AI tooling first seen', 'ai_tooling', notifications, can_edit) }}
+    {{ notification_checkbox_field('enabled_new_software', 'new_software_enabled', 'New software first seen', 'new_software', notifications, can_edit) }}
+  </div>
+  {% endif %}
+  {% endif %}
+</div>
+
+<div class="card ai-collection-card" id="collection">
+  <h2>Collection coverage</h2>
+  {% for tile in summary_tiles %}{% if tile.support %}<p class="meta">{{ tile.label }}: {{ tile.support }}</p>{% endif %}{% endfor %}
+  <div class="ai-collection-grid">
+    {% for block, coverage in summary.collection.items() %}
+    <div class="ai-collection-item">
+      <strong>{{ coverage.label }}</strong>
+      {% if coverage.available %}<span>{{ coverage.complete }} complete{% if coverage.partial %}, {{ coverage.partial }} partial{% endif %}{% if coverage.not_present %}, {{ coverage.not_present }} reported none{% endif %}{% if coverage.failed %}, {{ coverage.failed }} could not be read{% endif %}{% if coverage.not_reported %}, {{ coverage.not_reported }} not yet reported{% endif %}</span>{% else %}<span>Coverage unavailable</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <p class="meta">{% if summary.devices_with_tooling is not none %}{{ summary.devices_with_tooling }} device{{ '' if summary.devices_with_tooling == 1 else 's' }} currently report at least one authority-valid tooling item. {% endif %}A failed or not-yet-reported collector is a coverage gap, never evidence that a device has no AI tooling.</p>
+</div>
+
+
+<details class="card group-card ai-device-coverage" id="devices"{% if device_collection_open %} open{% endif %}>
+  <summary class="group-card__head card-edge-muted">
+    <h2>Collection by device</h2>
+    {% if devices is not none %}<span class="pill pill-muted">{{ devices | length }} of {{ devices_total }}</span>{% endif %}
+    <span class="group-card__desc">Collector state and counts for each tooling block. Unknown remains unknown.</span>
+  </summary>
+  {% if devices %}
+  <div class="table-scroll" role="region" aria-label="AI tooling collection by device" tabindex="0">
+  <table class="data-table table-stack ai-devices-table">
+    <thead><tr><th>Device</th><th>Platform</th><th>IDE plugins</th><th>CLI packages</th><th>Local models</th><th>MCP servers</th></tr></thead>
+    <tbody>
+      {% for device in devices %}
+      <tr>
+        <td data-label="Device"><a href="/ai-tooling/devices/{{ device.device_id }}">{{ device.hostname }}</a></td>
+        <td data-label="Platform">{{ device.platform | platform_display }}</td>
+        {% if device.ide_extensions.status == 'not_reported' and device.package_managers.status == 'not_reported' and device.local_models.status == 'not_reported' and device.mcp_servers.status == 'not_reported' %}
+        <td colspan="4" data-label="Collection">All four collectors have not yet reported. Coverage is unknown.</td>
+        {% else %}
+        <td data-label="IDE plugins">{% set block = device.ide_extensions %}<span class="pill {{ 'pill-ok' if block.status in ('complete', 'not_present') else 'pill-bad' if block.status == 'failed' else 'pill-muted' }}">{{ block.status_label }}</span>{% if block.count is not none %}<span class="cell-subtle">{{ 'At least ' if block.lower_bound }}{{ block.count }} plugin{{ '' if block.count == 1 else 's' }}</span>{% endif %}</td>
+        <td data-label="CLI packages">{% set block = device.package_managers %}<span class="pill {{ 'pill-ok' if block.status in ('complete', 'not_present') else 'pill-bad' if block.status == 'failed' else 'pill-muted' }}">{{ block.status_label }}</span>{% if block.count is not none %}<span class="cell-subtle">{{ 'At least ' if block.lower_bound }}{{ block.count }} package{{ '' if block.count == 1 else 's' }}</span>{% endif %}</td>
+        <td data-label="Local models">{% set block = device.local_models %}<span class="pill {{ 'pill-ok' if block.status in ('complete', 'not_present') else 'pill-bad' if block.status == 'failed' else 'pill-muted' }}">{{ block.status_label }}</span>{% if block.count is not none %}<span class="cell-subtle">{{ 'At least ' if block.lower_bound }}{{ block.count }} model{{ '' if block.count == 1 else 's' }}{% if block.runtime_count is not none %} · {{ block.runtime_count }} runtime{{ '' if block.runtime_count == 1 else 's' }}{% endif %}{% if block.total_bytes is not none %} · {{ block.total_bytes | humanbytes }}{% endif %}</span>{% endif %}</td>
+        <td data-label="MCP servers">{% set block = device.mcp_servers %}<span class="pill {{ 'pill-ok' if block.status in ('complete', 'not_present') else 'pill-bad' if block.status == 'failed' else 'pill-muted' }}">{{ block.status_label }}</span>{% if block.count is not none %}<span class="cell-subtle">{{ 'At least ' if block.lower_bound }}{{ block.count }} server{{ '' if block.count == 1 else 's' }}</span>{% endif %}</td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+  {% if devices_error %}<p class="empty">Device collection is temporarily unavailable from the platform.</p>
+  {% elif devices is not none and not devices %}<p class="empty">No devices have reported yet.</p>
+  {% elif devices is not none and devices_total > (devices | length) %}<p class="meta">Showing {{ devices | length }} of {{ devices_total }} devices.</p>{% endif %}
+  {% if device_previous_offset is not none or device_next_offset is not none %}
+  <nav class="pagination" aria-label="AI tooling device pages">
+    {% if device_previous_offset is not none %}<a class="btn btn-small" href="{{ device_previous_url }}">Previous devices</a>{% endif %}
+    {% if device_next_offset is not none %}<a class="btn btn-small" href="{{ device_next_url }}">Next devices</a>{% endif %}
+  </nav>
+  {% endif %}
+</details>
+
+<aside class="card card-narrow ai-privacy-panel">
+  <h2>What we collect</h2>
+  <p>Patched collects presence, version and configuration shape only, never prompts, chat history, model output, file contents, keys, MCP arguments or environment values.</p>
+  <p class="meta">MCP evidence is reduced on the device to the server name, transport, executable or package, and host before it is sent. Local-model evidence contains model names and sizes only.</p>
+</aside>
+
+<p class="toolbar-hint">No known vulnerability findings appears only when every advertised current version has exactly one completed assessment. Pending, Not assessed and incomplete coverage are not clean results. A finding is not labelled as a CVE unless its authoritative advisory record supplies a CVE alias. Approval changes are audited and feed the software governance and drift reports. They do not remove, block or uninstall tooling.</p>
+
+<aside class="history-drawer" id="history-drawer" role="dialog" aria-modal="false" aria-labelledby="history-drawer-title" hidden data-history-panel>
+  <div class="history-drawer__head"><h2 id="history-drawer-title">Approval history</h2><button type="button" class="btn btn-small" data-history-close>Close</button></div>
+  <div class="history-drawer__body" data-history-body></div>
+</aside>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ static_url('js/portal.js') }}"></script>{% endblock %}

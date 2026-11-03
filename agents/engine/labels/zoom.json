@@ -1,0 +1,36 @@
+{
+  "label": "zoom",
+  "name": "Zoom",
+  "type": "pkg",
+  "app_path": "/Applications/zoom.us.app",
+  "installed_version_key": "CFBundleVersion",
+  "expected_team_id": "BJ4HAAB9B3",
+  "download": {
+    "method": "static",
+    "url": "https://zoom.us/client/latest/ZoomInstallerIT.pkg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [
+    "zoom.us"
+  ],
+  "pinned_sha256": null,
+  "cross_hash_sources": [
+    {
+      "type": "homebrew_cask",
+      "id": "zoom"
+    }
+  ],
+  "patched": {
+    "allowlisted": true,
+    "mirror": false,
+    "mirror_eula_approved": false,
+    "tier": "core",
+    "reviewed_by": "andy",
+    "reviewed_at": null,
+    "notes": "IT (admin) PKG installer. Installed bundle is zoom.us.app \u2014 note the bundle name differs from the label. PAT-500: in scope for Phase 2 mirror pipeline; EULA review pending.",
+    "smoke_test_exempt": true,
+    "smoke_test_exempt_reason": "Zoom requires account credentials or SSO before the process reaches stable state; exits with login prompt in headless CI."
+  }
+}

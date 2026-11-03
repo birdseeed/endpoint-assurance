@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Patched staff console — Evidence and reports</title>
+<!-- Design reference for the staff console rebuild. Static mockup, invented data.
+     Source of truth for layout, spacing and colour. Colours and radii are theme.css tokens. -->
+<style>
+    body { margin:0; font-family:system-ui,-apple-system,'Segoe UI',sans-serif; font-size:14px; color:#0f1115; background:#f5f5f3; -webkit-font-smoothing:antialiased; }
+    a { color:#c93f04; text-decoration:none; } a:hover { color:#9f3003; }
+    .lbl { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:#7d8089; }
+    .mono { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; }
+    .num { font-weight:700; letter-spacing:-.02em; }
+    .pill { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; padding:2px 6px; border-radius:4px; white-space:nowrap; }
+    .card { background:#fff; border:1px solid rgba(15,17,21,.12); border-radius:6px; }
+    .th { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#7d8089; padding:9px 14px; text-align:left; }
+    .td { padding:11px 14px; border-top:1px solid rgba(15,17,21,.07); font-size:13px; }
+  </style>
+</head>
+<body>
+<div style="display:flex; flex-direction:column; width:1440px; height:900px; overflow:hidden; background:#f5f5f3;">
+
+  <div style="height:56px; flex-shrink:0; background:#fff; border-bottom:1px solid rgba(15,17,21,.12); display:flex; align-items:center; padding:0 22px; gap:11px;">
+    <span style="font-size:12px; color:#7d8089;">Meridian Trust</span><span style="font-size:12px; color:#7d8089;">/</span>
+    <h1 style="margin:0; font-size:18px; font-weight:700; letter-spacing:-.015em;">Evidence</h1>
+    <span class="mono" style="font-size:10px; color:#7d8089; background:#f5f5f3; border:1px solid rgba(15,17,21,.07); padding:3px 7px; border-radius:4px;">SAMPLE DATA</span>
+    <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+      <div style="border:1px solid rgba(15,17,21,.12); border-radius:6px; padding:6px 11px; font-size:12px; font-weight:500;">Build an assessor pack</div>
+      <div style="background:#c93f04; color:#fff; border-radius:6px; padding:7px 12px; font-size:12px; font-weight:600;">Issue a report</div>
+    </div>
+  </div>
+
+  <div style="padding:16px 22px; display:flex; flex-direction:column; gap:13px; overflow:hidden;">
+
+    <div style="display:grid; grid-template-columns:minmax(0,1fr) 400px; gap:13px; align-items:start;">
+
+      <div class="card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 15px 11px; border-bottom:1px solid rgba(15,17,21,.07);">
+          <div class="lbl" style="color:#0f1115; font-size:11px;">Issued</div>
+          <span class="mono" style="font-size:10px; color:#7d8089;">IMMUTABLE ONCE ISSUED</span>
+        </div>
+        <table style="width:100%; border-collapse:collapse;">
+          <thead><tr style="background:#f5f5f3;">
+            <th class="th" style="width:30%;">Report</th><th class="th">Period</th><th class="th">Coverage then</th><th class="th">Findings then</th><th class="th">Sent to</th><th class="th">State</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="td"><div style="font-weight:600;">Posture summary</div><div class="mono" style="font-size:11px; color:#7d8089; margin-top:2px;">sha256 4f9c…a1e2</div></td>
+              <td class="td mono" style="font-size:12px;">Aug 2026</td>
+              <td class="td"><span class="mono" style="font-size:12px; color:#c2410c; font-weight:600;">91.2%</span></td>
+              <td class="td"><div style="display:flex; gap:4px;"><span class="pill" style="background:#fef2f2; color:#b91c1c;">28</span><span class="pill" style="background:#fff7ed; color:#c2410c;">71</span></div></td>
+              <td class="td" style="font-size:12px;">s.voss</td>
+              <td class="td"><span class="pill" style="background:#f0fdf4; color:#15803d;">OPENED</span></td>
+            </tr>
+            <tr>
+              <td class="td"><div style="font-weight:600;">Cyber Essentials evidence</div><div class="mono" style="font-size:11px; color:#7d8089; margin-top:2px;">sha256 b7d1…3c08</div></td>
+              <td class="td mono" style="font-size:12px;">6 Sep</td>
+              <td class="td"><span class="mono" style="font-size:12px; color:#b91c1c; font-weight:600;">89.5%</span></td>
+              <td class="td"><div style="display:flex; gap:4px;"><span class="pill" style="background:#fef2f2; color:#b91c1c;">31</span><span class="pill" style="background:#fff7ed; color:#c2410c;">64</span></div></td>
+              <td class="td" style="font-size:12px;">s.voss, assessor</td>
+              <td class="td"><span class="pill" style="background:#f0fdf4; color:#15803d;">OPENED</span></td>
+            </tr>
+            <tr>
+              <td class="td"><div style="font-weight:600;">Software governance</div><div class="mono" style="font-size:11px; color:#7d8089; margin-top:2px;">sha256 19ab…77f4</div></td>
+              <td class="td mono" style="font-size:12px;">Q3 2026</td>
+              <td class="td"><span class="mono" style="font-size:12px; color:#c2410c; font-weight:600;">90.8%</span></td>
+              <td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">17 products</span></td>
+              <td class="td" style="font-size:12px;">s.voss</td>
+              <td class="td"><span class="pill" style="background:#fff7ed; color:#c2410c;">NOT OPENED</span></td>
+            </tr>
+            <tr>
+              <td class="td"><div style="font-weight:600;">Removal evidence, Tailscale</div><div class="mono" style="font-size:11px; color:#7d8089; margin-top:2px;">pending campaign</div></td>
+              <td class="td mono" style="font-size:12px; color:#7d8089;">—</td>
+              <td class="td mono" style="font-size:12px; color:#7d8089;">—</td>
+              <td class="td mono" style="font-size:12px; color:#7d8089;">—</td>
+              <td class="td mono" style="font-size:12px; color:#7d8089;">—</td>
+              <td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">WAITING</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:13px;">
+        <div class="card" style="padding:15px;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div class="lbl" style="color:#0f1115; font-size:11px;">What the customer scheduled</div>
+            <span class="pill" style="background:#f5f5f3; color:#7d8089;">THEIR CONTROL</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+            <div style="display:flex; align-items:baseline; gap:9px;"><span style="font-size:13px; font-weight:600; flex-grow:1;">Posture summary</span><span class="mono" style="font-size:11px; color:#7d8089;">MONTHLY, 1ST</span></div>
+            <div style="display:flex; align-items:baseline; gap:9px;"><span style="font-size:13px; font-weight:600; flex-grow:1;">Software governance</span><span class="mono" style="font-size:11px; color:#7d8089;">QUARTERLY</span></div>
+          </div>
+          <div style="margin-top:12px; padding-top:11px; border-top:1px solid rgba(15,17,21,.07); font-size:12px; color:#2a2d33; line-height:1.5;">
+            Cadence is theirs to set, at any frequency or on demand. Patched never promises a monthly rhythm it then has to keep.
+          </div>
+        </div>
+
+        <div class="card" style="padding:15px;">
+          <div class="lbl" style="color:#0f1115; font-size:11px;">Assessor pack</div>
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
+            <div style="display:flex; gap:9px; align-items:baseline;"><span class="pill" style="background:#f5f5f3; color:#7d8089;">1</span><span style="font-size:12px;">Estate inventory at a stated moment</span></div>
+            <div style="display:flex; gap:9px; align-items:baseline;"><span class="pill" style="background:#f5f5f3; color:#7d8089;">2</span><span style="font-size:12px;">Coverage statement, including what was not seen</span></div>
+            <div style="display:flex; gap:9px; align-items:baseline;"><span class="pill" style="background:#f5f5f3; color:#7d8089;">3</span><span style="font-size:12px;">Findings with their basis, mapped to controls</span></div>
+            <div style="display:flex; gap:9px; align-items:baseline;"><span class="pill" style="background:#f5f5f3; color:#7d8089;">4</span><span style="font-size:12px;">Dispositions, with who said what and when</span></div>
+            <div style="display:flex; gap:9px; align-items:baseline;"><span class="pill" style="background:#f5f5f3; color:#7d8089;">5</span><span style="font-size:12px;">Actions taken, and by whom</span></div>
+          </div>
+          <div style="display:flex; gap:7px; margin-top:13px;">
+            <span class="pill" style="background:#f5f5f3; color:#7d8089;">CYBER ESSENTIALS</span>
+            <span class="pill" style="background:#f5f5f3; color:#7d8089;">ISO 27001 A</span>
+            <span class="pill" style="background:#f5f5f3; color:#7d8089;">ART 32</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:13px; align-items:start;">
+      <div class="card" style="padding:15px;">
+        <div class="lbl" style="color:#0f1115; font-size:11px;">Every issued report states this, on its first page</div>
+        <div style="background:#f5f5f3; border-radius:6px; padding:14px 15px; margin-top:12px;">
+          <div style="font-size:13px; line-height:1.6; color:#0f1115;">
+            This report covers <strong>222 of 248 devices</strong> on the estate list as at <strong>6 September 2026</strong>. Sixteen devices could not be inspected and are listed individually at the end. <strong>They are not represented as compliant.</strong> Findings marked version confirmed were read from the installed application. Findings marked name match are weaker and are labelled as such.
+          </div>
+        </div>
+        <div style="margin-top:12px; font-size:12px; color:#2a2d33; line-height:1.5;">
+          This paragraph is the product. It is what makes the document usable by an assessor and it is what nobody else hands the customer.
+        </div>
+      </div>
+
+      <div class="card" style="padding:15px;">
+        <div class="lbl" style="color:#0f1115; font-size:11px;">Once issued, it does not change</div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+          <div style="display:flex; gap:10px; align-items:flex-start;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7d8089" stroke-width="1.9" style="margin-top:1px; flex-shrink:0;"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span style="font-size:12px; line-height:1.5;">The numbers are frozen at the moment of issue, and the coverage figure is stored with them, so a later improvement never rewrites history.</span></div>
+          <div style="display:flex; gap:10px; align-items:flex-start;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7d8089" stroke-width="1.9" style="margin-top:1px; flex-shrink:0;"><path d="M4 6h16v13H4z"/><path d="M8 10h8M8 14h5"/></svg><span style="font-size:12px; line-height:1.5;">A content hash is printed on the document, so a customer can prove the copy their assessor holds is the copy that was issued.</span></div>
+          <div style="display:flex; gap:10px; align-items:flex-start;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7d8089" stroke-width="1.9" style="margin-top:1px; flex-shrink:0;"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><span style="font-size:12px; line-height:1.5;">A correction is a new report that supersedes the old one, never an edit. Both stay in the list.</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

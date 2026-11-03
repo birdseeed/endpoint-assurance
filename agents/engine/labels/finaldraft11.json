@@ -1,0 +1,23 @@
+{
+  "label": "finaldraft11",
+  "name": "Final Draft 11",
+  "type": "pkginzip",
+  "app_path": "/Applications/Final Draft 11.app",
+  "expected_team_id": "7XUZ8R5736",
+  "download": {
+    "method": "static",
+    "url": "https://www.finaldraft.com"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

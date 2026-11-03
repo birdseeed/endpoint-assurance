@@ -1,0 +1,34 @@
+{
+  "label": "adobeacrobatprodc",
+  "name": "Adobe Acrobat Pro DC",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "relative-path-glob",
+    "patterns": [
+      "Acrobat/Acrobat DC Installer.pkg"
+    ]
+  },
+  "app_path": "/Applications/Adobe Acrobat Pro DC.app",
+  "expected_team_id": "JQ525L2MZD",
+  "download": {
+    "method": "static",
+    "url": "https://trials.adobe.com/AdobeProducts/APRO/Acrobat_HelpX/osx10/Acrobat_DC_Web_WWMUI.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "Acrobat Pro DC"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "mirror_eula_approved": false,
+    "vendor_only": true,
+    "vendor_only_reason": "auth-gated-cdn",
+    "reviewed_by": "pat-664",
+    "reviewed_at": "2026-07-04",
+    "notes": "PAT-664: permanently vendor_only=true. Adobe trial installer (trials.adobe.com) requires cookies/session authentication; download returns 403 without a valid Adobe session. Distinct from Adobe Reader DC. Mirror pipeline will skip this label. PAT-1380 (2026-08-15): the 'alert' surfaced by catalogue-scope verification (PAT-1296) was not an Adobe/auth problem -- it was a verifier gap. The DMG downloaded clean (HTTP 200, no cookies needed for this specific static URL -- worth another look at whether vendor_only_reason still holds, left as-is here since that is a separate judgment call from this ticket) but mounted to reveal the real installer at 'Acrobat/Acrobat DC Installer.pkg', a plain named subfolder, not the DMG root or a wrapper .app -- the only two shapes _find_primary_pkg() searched before this ticket. pkgutil --check-signature hand-confirmed it: signed by Adobe Inc., Team ID JQ525L2MZD (matches expected_team_id exactly), notarized and trusted. Fixed in verifier/verify.py (_find_primary_pkg) rather than here -- extended the search to a third shape, one level into any non-.app subdirectory, requiring exactly one .pkg match. Re-run against the live URL after the fix: classification 'ok'. See PAT-1380 writeup for the reasoning on why this was safe to fix in the resolver (widens discovery only; the Team ID/notarization check downstream is unchanged) rather than left unsupported."
+  }
+}

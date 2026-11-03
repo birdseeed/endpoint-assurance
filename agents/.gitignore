@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.pytest_cache/
+
+# Swift / Xcode
+# menubar/PatchedUpdater.xcodeproj is generated from project.yml by XcodeGen.
+# Run `xcodegen generate` inside menubar/ to regenerate before opening in Xcode.
+menubar/PatchedUpdater.xcodeproj/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+.build/
+*.o
+*.d
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Shell
+*.swp
+*.swo
+
+# Editor
+.vscode/
+.idea/
+*.iml
+
+# Local runtime / session dirs (not deliverables)
+verifier/reports/
+verifier/state/
+.claude/
+
+# Cloudflare Wrangler local cache, not build output.
+.wrangler/

@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Patched — Self-Service Agent · Menu-bar & Tray</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --signal:#F5530A; --signal-deep:#C93F04; --slate:#0F1115;
+    --mac:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro','Helvetica Neue',sans-serif;
+    --win:'Segoe UI Variable','Segoe UI',system-ui,'Segoe UI Emoji',sans-serif;
+    --archivo:'Archivo',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{background:#e4e4e1; -webkit-font-smoothing:antialiased; color:#0F1115;}
+  .canvas{min-width:100%; width:max-content; min-height:100vh; padding:48px; box-sizing:border-box;}
+  .pagehead{font-family:var(--mac); margin-bottom:8px;}
+  .pagehead .k{font-family:'Archivo',sans-serif; font-weight:600; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#7d8089;}
+  .pagehead h1{font-family:'Archivo',sans-serif; font-weight:700; font-size:26px; letter-spacing:-.02em; margin:10px 0 6px;}
+  .pagehead p{color:#5c606a; font-size:13.5px; max-width:74ch; margin:0;}
+  .pagehead p b{color:#0F1115;}
+
+  .grid{display:flex; gap:36px; align-items:flex-start; margin-top:38px;}
+  .col{display:flex; flex-direction:column; gap:36px;}
+  .scene{flex:none;}
+  .scene > .lab{font-family:var(--mac); font-size:11px; font-weight:600; letter-spacing:.04em; color:#5c606a; margin-bottom:10px; display:flex; gap:8px; align-items:center;}
+  .scene > .lab .os{font-family:'Archivo',sans-serif; font-weight:700; letter-spacing:-.01em; color:#0F1115;}
+  .scene > .lab .mode{font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:#9a9ea7;}
+
+  /* ---------- macOS scene ---------- */
+  .mac{width:560px; height:584px; border-radius:12px; overflow:hidden; position:relative; box-shadow:0 30px 70px -34px rgba(15,17,21,.55); border:1px solid rgba(15,17,21,.16);
+    background:linear-gradient(150deg,#5b6a82 0%,#6d6480 45%,#8a6f86 100%);}
+  .mac.night{background:linear-gradient(150deg,#1f2733 0%,#2a2535 50%,#3a2f3e 100%);}
+  .mac .mbar{height:26px; display:flex; align-items:center; gap:18px; padding:0 12px; background:rgba(255,255,255,.18); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);}
+  .mac.night .mbar{background:rgba(20,20,24,.42);}
+  .mac .mbar .app{font-family:var(--mac); font-size:12px; font-weight:600; color:#fff;}
+  .mac .mbar .mi{font-family:var(--mac); font-size:12px; color:rgba(255,255,255,.92); font-weight:400;}
+  .mac .mbar .sp{flex:1;}
+  .mac .mbar .si{display:flex; align-items:center; gap:14px;}
+  .mac .mbar .si svg{display:block;}
+  .mac .mbar .icobtn{display:flex; align-items:center; justify-content:center; width:24px; height:20px; border-radius:5px; background:rgba(255,255,255,.26);}
+  .mac.night .mbar .icobtn{background:rgba(255,255,255,.16);}
+  .mac .mbar .clk{font-family:var(--mac); font-size:12px; color:#fff; font-variant-numeric:tabular-nums;}
+
+  /* popover */
+  .pop{position:absolute; top:34px; width:340px; font-family:var(--mac);
+    border-radius:12px; overflow:hidden; box-shadow:0 18px 50px -16px rgba(0,0,0,.45);}
+  .pop.macpop{right:14px;}
+  .pop .notch{position:absolute; top:-6px; width:14px; height:14px; transform:rotate(45deg);}
+  .pop.macpop .notch{right:38px;}
+
+  /* light/dark popover surfaces */
+  .surf-light{background:#fbfbfc; color:#0F1115;}
+  .surf-light .notch{background:#fbfbfc;}
+  .surf-dark{background:#1c1c1f; color:#fff;}
+  .surf-dark .notch{background:#1c1c1f;}
+
+  /* popover header */
+  .ph{display:flex; align-items:center; gap:9px; padding:13px 14px 11px;}
+  .ph .lock{display:flex; align-items:center; gap:8px;}
+  .ph .lock .wm{font-family:var(--archivo); font-weight:600; font-size:15px; letter-spacing:-.02em;}
+  .surf-dark .ph .lock .wm{color:#fff;}
+  .ph .sp{flex:1;}
+  .ph .managed{font-size:10px; color:#8a8d94; border:1px solid rgba(15,17,21,.14); border-radius:4px; padding:2px 6px; letter-spacing:.02em;}
+  .surf-dark .ph .managed{color:rgba(255,255,255,.55); border-color:rgba(255,255,255,.18);}
+  .ph .gear{opacity:.5;}
+  .surf-dark .ph .gear{opacity:.7;}
+
+  .divide{height:1px; background:rgba(15,17,21,.09);}
+  .surf-dark .divide{background:rgba(255,255,255,.10);}
+
+  /* posture summary */
+  .summary{display:flex; align-items:center; gap:14px; padding:14px;}
+  .summary .gauge{flex:none; position:relative; width:62px; height:62px;}
+  .summary .meta .big{font-size:15px; font-weight:600; letter-spacing:-.01em;}
+  .summary .meta .sub{font-size:12px; color:#7d8089; margin-top:3px;}
+  .surf-dark .summary .meta .sub{color:rgba(255,255,255,.55);}
+  .summary .meta .legend{display:flex; gap:11px; margin-top:8px;}
+  .summary .meta .legend span{display:flex; align-items:center; gap:5px; font-size:10.5px; color:#5c606a; font-variant-numeric:tabular-nums;}
+  .surf-dark .summary .meta .legend span{color:rgba(255,255,255,.6);}
+  .summary .meta .legend .d{width:7px;height:7px;border-radius:2px;}
+
+  /* primary action */
+  .act{padding:4px 14px 12px; display:flex; gap:8px;}
+  .btn{flex:1; border:none; border-radius:7px; font-family:var(--mac); font-size:13px; font-weight:600; padding:9px 12px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px;}
+  .btn .sz{font-weight:400; opacity:.8; font-size:11.5px;}
+  .btn-primary{background:var(--signal); color:#fff;}
+  .btn-ghost{flex:none; background:rgba(15,17,21,.06); color:#0F1115; padding:9px 14px;}
+  .surf-dark .btn-ghost{background:rgba(255,255,255,.1); color:#fff;}
+
+  /* app list */
+  .list{padding:2px 6px 6px;}
+  .lhead{font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:#9a9ea7; padding:8px 8px 6px;}
+  .row{display:flex; align-items:center; gap:10px; padding:8px; border-radius:8px;}
+  .row:hover{background:rgba(15,17,21,.04);}
+  .surf-dark .row:hover{background:rgba(255,255,255,.06);}
+  .row .ico{flex:none; width:30px; height:30px; border-radius:7px; background:rgba(15,17,21,.07); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; color:#5c606a;}
+  .surf-dark .row .ico{background:rgba(255,255,255,.1); color:rgba(255,255,255,.7);}
+  .row .nm{flex:1; min-width:0;}
+  .row .nm .t{font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .row .nm .v{font-size:11px; color:#9a9ea7; margin-top:1px; font-variant-numeric:tabular-nums;}
+  .row .upd{font-size:12px; font-weight:600; color:#0F1115; border:1px solid rgba(15,17,21,.16); border-radius:6px; padding:5px 11px; background:transparent; cursor:pointer;}
+  .surf-dark .row .upd{color:#fff; border-color:rgba(255,255,255,.22);}
+  .row .ok{display:flex; align-items:center; gap:5px; font-size:11.5px; color:#9a9ea7;}
+  .row.patching .nm .v{color:var(--signal-deep);}
+  .surf-dark .row.patching .nm .v{color:var(--signal);}
+  .patchbar{margin-top:5px; height:3px; border-radius:2px; background:rgba(15,17,21,.10); position:relative; overflow:hidden;}
+  .surf-dark .patchbar{background:rgba(255,255,255,.14);}
+  .patchbar .f{position:absolute; left:0; top:0; bottom:0; background:var(--signal); border-radius:2px;}
+  .row .pct{font-size:11.5px; font-weight:600; color:var(--signal-deep); font-variant-numeric:tabular-nums;}
+  .surf-dark .row .pct{color:var(--signal);}
+
+  /* footer */
+  .pf{display:flex; align-items:center; padding:10px 14px; font-size:11px; color:#9a9ea7;}
+  .pf .sp{flex:1;}
+  .pf a{color:#5c606a; text-decoration:none; font-weight:500;}
+  .surf-dark .pf{color:rgba(255,255,255,.4);}
+  .surf-dark .pf a{color:rgba(255,255,255,.7);}
+
+  /* ---------- Windows scene ---------- */
+  .win{width:560px; height:430px; border-radius:10px; overflow:hidden; position:relative; box-shadow:0 30px 70px -34px rgba(15,17,21,.55); border:1px solid rgba(15,17,21,.16);
+    background:linear-gradient(150deg,#1a6db3 0%,#1f86c9 55%,#37a3da 100%);}
+  .win.night{background:linear-gradient(150deg,#0a2436 0%,#0e3350 60%,#114063 100%);}
+  .win .desk{position:absolute; inset:0;}
+  .win .taskbar{position:absolute; left:0; right:0; bottom:0; height:48px; display:flex; align-items:center; justify-content:center; gap:10px;
+    background:rgba(243,243,243,.82); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border-top:1px solid rgba(255,255,255,.5);}
+  .win.night .taskbar{background:rgba(32,32,34,.82); border-top:1px solid rgba(255,255,255,.06);}
+  .win .taskbar .tb{width:30px; height:30px; border-radius:6px; display:flex; align-items:center; justify-content:center;}
+  .win .taskbar .tb.start{background:none;}
+  .win .taskbar .tray{position:absolute; right:10px; display:flex; align-items:center; gap:11px;}
+  .win .taskbar .tray .ti{display:flex; align-items:center;}
+  .win .taskbar .tray .clk{font-family:var(--win); font-size:11px; line-height:1.3; text-align:right; color:#1a1a1a;}
+  .win.night .taskbar .tray .clk{color:#e8e8ea;}
+
+  /* flyout */
+  .flyout{position:absolute; right:8px; bottom:56px; width:360px; font-family:var(--win); border-radius:8px; overflow:hidden;
+    box-shadow:0 16px 44px -12px rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.4);}
+  .fl-light{background:#f3f3f3; color:#1a1a1a; border-color:rgba(255,255,255,.6);}
+  .fl-dark{background:#2b2b2e; color:#fff; border-color:rgba(255,255,255,.08);}
+
+  .fl-h{display:flex; align-items:center; gap:9px; padding:14px 15px 12px;}
+  .fl-h .wm{font-family:var(--archivo); font-weight:600; font-size:15px; letter-spacing:-.02em;}
+  .fl-dark .fl-h .wm{color:#fff;}
+  .fl-h .sp{flex:1;}
+  .fl-h .managed{font-size:10px; color:#5c606a; border:1px solid rgba(15,17,21,.16); border-radius:4px; padding:2px 6px;}
+  .fl-dark .fl-h .managed{color:rgba(255,255,255,.55); border-color:rgba(255,255,255,.18);}
+
+  .fl-div{height:1px; background:rgba(15,17,21,.10);}
+  .fl-dark .fl-div{background:rgba(255,255,255,.10);}
+
+  .fl-sum{display:flex; align-items:center; gap:14px; padding:15px;}
+  .fl-sum .gauge{flex:none; width:62px; height:62px; position:relative;}
+  .fl-sum .meta .big{font-size:15px; font-weight:600;}
+  .fl-sum .meta .sub{font-size:12px; color:#5c606a; margin-top:3px;}
+  .fl-dark .fl-sum .meta .sub{color:rgba(255,255,255,.6);}
+  .fl-sum .meta .legend{display:flex; gap:11px; margin-top:8px;}
+  .fl-sum .meta .legend span{display:flex; align-items:center; gap:5px; font-size:10.5px; color:#5c606a; font-variant-numeric:tabular-nums;}
+  .fl-dark .fl-sum .meta .legend span{color:rgba(255,255,255,.6);}
+  .fl-sum .meta .legend .d{width:7px;height:7px;border-radius:2px;}
+
+  .fl-act{padding:0 15px 13px;}
+  .fl-btn{width:100%; border:none; border-radius:5px; font-family:var(--win); font-size:13px; font-weight:600; padding:10px 12px; cursor:pointer; background:var(--signal); color:#fff; display:flex; align-items:center; justify-content:center; gap:7px;}
+  .fl-btn .sz{font-weight:400; opacity:.85; font-size:11.5px;}
+
+  .fl-list{padding:2px 8px 8px;}
+  .fl-lhead{font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:#9a9ea7; padding:8px 7px 6px;}
+  .fl-row{display:flex; align-items:center; gap:10px; padding:8px 7px;}
+  .fl-row .ico{flex:none; width:30px;height:30px;border-radius:6px; background:rgba(15,17,21,.07); display:flex;align-items:center;justify-content:center; font-size:13px;font-weight:600;color:#5c606a;}
+  .fl-dark .fl-row .ico{background:rgba(255,255,255,.1); color:rgba(255,255,255,.7);}
+  .fl-row .nm{flex:1; min-width:0;}
+  .fl-row .nm .t{font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .fl-row .nm .v{font-size:11px; color:#9a9ea7; margin-top:1px; font-variant-numeric:tabular-nums;}
+  .fl-row.patching .nm .v{color:var(--signal-deep);}
+  .fl-dark .fl-row.patching .nm .v{color:var(--signal);}
+  .fl-row .upd{font-size:12px; font-weight:600; color:#1a1a1a; border:1px solid rgba(15,17,21,.18); border-radius:4px; padding:5px 11px; background:transparent; cursor:pointer;}
+  .fl-dark .fl-row .upd{color:#fff; border-color:rgba(255,255,255,.22);}
+  .fl-row .ok{display:flex; align-items:center; gap:5px; font-size:11.5px; color:#9a9ea7;}
+  .fl-row .pct{font-size:11.5px; font-weight:600; color:var(--signal-deep); font-variant-numeric:tabular-nums;}
+  .fl-dark .fl-row .pct{color:var(--signal);}
+  .fl-pf{display:flex; align-items:center; padding:11px 15px; font-size:11px; color:#9a9ea7;}
+  .fl-pf .sp{flex:1;}
+  .fl-pf a{color:#5c606a; text-decoration:none; font-weight:500;}
+  .fl-dark .fl-pf{color:rgba(255,255,255,.4);} .fl-dark .fl-pf a{color:rgba(255,255,255,.7);}
+
+  .foot-note{font-family:var(--mac); margin-top:40px; color:#5c606a; font-size:13px; max-width:80ch; border-top:1px solid rgba(15,17,21,.12); padding-top:20px;}
+  .foot-note b{color:#0F1115;}
+</style>
+</head>
+<body>
+<div class="canvas">
+  <div class="pagehead">
+    <span class="k">Patched — self-service agent</span>
+    <h1>Menu-bar &amp; tray — the surface users actually open.</h1>
+    <p>The agent manages third-party app updates. Click the <b>ring mark</b> in the menu bar / tray and this panel drops down: device posture as the <b>gauge</b>, the apps that need patching, and one button to <b>patch all</b>. All UI is in the <b>OS system font</b> (SF on macOS, Segoe UI on Windows) — only the “Patched” lockup is Archivo. <b>Apps patched · patching · unpatched.</b></p>
+  </div>
+
+  <div class="grid">
+    <!-- ============ macOS column ============ -->
+    <div class="col">
+      <div class="scene">
+        <div class="lab"><span class="os">macOS</span> menu-bar popover <span class="mode">· Light</span></div>
+        <div class="mac">
+          <div class="mbar">
+            <span class="app">Patched</span>
+            <span class="mi">File</span><span class="mi">View</span><span class="mi">Help</span>
+            <span class="sp"></span>
+            <span class="si">
+              <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><path d="M8.5 2.2C5.9 2.2 3.6 3.2 1.9 4.9M8.5 6.1c-1.4 0-2.7.5-3.7 1.4M8.5 9.6l1.9-1.9a2.7 2.7 0 0 0-3.8 0L8.5 9.6Z" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x="1" y="2.5" width="19" height="7" rx="2" stroke="#fff" stroke-width="1.1"/><rect x="2.5" y="4" width="14" height="4" rx="1" fill="#fff"/><rect x="21" y="4.5" width="1.6" height="3" rx=".8" fill="#fff"/></svg>
+              <span class="icobtn" title="Patched"><span class="ring" data-ring data-dark></span></span>
+              <span class="clk">Mon 9:41</span>
+            </span>
+          </div>
+          <div class="pop macpop surf-light">
+            <div class="notch"></div>
+            <div class="ph">
+              <span class="lock"><span class="ring" data-ring></span><span class="wm">Patched</span></span>
+              <span class="sp"></span>
+              <span class="managed">Managed</span>
+              <svg class="gear" width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.2" stroke="#0F1115" stroke-width="1.6"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2l-2.1 2.1M7.3 16.7l-2.1 2.1" stroke="#0F1115" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </div>
+            <div class="divide"></div>
+            <div class="summary">
+              <div class="gauge"><span class="ring" data-gauge data-patched="84" data-patching="1" data-total="91"></span></div>
+              <div class="meta">
+                <div class="big">6 updates ready</div>
+                <div class="sub">This Mac · 1 patching now</div>
+                <div class="legend">
+                  <span><span class="d" style="background:#0F1115"></span>84 patched</span>
+                  <span><span class="d" style="background:#F5530A"></span>1 patching</span>
+                  <span><span class="d" style="background:rgba(15,17,21,.18)"></span>6 unpatched</span>
+                </div>
+              </div>
+            </div>
+            <div class="act">
+              <button class="btn btn-primary">Patch all <span class="sz">· 412 MB</span></button>
+              <button class="btn btn-ghost">Later</button>
+            </div>
+            <div class="divide"></div>
+            <div class="list">
+              <div class="lhead">Needs patching</div>
+              <div class="row patching">
+                <span class="ico">S</span>
+                <div class="nm"><div class="t">Slack</div><div class="v">4.36.140 → 4.37.94</div><div class="patchbar"><span class="f" style="width:62%"></span></div></div>
+                <span class="pct">62%</span>
+              </div>
+              <div class="row">
+                <span class="ico">C</span>
+                <div class="nm"><div class="t">Google Chrome</div><div class="v">120.0.6099 → 121.0.6167</div></div>
+                <button class="upd">Update</button>
+              </div>
+              <div class="row">
+                <span class="ico">Z</span>
+                <div class="nm"><div class="t">Zoom</div><div class="v">5.17.5 → 5.17.11</div></div>
+                <button class="upd">Update</button>
+              </div>
+              <div class="row">
+                <span class="ico">1</span>
+                <div class="nm"><div class="t">1Password</div><div class="v">8.10.20 → 8.10.28</div></div>
+                <button class="upd">Update</button>
+              </div>
+              <div class="lhead">Up to date</div>
+              <div class="row">
+                <span class="ico">N</span>
+                <div class="nm"><div class="t">Notion</div><div class="v">2.3.1 · patched 2d ago</div></div>
+                <span class="ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#9a9ea7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              </div>
+            </div>
+            <div class="divide"></div>
+            <div class="pf"><span>Last checked 2 min ago</span><span class="sp"></span><a href="#">Open Self Service →</a></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="scene">
+        <div class="lab"><span class="os">macOS</span> menu-bar popover <span class="mode">· Dark</span></div>
+        <div class="mac night">
+          <div class="mbar">
+            <span class="app">Patched</span>
+            <span class="mi">File</span><span class="mi">View</span><span class="mi">Help</span>
+            <span class="sp"></span>
+            <span class="si">
+              <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><path d="M8.5 2.2C5.9 2.2 3.6 3.2 1.9 4.9M8.5 6.1c-1.4 0-2.7.5-3.7 1.4M8.5 9.6l1.9-1.9a2.7 2.7 0 0 0-3.8 0L8.5 9.6Z" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x="1" y="2.5" width="19" height="7" rx="2" stroke="#fff" stroke-width="1.1"/><rect x="2.5" y="4" width="14" height="4" rx="1" fill="#fff"/><rect x="21" y="4.5" width="1.6" height="3" rx=".8" fill="#fff"/></svg>
+              <span class="icobtn" title="Patched"><span class="ring" data-ring data-dark></span></span>
+              <span class="clk">Mon 9:41</span>
+            </span>
+          </div>
+          <div class="pop macpop surf-dark">
+            <div class="notch"></div>
+            <div class="ph">
+              <span class="lock"><span class="ring" data-ring data-dark></span><span class="wm">Patched</span></span>
+              <span class="sp"></span>
+              <span class="managed">Managed</span>
+              <svg class="gear" width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.2" stroke="#fff" stroke-width="1.6"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2l-2.1 2.1M7.3 16.7l-2.1 2.1" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </div>
+            <div class="divide"></div>
+            <div class="summary">
+              <div class="gauge"><span class="ring" data-gauge data-patched="84" data-patching="1" data-total="91" data-dark></span></div>
+              <div class="meta">
+                <div class="big">6 updates ready</div>
+                <div class="sub">This Mac · 1 patching now</div>
+                <div class="legend">
+                  <span><span class="d" style="background:#fff"></span>84 patched</span>
+                  <span><span class="d" style="background:#F5530A"></span>1 patching</span>
+                  <span><span class="d" style="background:rgba(255,255,255,.22)"></span>6 unpatched</span>
+                </div>
+              </div>
+            </div>
+            <div class="act">
+              <button class="btn btn-primary">Patch all <span class="sz">· 412 MB</span></button>
+              <button class="btn btn-ghost">Later</button>
+            </div>
+            <div class="divide"></div>
+            <div class="list">
+              <div class="lhead">Needs patching</div>
+              <div class="row patching">
+                <span class="ico">S</span>
+                <div class="nm"><div class="t">Slack</div><div class="v">4.36.140 → 4.37.94</div><div class="patchbar"><span class="f" style="width:62%"></span></div></div>
+                <span class="pct">62%</span>
+              </div>
+              <div class="row">
+                <span class="ico">C</span>
+                <div class="nm"><div class="t">Google Chrome</div><div class="v">120.0.6099 → 121.0.6167</div></div>
+                <button class="upd">Update</button>
+              </div>
+              <div class="row">
+                <span class="ico">Z</span>
+                <div class="nm"><div class="t">Zoom</div><div class="v">5.17.5 → 5.17.11</div></div>
+                <button class="upd">Update</button>
+              </div>
+              <div class="row">
+                <span class="ico">1</span>
+                <div class="nm"><div class="t">1Password</div><div class="v">8.10.20 → 8.10.28</div></div>
+                <button class="upd">Update</button>
+              </div>
+            </div>
+            <div class="divide"></div>
+            <div class="pf"><span>Last checked 2 min ago</span><span class="sp"></span><a href="#">Open Self Service →</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ Windows column ============ -->
+    <div class="col">
+      <div class="scene">
+        <div class="lab"><span class="os">Windows</span> tray flyout <span class="mode">· Light</span></div>
+        <div class="win">
+          <div class="flyout fl-light">
+            <div class="fl-h">
+              <span class="ring" data-ring></span><span class="wm">Patched</span>
+              <span class="sp"></span>
+              <span class="managed">Managed</span>
+            </div>
+            <div class="fl-div"></div>
+            <div class="fl-sum">
+              <div class="gauge"><span class="ring" data-gauge data-patched="84" data-patching="1" data-total="91"></span></div>
+              <div class="meta">
+                <div class="big">6 updates ready</div>
+                <div class="sub">This PC · 1 patching now</div>
+                <div class="legend">
+                  <span><span class="d" style="background:#0F1115"></span>84 patched</span>
+                  <span><span class="d" style="background:#F5530A"></span>1 patching</span>
+                  <span><span class="d" style="background:rgba(15,17,21,.18)"></span>6 unpatched</span>
+                </div>
+              </div>
+            </div>
+            <div class="fl-act"><button class="fl-btn">Patch all <span class="sz">· 412 MB</span></button></div>
+            <div class="fl-div"></div>
+            <div class="fl-list">
+              <div class="fl-lhead">Needs patching</div>
+              <div class="fl-row patching">
+                <span class="ico">S</span>
+                <div class="nm"><div class="t">Slack</div><div class="v">62% · 4.37.94</div></div>
+                <span class="pct">62%</span>
+              </div>
+              <div class="fl-row">
+                <span class="ico">C</span>
+                <div class="nm"><div class="t">Google Chrome</div><div class="v">120.0 → 121.0</div></div>
+                <button class="upd">Update</button>
+              </div>
+              <div class="fl-row">
+                <span class="ico">E</span>
+                <div class="nm"><div class="t">Microsoft Edge</div><div class="v">120.0 → 121.0</div></div>
+                <button class="upd">Update</button>
+              </div>
+              <div class="fl-row">
+                <span class="ico">7</span>
+                <div class="nm"><div class="t">7-Zip</div><div class="v">23.01 → 24.05</div></div>
+                <button class="upd">Update</button>
+              </div>
+            </div>
+            <div class="fl-div"></div>
+            <div class="fl-pf"><span>Last checked 2 min ago</span><span class="sp"></span><a href="#">Open Self Service →</a></div>
+          </div>
+          <div class="taskbar">
+            <span class="tb start"><svg width="20" height="20" viewBox="0 0 20 20"><rect x="1" y="1" width="8" height="8" rx="1" fill="#1a7fd1"/><rect x="11" y="1" width="8" height="8" rx="1" fill="#1a7fd1"/><rect x="1" y="11" width="8" height="8" rx="1" fill="#1a7fd1"/><rect x="11" y="11" width="8" height="8" rx="1" fill="#1a7fd1"/></svg></span>
+            <span class="tb"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#3a3a3f" stroke-width="1.8"/><path d="M16 16l5 5" stroke="#3a3a3f" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+            <span class="tb"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#3a3a3f" stroke-width="1.8"/><path d="M3 8h18" stroke="#3a3a3f" stroke-width="1.8"/></svg></span>
+            <span class="tray">
+              <span class="ti"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 9l7-5 7 5v9a1 1 0 0 1-1 1h-4v-6h-4v6H6a1 1 0 0 1-1-1V9Z" stroke="#3a3a3f" stroke-width="1.6" stroke-linejoin="round"/></svg></span>
+              <span class="ti"><span class="ring" data-ring></span></span>
+              <span class="clk">9:41 AM<br>6/22/2026</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="scene">
+        <div class="lab"><span class="os">Windows</span> tray flyout <span class="mode">· Dark</span></div>
+        <div class="win night">
+          <div class="flyout fl-dark">
+            <div class="fl-h">
+              <span class="ring" data-ring data-dark></span><span class="wm">Patched</span>
+              <span class="sp"></span>
+              <span class="managed">Managed</span>
+            </div>
+            <div class="fl-div"></div>
+            <div class="fl-sum">
+              <div class="gauge"><span class="ring" data-gauge data-patched="84" data-patching="1" data-total="91" data-dark></span></div>
+              <div class="meta">
+                <div class="big">6 updates ready</div>
+                <div class="sub">This PC · 1 patching now</div>
+                <div class="legend">
+                  <span><span class="d" style="background:#fff"></span>84 patched</span>
+                  <span><span class="d" style="background:#F5530A"></span>1 patching</span>
+                  <span><span class="d" style="background:rgba(255,255,255,.22)"></span>6 unpatched</span>
+                </div>
+              </div>
+            </div>
+            <div class="fl-act"><button class="fl-btn">Patch all <span class="sz">· 412 MB</span></button></div>
+            <div class="fl-div"></div>
+            <div class="fl-list">
+              <div class="fl-lhead">Needs patching</div>
+              <div class="fl-row patching">
+                <span class="ico">S</span>
+                <div class="nm"><div class="t">Slack</div><div class="v">62% · 4.37.94</div></div>
+                <span class="pct">62%</span>
+              </div>
+              <div class="fl-row">
+                <span class="ico">C</span>
+                <div class="nm"><div class="t">Google Chrome</div><div class="v">120.0 → 121.0</div></div>
+                <button class="upd">Update</button>
+              </div>
+              <div class="fl-row">
+                <span class="ico">E</span>
+                <div class="nm"><div class="t">Microsoft Edge</div><div class="v">120.0 → 121.0</div></div>
+                <button class="upd">Update</button>
+              </div>
+              <div class="fl-row">
+                <span class="ico">7</span>
+                <div class="nm"><div class="t">7-Zip</div><div class="v">23.01 → 24.05</div></div>
+                <button class="upd">Update</button>
+              </div>
+            </div>
+            <div class="fl-div"></div>
+            <div class="fl-pf"><span>Last checked 2 min ago</span><span class="sp"></span><a href="#">Open Self Service →</a></div>
+          </div>
+          <div class="taskbar">
+            <span class="tb start"><svg width="20" height="20" viewBox="0 0 20 20"><rect x="1" y="1" width="8" height="8" rx="1" fill="#4cc2ff"/><rect x="11" y="1" width="8" height="8" rx="1" fill="#4cc2ff"/><rect x="1" y="11" width="8" height="8" rx="1" fill="#4cc2ff"/><rect x="11" y="11" width="8" height="8" rx="1" fill="#4cc2ff"/></svg></span>
+            <span class="tb"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#cdcdd2" stroke-width="1.8"/><path d="M16 16l5 5" stroke="#cdcdd2" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+            <span class="tb"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#cdcdd2" stroke-width="1.8"/><path d="M3 8h18" stroke="#cdcdd2" stroke-width="1.8"/></svg></span>
+            <span class="tray">
+              <span class="ti"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 9l7-5 7 5v9a1 1 0 0 1-1 1h-4v-6h-4v6H6a1 1 0 0 1-1-1V9Z" stroke="#cdcdd2" stroke-width="1.6" stroke-linejoin="round"/></svg></span>
+              <span class="ti"><span class="ring" data-ring data-dark></span></span>
+              <span class="clk">9:41 AM<br>6/22/2026</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot-note">
+    <b>What this is.</b> The self-service entry point on both platforms: posture as the gauge, the apps needing patching, one <b>Patch all</b>, and an <b>Open Self Service →</b> deep-link. Mark in the menu bar is the <b>mono template</b> (orange drops to ink). Everything here is the <b>OS system font</b>; the <b>“Patched” lockup is the only Archivo</b>. Live data (apps, versions, progress, last-checked) wires to the agent daemon.
+  </div>
+</div>
+
+<script>
+const SIGNAL="#F5530A";
+function ringMark(size, dark){
+  const ink = dark ? "#FFFFFF" : "#0F1115";
+  const t=Math.max(1.2,size*0.072), r=size*0.26, seg=size*0.26, fs=size*0.52;
+  let s=`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block">`;
+  s+=`<rect x="${t/2}" y="${t/2}" width="${size-t}" height="${size-t}" rx="${r}" fill="none" stroke="${ink}" stroke-width="${t}"/>`;
+  s+=`<path d="M ${size-r-seg} ${t/2} H ${size-r} A ${r} ${r} 0 0 1 ${size-t/2} ${r}" fill="none" stroke="${SIGNAL}" stroke-width="${t}" stroke-linecap="round"/>`;
+  s+=`<text x="${size/2}" y="${size*0.50+fs*0.355}" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="700" font-size="${fs}" letter-spacing="${-0.04*fs}" fill="${ink}">P</text>`;
+  return s+"</svg>";
+}
+/* menu-bar mono template = the mark in pure ink/white (orange to ink) */
+function ringMono(size, dark){
+  const ink = dark ? "#FFFFFF" : "#1d1d1f";
+  const t=Math.max(1.2,size*0.072), r=size*0.26, seg=size*0.26, fs=size*0.52;
+  let s=`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block">`;
+  s+=`<rect x="${t/2}" y="${t/2}" width="${size-t}" height="${size-t}" rx="${r}" fill="none" stroke="${ink}" stroke-width="${t}"/>`;
+  s+=`<path d="M ${size-r-seg} ${t/2} H ${size-r} A ${r} ${r} 0 0 1 ${size-t/2} ${r}" fill="none" stroke="${ink}" stroke-width="${t}" stroke-linecap="round"/>`;
+  s+=`<text x="${size/2}" y="${size*0.50+fs*0.355}" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="700" font-size="${fs}" letter-spacing="${-0.04*fs}" fill="${ink}">P</text>`;
+  return s+"</svg>";
+}
+function gauge(S, patchedFrac, patchingFrac, dark){
+  const t=Math.max(5,S*0.085), pad=t/2+3, x0=pad, y0=pad, w=S-pad*2, rr=S*0.26, PL=1000;
+  const faint = dark? "rgba(255,255,255,0.18)" : "rgba(15,17,21,0.12)";
+  const closed = dark? "#FFFFFF" : "#0F1115";
+  const pLen=Math.max(0,patchedFrac*PL), gLen=patchingFrac>0?Math.max(20,patchingFrac*PL):0;
+  const rect=(stroke,extra)=>`<rect x="${x0}" y="${y0}" width="${w}" height="${w}" rx="${rr}" pathLength="${PL}" fill="none" stroke="${stroke}" stroke-width="${t}" ${extra}/>`;
+  let s=`<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block">`;
+  s+=rect(faint,"");
+  s+=rect(closed,`stroke-dasharray="${pLen} ${PL}" stroke-dashoffset="0" stroke-linecap="round"`);
+  s+=rect(SIGNAL,`stroke-dasharray="${gLen} ${PL}" stroke-dashoffset="${-pLen}" stroke-linecap="round"`);
+  return s+"</svg>";
+}
+// header / lockup / tray marks
+document.querySelectorAll('[data-ring]').forEach(el=>{
+  const dark = el.hasAttribute('data-dark');
+  const inMbar = el.closest('.icobtn') || el.closest('.tray');
+  const size = el.closest('.icobtn') ? 15 : el.closest('.tray') ? 16 : 20;
+  el.innerHTML = inMbar ? ringMono(size, dark) : ringMark(size, dark);
+});
+// gauges
+document.querySelectorAll('[data-gauge]').forEach(el=>{
+  const dark = el.hasAttribute('data-dark');
+  const patched=+el.dataset.patched, patching=+el.dataset.patching, total=+el.dataset.total;
+  el.innerHTML = gauge(62, patched/total, patching/total, dark);
+});
+</script>
+</body>
+</html>

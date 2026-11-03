@@ -1,0 +1,24 @@
+{
+  "label": "signiantapp",
+  "name": "Signiant App",
+  "type": "dmg",
+  "app_path": "/Applications/Signiant App.app",
+  "expected_team_id": "U6ZZ4QLU4Q",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://updates.signiant.com/signiant_app/signiant-app-info-mac.json"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

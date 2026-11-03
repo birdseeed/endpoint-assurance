@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% from "_macros.html" import kpi_summary %}
+{% block content %}
+<p class="crumb"><a href="/reports">Reports</a> / Cyber insurance evidence</p>
+<div class="page-head">
+  <p class="page-kicker">Endpoint assurance</p>
+  <div class="page-head__title">
+    <h1>Cyber insurance evidence</h1>
+  </div>
+  <p class="meta">
+    Evidence as of {{ (generated_at | humandate(true)) ~ ' UTC' if generated_at else 'unknown' }}
+    {%- if devices_in_scope is not none %} &middot; {{ devices_in_scope }} device{{ '' if devices_in_scope == 1 else 's' }} in scope{% endif %}
+    {%- if retired_excluded %} &middot; {{ retired_excluded }} retired device{{ '' if retired_excluded == 1 else 's' }} not counted{% endif %}
+  </p>
+</div>
+
+{#- PAT-2258: counts of questions per evidence status, each with its
+   denominator (rubric D3). The status is how much of the estate an answer
+   covers, never a verdict on the answer. #}
+{% call kpi_summary([
+  (status_labels['evidenced'], status_counts['evidenced'] ~ ' of ' ~ total, ''),
+  (status_labels['partial'], status_counts['partial'] ~ ' of ' ~ total, ''),
+  (status_labels['unknown'], status_counts['unknown'] ~ ' of ' ~ total, ''),
+  (status_labels['not_evidenced_by_patched'], status_counts['not_evidenced_by_patched'] ~ ' of ' ~ total, ''),
+], 'Questions by how much of your estate the evidence covers, not by whether the answer is a good one.') %}<a class="btn btn-small" href="{{ pdf_url }}">Download PDF</a> <a class="btn btn-small" href="{{ csv_url }}">Download CSV</a>{% endcall %}
+
+<section class="card" aria-labelledby="ie-about-heading">
+  <h2 id="ie-about-heading">What this pack is</h2>
+  {% if statement %}<p>{{ statement }}</p>{% endif %}
+  <p class="meta">A device counts as reporting when it has sent evidence within the last {{ reporting_window_days or 14 }} days. Each answer links to the page its evidence comes from, where you can check the device-level detail behind it.</p>
+</section>
+
+<section class="card" aria-labelledby="ie-answers-heading">
+  <h2 id="ie-answers-heading">Answers from Patched evidence</h2>
+  {% if evidenced %}
+  <div class="insurance-list">
+    {% for q in evidenced %}
+    <article class="insurance-item" id="q-{{ q.id }}" aria-labelledby="q-{{ q.id }}-title">
+      <div class="insurance-item__head">
+        <h3 id="q-{{ q.id }}-title">{{ q.title }}</h3>
+        <span class="pill {{ q.status_pill }}">{{ q.status_label }}</span>
+      </div>
+      {% if q.question %}<p class="insurance-item__question">{{ q.question }}</p>{% endif %}
+      {% if q.headline %}<p class="insurance-item__headline mono">{{ q.headline }}</p>{% endif %}
+      <p>{{ q.answer_text }}</p>
+      <dl class="kv insurance-item__facts">
+        <dt>Unknown devices</dt>
+        <dd class="mono">{{ q.unknown_devices if q.unknown_devices is not none else 'Not stated' }}</dd>
+        <dt>As of</dt>
+        <dd class="mono">{{ (q.as_of | humandate(true)) ~ ' UTC' if q.as_of else 'Not recorded' }}</dd>
+        {% if q.oldest_evidence_at %}
+        <dt>Oldest evidence used</dt>
+        <dd class="mono">{{ q.oldest_evidence_at | humandate(true) }} UTC</dd>
+        {% endif %}
+        <dt>Source</dt>
+        <dd>{% if q.source_path %}<a href="{{ q.source_path }}">{{ q.source_label or q.source_path }}</a>{% else %}{{ q.source_label or 'Not stated' }}{% endif %}</dd>
+      </dl>
+      {% if q.basis %}<p class="meta">How this is worked out: {{ q.basis }}</p>{% endif %}
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="empty">No answers could be read from Patched's evidence right now.</p>
+  {% endif %}
+</section>
+
+<section class="card" aria-labelledby="ie-not-evidenced-heading">
+  <h2 id="ie-not-evidenced-heading">Not evidenced by Patched</h2>
+  <p class="meta">Renewal forms usually ask these too. Patched collects evidence from your endpoints only, so it holds nothing that answers them. They are listed so none is missed.</p>
+  {% if not_evidenced %}
+  <div class="insurance-list">
+    {% for q in not_evidenced %}
+    <article class="insurance-item" id="q-{{ q.id }}" aria-labelledby="q-{{ q.id }}-title">
+      <div class="insurance-item__head">
+        <h3 id="q-{{ q.id }}-title">{{ q.title }}</h3>
+        <span class="pill {{ q.status_pill }}">{{ q.status_label }}</span>
+      </div>
+      {% if q.question %}<p class="insurance-item__question">{{ q.question }}</p>{% endif %}
+      <p>{{ q.answer_text }}</p>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="empty">No questions are listed here in this pack.</p>
+  {% endif %}
+</section>
+{% endblock %}

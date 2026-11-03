@@ -1,0 +1,24 @@
+{
+  "label": "emacs",
+  "name": "Emacs",
+  "type": "dmg",
+  "app_path": "/Applications/Emacs.app",
+  "expected_team_id": "5BRAQAFB8B",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://emacsformacosx.com/atom/release"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

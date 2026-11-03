@@ -1,0 +1,23 @@
+{
+  "label": "splashtopsos",
+  "name": "Splashtop SOS",
+  "type": "dmg",
+  "app_path": "/Applications/Splashtop SOS.app",
+  "expected_team_id": "CPQQ3AW49Y",
+  "download": {
+    "method": "static",
+    "url": "https://download.splashtop.com/sos/SplashtopSOS.dmg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

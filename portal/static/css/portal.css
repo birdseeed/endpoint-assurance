@@ -1,0 +1,3132 @@
+/* Patched customer portal — app.patched.im
+ * Shell: navy left rail navigation, cool slate surfaces and Brand v3 blue
+ * primary actions. Native system type throughout (the Brand v3 Inter/
+ * JetBrains stacks fall back to the system fonts when they are not local) for
+ * evidence/versions/counts/dates/identifiers) - no web fonts are loaded.
+ * Adapted for an app context: denser tables, score dial, status colours.
+ * Light and dark theme (PAT-1641): toggled via [data-theme] on <html>,
+ * falling back to the OS preference when nothing is stored yet.
+ *
+ * PAT-953: base.html loads static/vendor/brand/tokens.css (the shared
+ * brand-token contract, vendored verbatim from Patched-LTD/branding kit
+ * v3.0.0 - Brand v3's approved geometric circular P and blue primary, see
+ * static/vendor/brand/README.md)
+ * before this stylesheet. --snow/--paper/--slate/--graphite/--mute/--rule/
+ * --hair are NOT redeclared here any more (PAT-1641) - they fall through to
+ * the kit's own cascade, which already flips them for
+ * `@media (prefers-color-scheme: dark)` and for an explicit
+ * [data-theme="dark"]/[data-theme="light"] override. Do not re-pin them to
+ * fixed light values here; that was the old light-only behaviour this
+ * ticket removes. Brand v3 reserves signal orange for exceptional emphasis.
+ * Navigation, actions and focus use the blue primary aliases instead.
+ *
+ * Two surfaces are deliberately NOT theme-following: the rail and the
+ * footer. Both are permanent navy panels carrying the brand identity. Their
+ * foreground colours use
+ * the --on-slate-* tokens below (literal white-based, never following the
+ * app theme) rather than --snow/--slate, which now DO follow the theme and
+ * would go the wrong way on a surface that must not flip.
+ */
+
+:root {
+  /* Portal-only extra tokens (not in the vendored kit) */
+  --slate-2: var(--navy-2);   /* elevated navy panel - dark-theme rail/footer */
+  --hair-strong: rgba(15, 17, 21, 0.10);
+  --on-slate-mute: rgba(255, 255, 255, 0.72);
+  --on-slate-hair: rgba(255, 255, 255, 0.12);
+  --on-slate-strong: #ffffff; /* full-white text on the always-dark rail/footer */
+  --on-accent: var(--on-primary);
+
+  --display: var(--font-display);
+  --sans: var(--font-sans);
+  --mono: var(--font-mono);
+
+  /* PAT-2070: 1200px capped every card at the same ~1118px available width
+     from 1440px up (1200 - 2*40 page padding), which is why revealing a
+     .col-secondary column could never happen at any width this ticket
+     tests - there was never more room to give it. Raised to 1600px so wide
+     evidence tables have somewhere to grow into above 1280px; prose-only
+     pages (Support, Install) opt back into the old, more readable narrower
+     measure via .page--narrow. */
+  --maxw: 1600px;
+  --pad: 40px;
+  --rail-width: 232px;
+
+  /* App status colours (portal-only; the website has no equivalents).
+     Light values here; dark values in the two blocks below. */
+  --ok: #15803d;
+  --ok-wash: #f0fdf4;
+  --warn: #c2410c;
+  --warn-wash: #fff7ed;
+  --bad: #b91c1c;
+  --bad-wash: #fef2f2;
+  --sev-critical: #b91c1c;
+  --sev-high: #c2410c;
+  --sev-medium: #854d0e;
+  --sev-medium-wash: rgba(133, 77, 14, 0.08);
+  --sev-low: #475569;
+}
+
+/* Dark-theme overrides for the portal-only status/line tokens above.
+   --snow/--paper/--slate/--graphite/--mute/--rule/--hair/ and semantic
+   primary tokens
+   already flip via static/vendor/brand/tokens.css's own cascade - only the
+   tokens this file owns need repeating here. Both the automatic
+   (OS-preference) and explicit ([data-theme]) forms are covered, matching
+   the kit's own contract, so dark mode still works if a page ever renders
+   before the inline bootstrap script in base.html runs. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --hair-strong: rgba(255, 255, 255, 0.16);
+    --ok: #34d399;
+    --ok-wash: rgba(52, 211, 153, 0.16);
+    --warn: #fbbf24;
+    --warn-wash: rgba(251, 191, 36, 0.14);
+    --bad: #f87171;
+    --bad-wash: rgba(248, 113, 113, 0.16);
+    --sev-critical: #f87171;
+    --sev-high: #fb923c;
+    --sev-medium: #fbbf24;
+    --sev-medium-wash: rgba(251, 191, 36, 0.14);
+    --sev-low: #94a3b8;
+  }
+}
+:root[data-theme="dark"] {
+  --hair-strong: rgba(255, 255, 255, 0.16);
+  --ok: #34d399;
+  --ok-wash: rgba(52, 211, 153, 0.16);
+  --warn: #fbbf24;
+  --warn-wash: rgba(251, 191, 36, 0.14);
+  --bad: #f87171;
+  --bad-wash: rgba(248, 113, 113, 0.16);
+  --sev-critical: #f87171;
+  --sev-high: #fb923c;
+  --sev-medium: #fbbf24;
+  --sev-medium-wash: rgba(251, 191, 36, 0.14);
+  --sev-low: #94a3b8;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--sans);
+  background: var(--paper);
+  color: var(--graphite);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100vh;
+}
+a { color: inherit; text-decoration: none; }
+h1 {
+  font-family: var(--display); font-weight: 700; letter-spacing: -0.02em;
+  line-height: 1.08; font-size: clamp(26px, 3.2vw, 34px);
+  color: var(--slate); margin: 0 0 6px;
+}
+/* Card headings use Brand v3's readable interface face, not legacy labels. */
+h2 {
+  font-family: var(--sans); font-weight: 650; font-size: 16px;
+  letter-spacing: -0.01em; text-transform: none;
+  color: var(--mute); margin: 0 0 16px;
+}
+.mono { font-family: var(--mono); font-size: 0.88em; letter-spacing: 0.02em; }
+
+/* eyebrow (error/state pages) */
+.eyebrow {
+  font-family: var(--sans); font-size: 12px; font-weight: 650; letter-spacing: normal;
+  text-transform: none; color: var(--primary); margin: 0 0 18px;
+  display: flex; align-items: center; gap: 10px;
+}
+.card-center .eyebrow { justify-content: center; }
+.eyebrow__dot { width: 6px; height: 6px; background: currentColor; border-radius: 1px; flex: 0 0 auto; }
+
+/* ── App shell: slate rail + main column ────────────────────── */
+.shell { display: flex; min-height: 100vh; }
+.shell-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+
+/* ── Rail (left navigation) ──────────────────────────────────
+   Deliberately not theme-following: a permanent dark panel, one shade
+   lighter in dark theme (0f1115 -> 15181e) to read as "elevated" against
+   the dark canvas, matching the design reference. Foreground colours are
+   the --on-slate-* tokens (literal white-based), never --snow/--slate. */
+.rail {
+  width: var(--rail-width); flex: 0 0 auto;
+  background: var(--navy);
+  display: flex; flex-direction: column;
+}
+:root[data-theme="dark"] .rail { background: var(--slate-2); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .rail { background: var(--slate-2); }
+}
+.rail__logo {
+  display: flex; align-items: center; gap: 9px;
+  padding: 22px 18px 24px; flex-shrink: 0;
+}
+.rail__logo .brand-mark { display: block; flex: 0 0 auto; filter: drop-shadow(0 4px 12px rgba(34, 211, 238, .24)); }
+.rail__brand {
+  font-family: var(--display); font-weight: 700; font-size: 15px;
+  letter-spacing: -0.02em; color: var(--on-slate-strong); line-height: 1;
+}
+.rail__suffix {
+  font-family: var(--sans); font-size: 11px; font-weight: 600;
+  letter-spacing: normal; text-transform: none; color: var(--on-slate-mute);
+  border-left: 1px solid var(--on-slate-hair); padding-left: 9px; line-height: 1.4;
+}
+.rail__nav { display: flex; flex-direction: column; gap: 12px; padding: 4px 0 12px; overflow-y: auto; }
+.rail__group { display: flex; flex-direction: column; gap: 1px; }
+.rail__group-label {
+  margin: 8px 16px 5px; font-family: var(--sans); font-size: 11px;
+  font-weight: 600; letter-spacing: normal; text-transform: none;
+  color: var(--on-slate-mute);
+}
+.rail__item {
+  display: flex; align-items: center; gap: 10px; min-height: 40px;
+  padding: 9px 16px 9px 12px; margin: 0 10px;
+  font-size: 13.5px; font-weight: 500; color: var(--on-slate-mute);
+  border-left: 2px solid transparent; border-radius: var(--radius-sm);
+  transition: background .14s, color .14s, border-color .14s;
+}
+.rail__item--primary { color: var(--on-slate-strong); }
+.rail__icon { width: 17px; height: 17px; flex: 0 0 17px; }
+.rail__item--development { flex-wrap: wrap; column-gap: 10px; row-gap: 2px; }
+.rail__status {
+  flex-basis: calc(100% - 27px); margin-left: 27px;
+  color: var(--blue-400); font-size: 8px; font-weight: 700;
+  letter-spacing: normal; line-height: 1; text-transform: none;
+}
+.rail__item:hover { background: var(--on-slate-hair); color: var(--on-slate-strong); }
+.rail__item.active {
+  background: linear-gradient(90deg, rgba(37, 99, 235, .26), rgba(59, 130, 246, .08)); color: var(--on-slate-strong);
+  border-left-color: var(--primary); font-weight: 600;
+}
+.rail__specialist {
+  margin-top: auto; padding: 14px 16px; flex-shrink: 0;
+  border-top: 1px solid var(--on-slate-hair);
+}
+.rail__specialist-label {
+  font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: normal;
+  text-transform: none; color: var(--on-slate-mute);
+}
+.rail__specialist-contact {
+  display: flex; align-items: center; gap: 8px; margin-top: 7px; font-family: var(--sans);
+  font-size: 11px; color: var(--on-slate-strong); word-break: break-all;
+}
+.rail__specialist-contact .rail__icon { width: 14px; height: 14px; flex-basis: 14px; }
+.rail__specialist-contact:hover { color: var(--cyan-400); }
+
+/* ── Top bar: identity, sign-out, theme toggle - every page ─── */
+.topbar {
+  position: sticky; top: 0; z-index: 50; flex-shrink: 0;
+  background: var(--snow);
+  border-bottom: 1px solid var(--rule);
+  display: flex; align-items: center; gap: 16px;
+  height: 64px; padding: 0 28px;
+}
+.topbar__burger {
+  display: none; background: none; border: 0; cursor: pointer;
+  padding: 8px; margin: -8px -6px -8px -8px; flex: 0 0 auto;
+}
+.topbar__burger span { display: block; width: 20px; height: 1.6px; background: var(--slate); margin: 4px 0; }
+.topbar__spacer { flex: 1; }
+.theme-toggle {
+  display: inline-flex; border: 1px solid var(--rule); border-radius: var(--radius-pill);
+  overflow: hidden; flex: 0 0 auto;
+}
+.theme-toggle__btn {
+  font: inherit; font-family: var(--sans); font-size: 12px; font-weight: 600;
+  letter-spacing: normal; text-transform: none; padding: 7px 11px;
+  border: 0; background: transparent; color: var(--mute); cursor: pointer;
+  transition: color .14s;
+}
+.theme-toggle__btn:hover { color: var(--slate); }
+/* PAT-2256: the active button is the one for the theme actually applied, read
+   straight from <html data-theme> (set before first paint by the inline
+   bootstrap in base.html), so the highlight can never be missing because a
+   script-set class did not survive. `.is-active` (set by the toggle script,
+   with aria-pressed) styles the same button and is kept for the script and
+   for assistive tech. The background is not transitioned: a transition made
+   the freshly painted active button read as unhighlighted for its first
+   frames. */
+.theme-toggle__btn.is-active,
+html[data-theme="light"] .theme-toggle__btn[data-theme-choice="light"],
+html[data-theme="dark"] .theme-toggle__btn[data-theme-choice="dark"] {
+  background: var(--primary); color: var(--on-primary);
+}
+.identity {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em;
+  color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 320px;
+}
+.topbar__signout {
+  font-size: 13px; font-weight: 500; color: var(--mute); white-space: nowrap;
+  padding-bottom: 1px; border-bottom: 1px solid transparent;
+  transition: color .14s, border-color .14s; flex-shrink: 0;
+}
+.topbar__signout:hover { color: var(--slate); border-bottom-color: var(--rule); }
+.topbar__feedback, .topbar__requests {
+  font: inherit; font-family: var(--sans); font-size: 13px; font-weight: 600;
+  color: var(--graphite); border: 1px solid var(--rule); background: var(--snow);
+  border-radius: var(--radius-sm); padding: 7px 10px; text-decoration: none;
+  white-space: nowrap; cursor: pointer;
+}
+.topbar__feedback:hover, .topbar__requests:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ── Subscription-state slot (PAT-2130): reserved, empty, unstyled until
+   PAT-2132 fills it from platform entitlement state. The tier chip
+   (PAT-1641) it replaces is retired along with the Assurance/Managed tier
+   split - see templates/base.html's own comment on this element. ────── */
+.subscription-state:empty { display: none; }
+
+/* ── Layout ──────────────────────────────────────────────────── */
+.page { max-width: var(--maxw); margin: 0 auto; padding: 48px var(--pad) 96px; width: 100%; flex: 1; }
+/* PAT-2070: prose-only pages (Support, Install) keep the old, more readable
+   1200px measure - a wall of running text at 1600px reads badly - rather
+   than following --maxw's raise for the data-table pages. */
+.page--narrow { max-width: 1200px; }
+.page-head { margin-bottom: 32px; }
+.page-head__title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.page-head__title h1 { margin-bottom: 0; }
+.page-kicker {
+  margin: 0 0 8px; color: var(--primary); font-family: var(--sans);
+  font-size: 12px; font-weight: 650; letter-spacing: normal; text-transform: none;
+}
+/* PAT-2070: a device hostname, tenant name or joined path list can be one
+   long unbroken token with no space to wrap at. Body copy wraps normally at
+   spaces already; overflow-wrap: anywhere is the fallback for the token
+   itself so the page (never a table, already handled by table-scroll)
+   cannot be forced wider than the viewport. */
+.page-head h1, .meta, .crumb { overflow-wrap: anywhere; }
+.meta { color: var(--mute); font-size: 14px; margin: 6px 0 0; }
+.crumb {
+  font-family: var(--sans); font-size: 12px; letter-spacing: normal;
+  text-transform: none; color: var(--mute); margin: 0 0 14px;
+}
+.crumb a { color: var(--mute); }
+.crumb a:hover { color: var(--slate); }
+
+/* PAT-2329: phones are a supported quick-look tier, not a full-parity one
+   (Andy, 2026-09-30). The pages in main.py's PHONE_SUPPORTED_ROUTES are laid
+   out for a 390px screen; every other signed-in page is dense, and below
+   768px it says so once, under its heading. base.html puts .page--dense on
+   <main> for those pages only (never a phone-supported, signed-out or error
+   page), and the note is the heading block's ::after, so no template repeats
+   it. Nothing is blocked or hidden and there is nothing to dismiss: a media
+   query is the whole mechanism. Only the first .page-head speaks
+   (install.html has three). */
+.page--dense > .page-head::after {
+  content: "This page is best viewed on a larger screen.";
+  display: none;
+  margin: 10px 0 0; color: var(--mute); font-size: 13px;
+}
+.page--dense > .page-head ~ .page-head::after { content: none; }
+@media (max-width: 767.98px) {
+  .page--dense > .page-head::after { display: block; }
+}
+
+.grid { display: grid; gap: 18px; }
+/* PAT-2092: .grid .card's own margin-bottom is zeroed (the grid's own
+   gap already spaces cards within the grid), but nothing then restores
+   spacing after the grid itself - control_coverage_card() renders
+   immediately after this grid in the DOM with no wrapping element, so
+   its top border sat flush against the stat cards' bottom borders with
+   no gap. 18px matches .card's own default margin-bottom, and the
+   grid's own internal gap, for one consistent rhythm down the page. */
+.grid-overview { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); margin-bottom: 18px; }
+/* PAT-1954: device detail stacks the short Summary card above the findings
+   card. The findings table has six columns and needs about 820px of its own
+   (application, version, a 170px CVE column, severity, confidence, fixed
+   version) plus 58px of card padding, while the page column is capped at
+   1120px. No two-track split can give the table that and still leave the
+   Summary card a usable width, so a side-by-side layout clips the severity
+   pill at every realistic viewport (an equal split gave the table about 550px).
+   One full-width track, minmax(0, 1fr), lets the table use the whole row
+   without ever widening the page; align-items: start keeps each card only as
+   tall as its content and min-width: 0 lets the table scroll inside its card
+   instead of widening the track. */
+.grid-two { grid-template-columns: minmax(0, 1fr); align-items: start; margin-bottom: 18px; }
+.grid-two > .card { min-width: 0; }
+/* Tighter cell padding for the findings table so the whole row (severity pill
+   included) fits without a sideways scroll from about 1180px. CVE IDs stay
+   no-wrap. */
+.grid-two .data-table th, .grid-two .data-table td { padding-left: 12px; padding-right: 12px; }
+
+/* Brand v3 cards use quiet rounded surfaces, then reserve stronger blue/navy
+   treatment for the Overview hierarchy. */
+.card {
+  background: var(--snow); border: 1px solid var(--rule);
+  border-radius: var(--radius-lg); padding: 26px 28px 28px; margin-bottom: 18px;
+  box-shadow: var(--shadow-card); transition: border-color .16s, box-shadow .16s, transform .16s;
+}
+.card:hover { border-color: rgba(37, 99, 235, .22); box-shadow: var(--shadow-float); }
+.grid .card { margin-bottom: 0; }
+.card-narrow { max-width: 560px; }
+.card-center { margin: 72px auto; text-align: center; }
+.card p { margin: 0 0 14px; }
+.card p:last-child { margin-bottom: 0; }
+.card-foot { margin: 16px 0 0; font-size: 14px; }
+.card-foot a { color: var(--accent-press); font-weight: 500; }
+.card-foot a:hover { color: var(--accent); }
+.empty { color: var(--mute); padding: 18px 0; margin: 0; font-size: 14px; }
+
+/* ── Coverage hero (PAT-1602 ruling, 2026-09-13) ─────────────
+   Coverage is prominent on the landing screen, not one tile among six:
+   stated as a fraction with its denominator, a stacked bar (never a pie
+   chart), and a standing statement that unseen devices are never counted
+   as compliant. Reuses --ok/--warn/--bad/--mute/--rule - no new colours. */
+.coverage-hero {
+  padding: 26px 28px 28px;
+  background: linear-gradient(135deg, var(--snow) 0%, var(--blue-50) 100%);
+  border-color: rgba(37, 99, 235, .18);
+}
+.coverage-hero__head { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.coverage-hero__head h2 { margin-bottom: 10px; }
+.coverage-hero__figure { display: flex; align-items: baseline; gap: 12px; }
+.coverage-hero__count { font-family: var(--display); font-size: 38px; font-weight: 800; letter-spacing: -0.02em; color: var(--slate); }
+.coverage-hero__of { font-size: 20px; font-weight: 600; color: var(--mute); }
+.coverage-hero__pct { font-family: var(--sans); font-size: 14px; font-weight: 700; }
+.coverage-hero__since { margin: 0; text-align: right; white-space: nowrap; }
+.bar-stack { display: flex; height: 10px; overflow: hidden; margin-top: 18px; background: var(--slate-200); border-radius: var(--radius-pill); }
+.bar-stack__seg { height: 100%; }
+.bar-stack__seg--ok { background: var(--ok); }
+.bar-stack__seg--bad { background: var(--bad); }
+/* PAT-2135: retired devices get their own neutral segment - never the
+   alert tone, since a retired device is the customer's own decision, not
+   a coverage gap (rubric D1/D2). */
+.bar-stack__seg--muted { background: var(--mute); }
+.coverage-hero__legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 12px; font-size: 13px; }
+.coverage-hero__legend-item { display: inline-flex; align-items: center; gap: 7px; color: var(--graphite); }
+.legend-dot { width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; }
+.legend-dot--ok { background: var(--ok); }
+.legend-dot--bad { background: var(--bad); }
+.legend-dot--warn { background: var(--warn); }
+.legend-dot--muted { background: var(--mute); }
+/* PAT-2010: the drift report's own two-series trend legend (Unapproved,
+   Unreviewed) - same flex-row-of-dot-plus-label shape as
+   .coverage-hero__legend above, kept separate since it sits under a
+   .card-trend rather than the Overview coverage hero. */
+.trend-legend { display: flex; flex-wrap: wrap; gap: 18px; margin: 8px 0 0; font-size: 13px; color: var(--graphite); }
+.trend-legend__item { display: inline-flex; align-items: center; gap: 7px; }
+.coverage-hero__note {
+  margin: 16px 0 0; padding-top: 14px; border-top: 1px solid var(--rule);
+  font-size: 13.5px; color: var(--graphite); line-height: 1.55;
+}
+:root[data-theme="dark"] .coverage-hero { background: linear-gradient(135deg, rgba(30, 41, 59, .96), rgba(30, 64, 175, .24)); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .coverage-hero { background: linear-gradient(135deg, rgba(30, 41, 59, .96), rgba(30, 64, 175, .24)); }
+}
+
+/* PAT-1951: urgent data loss and high/critical CIS failures precede the
+   explanatory coverage detail. The order is explicit so the DOM remains
+   compact and the same reading order holds in either colour theme. */
+.attention-summary { padding: 24px; }
+.attention-summary__head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; }
+.attention-summary__head h2 { margin: 0; color: var(--slate); font-size: 18px; }
+.attention-summary__head .meta { margin: 2px 0 0; }
+.attention-summary__items { display: grid; gap: 12px; }
+.attention-summary__item { display: grid; grid-template-columns: minmax(190px, .9fr) minmax(240px, 1.4fr) auto; align-items: center; gap: 12px 18px; padding: 12px 14px; border-left: 3px solid var(--bad); background: var(--bad-wash); color: var(--graphite); font-size: 13.5px; line-height: 1.45; }
+/* PAT-2070: a grid item's automatic minimum size defaults to its content's
+   min-content, which for nowrap text equals its full unwrapped width - the
+   CTA link's own box could force this item wider than its 1fr share (and
+   the whole card past the viewport) regardless of the grid track sizing
+   above. min-width: 0 lets every item shrink to the track instead of the
+   other way round; a wider fallback font (Linux Chromium's system-ui
+   fallback, or a forced one in a test) only makes the same defect wider,
+   never a different one, so this is the general fix rather than a
+   pixel-specific one. */
+.attention-summary__item > * { min-width: 0; }
+.attention-summary__item strong { color: var(--bad); }
+.attention-summary__item a { color: var(--accent-press); font-weight: 600; white-space: nowrap; }
+.attention-summary__empty { margin: 0; padding: 4px 0; color: var(--graphite); }
+/* PAT-1953: "not yet available" is neither the all-clear empty state nor a
+   confirmed-bad finding - it is a genuine unknown, styled with --warn
+   rather than --bad so it reads as a caveat, not an alarm, while still
+   never reading as a clean pass. */
+.attention-summary__unknown { margin: 0; padding: 12px 14px; border-left: 3px solid var(--warn); background: var(--warn-wash); color: var(--graphite); font-size: 13.5px; line-height: 1.45; }
+.posture-caveat { color: var(--warn); font-size: 13px; line-height: 1.45; }
+
+/* ── Overview widgets ────────────────────────────────────── */
+.dial-wrap { display: flex; justify-content: center; }
+.dial-wrap svg { width: 170px; height: 170px; }
+.dial-value { font-size: 32px; font-weight: 700; fill: var(--slate); font-family: var(--display); letter-spacing: -0.02em; }
+.dial-label { font-size: 10px; fill: var(--mute); font-family: var(--sans); font-weight: 600; letter-spacing: normal; text-transform: none; }
+.trend-svg { width: 100%; height: 150px; display: block; }
+.trend-axis {
+  display: flex; justify-content: space-between; margin-top: 8px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--mute);
+}
+
+/* ── CIS control coverage (PAT-1859) ────────────────────────
+   An explanatory aggregate read model beside Overview's established score.
+   This stays intentionally generic so a later Posture surface can reuse the
+   markup without inventing an estate-wide score or device-level drill-down. */
+.control-coverage__head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
+}
+.control-coverage__head h2 { margin-bottom: 10px; }
+.control-coverage__head .meta { margin: 0; text-align: right; }
+.control-coverage__intro { max-width: 780px; color: var(--graphite); line-height: 1.55; }
+.control-coverage__scope {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  padding: 14px 0; margin: 2px 0 16px; border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+.control-coverage__scope-label, .control-coverage__empty {
+  font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: normal;
+  text-transform: none; color: var(--mute);
+}
+.control-coverage__zero {
+  padding: 12px 14px; border-left: 3px solid var(--warn); background: var(--warn-wash);
+  color: var(--graphite); font-size: 13.5px; line-height: 1.5;
+}
+.control-coverage .kpi { margin: 18px 0; }
+.control-coverage__authority { color: var(--graphite); font-size: 13.5px; line-height: 1.55; }
+.control-coverage__states {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 20px;
+  margin: 18px 0; padding: 0; list-style: none;
+}
+.control-coverage__states li {
+  padding: 11px 12px; border: 1px solid var(--hair); color: var(--graphite);
+  font-size: 13px; line-height: 1.45;
+}
+.control-coverage__states strong { color: var(--slate); }
+.control-coverage__identifiers, .control-coverage__benchmarks {
+  margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--rule);
+}
+.control-coverage h3 { margin: 0 0 12px; font-size: 15px; }
+/* PAT-2070: this table has 12 columns; the CIS mapping/identifier-namespace
+   breakdown (Version, Not applicable, Out of scope, CIS mapped/unmapped,
+   Non-CIS) is a secondary read next to the primary Pass/Fail/Undetermined
+   signal (and the identifier counts are already given in aggregate by the
+   "Definition identifiers" cards above), so those six columns are
+   .col-tertiary - the widest column set of any table here, so it needs the
+   1680px reveal tier, not the 1440px one. table-layout: fixed with a narrow
+   explicit width per kept column is what makes the primary seven fit
+   without a horizontal scroll at 1280px and above - the old
+   min-width: 1240px forced a scroll at every desktop width, even 1920,
+   because .page never exceeded 1200px. */
+.control-coverage-table { table-layout: fixed; min-width: 715px; }
+/* PAT-2092: "Undetermined" (12 characters, one unbroken word - it has no
+   space to wrap at, so under the shared .data-table th rule's normal
+   wrap it either fits nowrap or visibly overflows; mid-word breaking is
+   never the fix) needed more than 76px to fit its own header under a
+   wider fallback font. Widened from 76 to 95; benchmark trimmed by 20 to
+   keep the row inside the same 1280px budget. */
+.control-coverage-table .ccov-col-benchmark { width: 240px; }
+.control-coverage-table .ccov-col-num { width: 95px; }
+
+.sev-row, .stat-row { display: flex; gap: 0; flex-wrap: wrap; border: 1px solid var(--rule); }
+.sev, .stat {
+  flex: 1; min-width: 90px; text-align: center; padding: 18px 8px 16px;
+  border-left: 1px solid var(--rule); background: var(--snow);
+}
+.sev:first-child, .stat:first-child { border-left: 0; }
+.sev-count, .stat-num {
+  display: block; font-family: var(--display); font-size: 30px; font-weight: 800;
+  letter-spacing: -0.03em; line-height: 1.1; color: var(--slate);
+}
+/* PAT-2342: textual unknown counts fit their bucket without changing numeric stats. */
+.stat-num.stat-num-unavailable {
+  font-family: var(--sans); font-size: 13px; font-weight: 600;
+  letter-spacing: normal; line-height: 33px;
+}
+.sev-name, .stat-name {
+  display: block; font-family: var(--sans); font-size: 11px; font-weight: 600;
+  text-transform: none; letter-spacing: normal; color: var(--mute); margin-top: 8px;
+}
+.sev-critical .sev-count { color: var(--sev-critical); }
+.sev-high .sev-count { color: var(--sev-high); }
+.sev-medium .sev-count { color: var(--sev-medium); }
+.sev-low .sev-count { color: var(--sev-low); }
+.ok-text { color: var(--ok); }
+.warn-text { color: var(--warn); }
+.bad-text { color: var(--bad); }
+/* PAT-2140: a KPI figure that is genuinely zero, or a level whose whole
+   tone is "muted" (Low, on the New software card), reads with the same
+   de-emphasised token the muted pill already uses - previously a zero
+   count fell through to no class at all, i.e. the same plain --slate text
+   as a real, non-zero Low count, which is what read as "no colour
+   coding" in Andy's live review. */
+.mute-text { color: var(--mute); }
+/* Secondary-text tone, reused (not invented) for a KPI figure that needs
+   to read as its own distinct neutral rather than share a colour with an
+   actual severity level or with a muted/zero one - see .pill-info below
+   for the matching pill treatment. */
+.graphite-text { color: var(--graphite); }
+
+/* ── Tables ──────────────────────────────────────────────── */
+.toolbar { margin-bottom: 16px; }
+.search {
+  width: 100%; max-width: 420px; padding: 11px 14px; font-size: 14px;
+  border: 1px solid var(--rule); border-radius: 0;
+  background: var(--snow); color: var(--graphite); font-family: var(--sans);
+  transition: border-color .16s;
+}
+.search::placeholder { color: var(--mute); }
+.search:hover { border-color: var(--slate); }
+.search:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.card-table { padding: 10px 0 6px; }
+.card-table h2 { padding: 14px 28px 0; }
+.table-scroll {
+  width: 100%; max-width: 100%; overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+/* PAT-2070: a shared way to demote a table column below the tables' own
+   readability threshold rather than force the whole table (and the
+   .table-scroll around it) wider than the card that holds it.
+   --maxw was raised from 1200 to 1600 (see :root) specifically so these
+   columns have real room to grow into again above 1280px - hiding them below
+   a breakpoint that never fires in practice would silently remove real
+   evidence from every customer, which is exactly the bug this reveal
+   mechanism must not become. Two tiers, chosen per table by measuring each
+   table's actual full-column width against the card width available at
+   each viewport (audited widths recorded in each table's own comment
+   below), not guessed:
+     .col-secondary reveals at 1440px - device-table, software-table,
+       inventory-table, exception-table.
+     .col-tertiary reveals at 1680px - control-coverage-table (12 columns)
+       and findings-table (8 columns, both wider row totals).
+   `revert` rather than a hardcoded table-cell: this class is applied to
+   <col> elements (device-table's OS column) as well as <th>/<td> cells
+   (every other table below), and only revert resets correctly to each
+   element's own default (table-column vs table-cell). */
+.col-secondary, .col-tertiary { display: none; width: 0; }
+/* 24 Sept review: Chromium's fixed table layout treats a zero-width column
+   as auto and hands it an equal share of the leftover width even while it
+   is display: none, which is why each table's one flexible column used to be
+   pinned to a pixel width per tier (and scrolled sideways at every width in
+   between). 1px on a hidden <col> is enough to make it a fixed column, so
+   the flexible column takes the whole remainder at any viewport. :where()
+   keeps specificity at one class so each table's revealed width still wins. */
+@media (max-width: 1439.98px) { :where(col).col-secondary { width: 1px; } }
+@media (max-width: 1679.98px) { :where(col).col-tertiary { width: 1px; } }
+@media (min-width: 1440px) {
+  .col-secondary { display: revert; }
+}
+@media (min-width: 1680px) {
+  .col-tertiary { display: revert; }
+}
+/* PAT-2092: every hidden column's own width lives here, inside its reveal
+   media query, not as a standing declaration next to its table's other
+   columns. table-layout: fixed counts a column's specified width toward
+   the table's total even while display: none hides its rendering - a
+   hidden .col-tertiary column with a real width still "spent" that width
+   out of the table's budget, so a table with two hidden-but-widthed
+   columns rendered ~190px narrower than its own card at 1440px (measured
+   on findings-table: 955px used of a 1142px card) instead of stretching
+   to fill it, because the browser saw the total specified width already
+   exceeding the container once the hidden columns' width was counted and
+   never grew the visible ones to compensate. Zero width while hidden -
+   real width only from the breakpoint it actually renders at - lets each
+   table's visible columns use the whole container at every tier. */
+@media (min-width: 1440px) {
+  /* PAT-2286: 110px was narrower than a Windows build such as
+     10.0.26200.8457 (about 108px of text plus the cell's 32px padding), so
+     the version broke in the middle of the number. 156px, with the cell's
+     right padding cut to 8px (.cell-version below), leaves 132px of text
+     room: 20% more than the 108px the build measures on macOS, for Linux
+     fonts. The table still fits the 1440px card (the nine column widths
+     total 1122px of the ~1126px available). */
+  .device-col-os { width: 156px; }
+  /* PAT-2119: the inventory table's 1440px+ widths live after its base
+     rules (see .inventory-col-decision); declared here they lose on source order. */
+  /* Type holds an icon plus "Application"/"Extension" (software_type_tag()
+     in _macros.html, nowrap by its own .type-tag rule) - 90px was too
+     narrow for the icon and the word together, so the word visually ran
+     into the next column with no gap ("Application0"). */
+  .software-col-type { width: 130px; }
+  /* "PLATFORM" header (PAT-2120, moved over from the old inventory table's
+     .inventory-col-platform - same measured value, ~91px with padding for
+     a fixed macOS/Windows/Linux value set). */
+  .software-col-platform { width: 100px; }
+  /* Same fix as .software-col-type just above - software_type_tag()'s
+     icon-plus-word content needs more than 90px. */
+  .exception-col-type { width: 130px; }
+  .exception-col-requested { width: 150px; }
+  .findings-col-cvss { width: 60px; }
+}
+@media (min-width: 1680px) {
+  .findings-col-seen { width: 130px; }
+  /* PAT-2120 (moved over from .inventory-col-evidence): the date and
+     "Used:" line each need one unbroken line (~211px with padding). */
+  .software-col-evidence { width: 240px; }
+}
+/* Shared truncate-with-title treatment for a single long identifying label
+   (a benchmark name, a bundle id, a filesystem path) where multi-line wrap
+   would blow out row height more than the value is worth - the full value
+   stays available as a title tooltip. Needs a bounded-width ancestor
+   (table-layout: fixed column, or an explicit max-width) to have something
+   to truncate against. */
+.cell-truncate {
+  display: block; max-width: 100%; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+/* PAT-2092: was nowrap here, with wrap-instead added back per-table
+   (.control-coverage-table th, .device-table th) as two narrower PAT-2070
+   patches. That left every other table - findings, software, inventory,
+   exception - still nowrap, so a two-word header ("Devices affected",
+   "Usage evidence", "CVE assessment") in a column sized for its data, not
+   its own header text, silently overlapped the next header instead of
+   wrapping onto a second line (the findings table's "Devices affected" /
+   "Verification" collision the owner reported). Wrapping is the general
+   correct behaviour for every mono uppercase header in this app, so it
+   belongs on the shared rule, not re-added table by table.
+   Second pass: overflow-wrap: break-word was here too, which broke single
+   words mid-letter ("CVS/S", "APPLICATI/ON") whenever a column was too
+   narrow for the whole header - headers must only ever wrap between
+   words. overflow-wrap stays at its normal default (breaks only at an
+   existing space) here; a header that still doesn't fit its column
+   overflows visibly instead of fragmenting, which is the signal to widen
+   that column rather than something to paper over with a forced break. */
+.data-table th {
+  text-align: left; font-family: var(--sans); font-weight: 650; font-size: 12px;
+  text-transform: none; letter-spacing: normal; color: var(--mute);
+  padding: 12px 16px; border-bottom: 1px solid var(--rule);
+  white-space: normal;
+}
+.data-table th[data-sort] { cursor: pointer; user-select: none; }
+.data-table th[data-sort]:hover { color: var(--slate); }
+.data-table th.sorted-asc::after { content: " \2191"; color: var(--primary); }
+.data-table th.sorted-desc::after { content: " \2193"; color: var(--primary); }
+/* PAT-2070: applies to every data table, not just device-table (which set
+   this alone before) - identifiers, paths and joined lists in any table cell
+   (software identifiers, Homebrew prefixes/taps, exception evidence, ...)
+   get the same wrap-inside-the-cell treatment rather than overflowing the
+   fixed column width. Cells that must stay unbreakable (CVE ids, ask-links)
+   already set their own white-space: nowrap and are unaffected.
+   PAT-2092: this was overflow-wrap: anywhere, which breaks a word the
+   moment it doesn't fit its column even when the word itself would fit
+   fine on its own line one column over - it broke "unknown" into
+   "unknow/n" and "ArchiveTool" into "ArchiveTo/ol" wherever a column
+   was narrower than a genuinely short, ordinary value, which is a
+   column-sizing problem, not a reason to fragment the word. break-word
+   is the correct default: it only breaks a word that cannot fit on a
+   line by itself (the identifiers/paths this rule's own name references
+   still need real wrap-anywhere behaviour - that lives on .cell-anywrap
+   below, applied only to the specific cells that hold an unbroken path,
+   bundle id, SID or hash, never as the table-wide default). */
+.data-table td { padding: 11px 16px; border-bottom: 1px solid var(--hair); vertical-align: top; overflow-wrap: break-word; }
+.data-table tbody tr:last-child td { border-bottom: none; }
+.data-table td a { color: var(--slate); font-weight: 500; border-bottom: 1px solid var(--rule); transition: border-color .14s, color .14s; }
+.data-table td a:hover { color: var(--accent-press); border-bottom-color: var(--primary); }
+/* PAT-2092: the one place genuine wrap-anywhere identifier content
+   (a bundle id, a filesystem path, a SID, a hash - anything with no
+   spaces to wrap at naturally) still needs it, scoped explicitly rather
+   than inherited from the table-wide default above. */
+.cell-anywrap { overflow-wrap: anywhere; }
+.row-summary td { color: var(--mute); font-size: 13px; padding-top: 0; border-bottom: 1px solid var(--hair); overflow-wrap: anywhere; }
+/* Search and any number of segmented filters remain independent. */
+.data-table tbody tr.row-hide-search,
+.data-table tbody tr.row-hide-filter { display: none; }
+.cell-actions { text-align: right; }
+.report-downloads { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
+.report-downloads__note { margin: 0; }
+@media (max-width: 680px) { .report-downloads { justify-content: flex-start; } }
+.advisory { color: var(--mute); font-size: 13px; max-width: 340px; }
+/* PAT-1839: decision provenance disclosure inside a data-table cell. */
+.decision summary { cursor: pointer; color: var(--slate); font-weight: 500; }
+.decision summary:hover { color: var(--primary); }
+.decision__body { margin-top: 6px; }
+.decision__body p { margin: 0 0 4px; color: var(--mute); font-size: 13px; max-width: 340px; }
+.decision__body p:last-child { margin-bottom: 0; }
+/* PAT-2256: the unit ("38%") made the score wider than the 27px of content
+   left in the 59px Score column, so it wrapped as "38" over "%". It stays on
+   one line and, at three digits, uses a few px of the cell's own right
+   padding rather than widening a column the row has no budget for. */
+.score { font-family: var(--sans); font-weight: 700; white-space: nowrap; }
+/* PAT-2256/PAT-2286: a version-shaped string (10.0.26200.8457, 15.5) never
+   breaks inside itself. */
+.nowrap { white-space: nowrap; }
+/* The device table's OS version cell: one line, and a value too long for the
+   column is cut with an ellipsis (the full value is the cell's title) rather
+   than wrapping mid-number or running into the next cell. */
+.cell-version { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.device-table td.cell-version { padding-right: 8px; }
+/* PAT-2324: the OS cell of a device the platform sent an os_caption for leads
+   with a short name ("Server 2022") and puts the build on the line under it;
+   the column's 132px of text cannot hold both on one line, so the two lines are
+   fixed rather than left to wrap wherever the font happens to break. Same right
+   padding as .cell-version. The build is never split (nowrap) and a build wider
+   than the column is cut with an ellipsis, as in .cell-version. The full
+   caption and build are the cell's title. */
+.device-table td.cell-os-named { padding-right: 8px; }
+.cell-os-named .os-name { display: block; }
+.os-build {
+  display: block; max-width: 100%; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+/* PAT-2324: a server has no CIS score (there is no server benchmark yet), so
+   its Score cell reads "n/a" in the muted tone; the words "No server
+   benchmark" are its title, because the 59px column cannot hold them. The
+   footnote under the table is shown only while a server row is visible in the
+   selected tab and search (the same :has() shape as the long-pill column
+   widths below). */
+.score-none { font-weight: 400; color: var(--mute); }
+.table-note[data-server-score-note] { display: none; }
+.table-note[data-update-state-note] + .table-note[data-server-score-note] { padding-top: 0; }
+.table-scroll:has(tbody tr[data-device-class="server"]:not(.row-hide-filter):not(.row-hide-search))
+  ~ .table-note[data-server-score-note] {
+  display: block;
+}
+/* Muted one-line explanation in place of a value the page cannot show. */
+.note-muted { color: var(--mute); font-size: 13px; font-weight: 400; }
+/* A single explanatory line under a table, aligned with the cell text. */
+.table-note { margin: 0; padding: 10px 16px 14px; color: var(--mute); font-size: 13px; }
+
+/* PAT-1954: CVE cell on the device detail page. Each ID is unbreakable (the
+   hyphens must never be a wrap point), the column keeps a sensible minimum
+   width so the other columns cannot squeeze it, and the tail beyond the first
+   three IDs lives in a native <details> disclosure. */
+.cve-cell { min-width: 170px; }
+
+/* PAT-2070: this table has 10 columns and was auto-layout (no width rules
+   at all), so it sized to the natural width of its widest cells - the
+   Verification lifecycle disclosure and the Fixes-at text - regardless of
+   viewport, overflowing even with a single ordinary "Critical" severity
+   pill (the base .pill rule is nowrap). Devices is a key prioritisation
+   column and stays primary/always visible.
+   PAT-2092, second pass: the first pass (every column an explicit px
+   width sized to fit an 982px floor) stopped every mid-word pill/CVE-id
+   break, but starved Application and Fixes at (target) down to ~90-100px,
+   breaking ordinary words ("ArchiveTo/ol") instead - worse than the
+   original bug - and still didn't fill a wider card (a hidden
+   .col-tertiary column's width was still "spent" out of the table's
+   budget even while display: none - see the reveal-tier width comment
+   above col-secondary/col-tertiary's own media queries, which is the
+   real fix for that half of it).
+   The other half: CVSS and Confidence were both made .col-secondary
+   (hidden below 1440px, alongside Version/First seen's .col-tertiary at
+   1680px) - freeing their combined ~225px at the 1280px floor gave
+   Application genuine room.
+   PAT-2092, fourth pass (non-author review, adjudicated): Confidence is
+   the evidence qualifier on a CVE claim (root AGENTS.md - CVE claims
+   require evidence) and must stay visible at every width; only CVSS
+   stays .col-secondary. Re-budgeted the 1280px floor without it: Fixes
+   at (target) is ordinary prose ("Target: 124.0.5"/"Target: latest
+   vendor release") free to wrap at its own spaces, so it gives up 50px
+   to Application instead of guarding its own single-line reading -
+   still never a mid-word break, just more often two lines.
+   PAT-2092, third pass: table-layout: fixed's "proportional stretch"
+   above does not actually happen once a table has ANY hidden
+   (.col-secondary/.col-tertiary) column - measured directly: with every
+   column given a real width (hidden ones included, at 0), the table's
+   own box still stretches to fill width: 100%, but the extra space past
+   the sum of the VISIBLE columns' widths is not distributed to any
+   column at all - it becomes dead space after the last visible cell
+   (the coordinator's "row dividers stop at x=1182 in a card to 1239"
+   report; confirmed the same defect on exception-table, not present on
+   device/software/inventory-table, whose last DOM column is always
+   already the last visible one). Since that dead space can't be
+   auto-distributed, Application's width is set explicitly per reveal
+   tier instead, to the container width measured at each of this app's
+   three tested viewports (1280/1440/1920: 982/1142/1518px) minus the
+   sum of every other visible column at that tier - not a guess. */
+/* Device compliance signals (24 Sept review). This table was auto-layout
+   and sized to its content: long snake_case rule ids, multi-line advisories
+   and the nowrap "No lifecycle evidence yet" pill pushed Verification past
+   the card edge at 1280-1440px. Advisory now sits under the control title
+   (like the CVE description sub-row) instead of taking a column, the rule
+   id breaks only at the <wbr> after each underscore, and every column but
+   Control has a fixed width sized to its widest real value, with room for
+   Linux Chromium's wider fallback font. Pills stay single-line (PAT-2092). */
+.signals-table { table-layout: fixed; }
+.signals-table th:nth-child(1) { width: 24%; }
+.signals-table th:nth-child(3) { width: 108px; }
+.signals-table th:nth-child(4) { width: 84px; }
+.signals-table th:nth-child(5) { width: 250px; }
+.signals-table__rule { overflow-wrap: normal; }
+.signals-table__advisory { display: block; margin-top: 4px; max-width: none; line-height: 1.5; }
+.signals-table .lifecycle { min-width: 0; }
+/* At 1280px, the Brand v3 rail leaves this card with 966px. Keep the
+   table's desktop floor within that real viewport rather than making its
+   wrapper scroll for ordinary data. */
+.findings-table { table-layout: fixed; min-width: 966px; }
+/* Application is the flexible column: 100% hands it the whole remainder,
+   as on the exception tables, instead of a width pinned per reveal tier. */
+.findings-col-app { width: 100%; }
+.findings-col-cve { width: 145px; }
+.findings-col-severity { width: 95px; }
+.findings-col-confidence { width: 165px; }
+/* Reported installed context is primary; unusually long vendor versions
+   stay on one line with the complete escaped value available in the title. */
+.finding-versions { font-size: 13px; }
+.finding-versions > span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.finding-target { color: var(--mute); }
+.finding-versions > .finding-target--fallback { white-space: normal; }
+.findings-col-devices { width: 80px; }
+.findings-col-verification { width: 225px; }
+@media (min-width: 1440px) {
+}
+@media (min-width: 1680px) {
+}
+.cve-item { white-space: nowrap; }
+.data-table td a.cve-id { white-space: nowrap; }
+.cve-more { margin-top: 6px; }
+.cve-more summary { cursor: pointer; color: var(--graphite); font-weight: 500; }
+.cve-more summary:hover { color: var(--accent-press); }
+.cve-more summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.cve-more[open] summary { margin-bottom: 6px; }
+
+/* PAT-1879: finding-verification lifecycle cell (device compliance signals
+   and CVE findings tables). Mirrors the .decision / .cve-more disclosure
+   idiom above rather than inventing a new one. Collapsed by default - the
+   markup never sets the <details> open attribute and no script touches it
+   (see e2e/test_pat2092_layout.py's collapsed-by-default guard).
+   PAT-2092: the column itself only ever shows the status pill plus the
+   "N lifecycle events" toggle; opening it must not turn the row into a
+   screen-tall stack. max-height + overflow-y: auto on the timeline caps
+   how tall an opened history can push the row, whatever the real event
+   count on a long-lived, repeatedly-recurring finding - a bounded compact
+   list, per the brief's second option, rather than relocating the history
+   into a full-width row (which would need JS to move the disclosure's
+   content out of its narrow cell). */
+.lifecycle { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 190px; }
+.lifecycle__closure { margin: 0; color: var(--mute); font-size: 12px; max-width: 300px; }
+.lifecycle__history summary { cursor: pointer; color: var(--slate); font-weight: 500; font-size: 12.5px; }
+.lifecycle__history summary:hover { color: var(--primary); }
+.lifecycle__history summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.lifecycle__history[open] summary { margin-bottom: 6px; }
+.lifecycle__timeline {
+  list-style: none; margin: 0; padding: 0 4px 0 0; display: grid; gap: 6px;
+  max-width: 340px; max-height: 220px; overflow-y: auto;
+}
+.lifecycle__timeline-item {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px;
+  padding: 6px 8px; border-left: 2px solid var(--hair); background: var(--paper);
+  font-size: 12px; color: var(--graphite);
+}
+.lifecycle__timeline-item--closing { border-left-color: var(--ok); background: var(--ok-wash); }
+.lifecycle__reason { width: 100%; color: var(--mute); }
+
+/* PAT-2070: minmax(0, max-content) instead of a bare max-content first
+   track. A bare max-content track sizes to the dt text's unwrapped width
+   regardless of container size (a long-but-wrappable label like "Products
+   assessed / checking / not yet assessed" still blows the grid out at
+   narrow widths); minmax(0, max-content) lets the track shrink and the
+   overflow-wrap below give it somewhere to break. */
+.kv { display: grid; grid-template-columns: minmax(0, max-content) 1fr; gap: 10px 24px; margin: 0; }
+.kv dt {
+  font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: normal;
+  text-transform: none; color: var(--mute); padding-top: 3px;
+  overflow-wrap: anywhere;
+}
+.kv dd { margin: 0; color: var(--slate); font-weight: 500; overflow-wrap: anywhere; }
+
+/* ── Pills: compact Brand v3 interface badges ───────────────── */
+.pill {
+  display: inline-block; font-family: var(--sans); font-size: 11px; font-weight: 600;
+  padding: 3px 9px; border: 1px solid currentColor; border-radius: 0;
+  text-transform: none; letter-spacing: normal; white-space: nowrap;
+}
+.pill-ok { background: var(--ok-wash); color: var(--ok); }
+.pill-warn { background: var(--warn-wash); color: var(--warn); }
+.pill-bad { background: var(--bad-wash); color: var(--bad); }
+.pill-critical { background: var(--bad-wash); color: var(--sev-critical); }
+.pill-high { background: var(--warn-wash); color: var(--sev-high); }
+.pill-medium { background: var(--sev-medium-wash); color: var(--sev-medium); }
+.pill-low { background: var(--hair); color: var(--sev-low); }
+.pill-muted { background: var(--hair); color: var(--mute); }
+/* PAT-2140: same background as pill-muted/pill-low (both already read as
+   plain grey next to each other) but --graphite for the foreground, the
+   same "not yet assessed" tone the CVE assessment badge already uses
+   (_cve_state_display's own pill-warn is a different, warmer reading for
+   that feature; this one stays neutral) - gives New software's
+   not_assessed urgency its own distinct, legible identity instead of
+   doubling up on muted. */
+.pill-info { background: var(--hair); color: var(--graphite); }
+
+/* PAT-1832: /software signing-state badge. Visually identical to
+   pill-ok/pill-warn/pill-muted but named separately - the protected-
+   software badge (PAT-1821) already renders literal pill-ok in the same
+   table row, and reusing that class name here would make a signed-and-
+   notarized application read as a false positive for "protected". */
+.pill-signed-ok { background: var(--ok-wash); color: var(--ok); }
+.pill-signed-warn { background: var(--warn-wash); color: var(--warn); }
+.pill-signed-unknown { background: var(--hair); color: var(--mute); }
+
+/* ── Scheduled reports form (PAT-703) ───────────────────────── */
+.sched-status {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 14px;
+  margin: 0 0 18px; font-size: 14px;
+}
+.sched-summary { font-weight: 600; color: var(--slate); }
+.sched-next {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--mute);
+}
+.sched-form { margin-top: 4px; }
+.sched-fields { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 18px; margin: 0 0 14px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-label {
+  font-family: var(--sans); font-size: 12px; font-weight: 600;
+  letter-spacing: normal; text-transform: none; color: var(--mute);
+}
+.field select,
+.field input[type="text"],
+.field input[type="number"] {
+  font: inherit; font-size: 14px; color: var(--slate);
+  background: var(--snow); border: 1px solid var(--hair-strong); border-radius: 0;
+  padding: 8px 10px; min-width: 130px;
+}
+.field select:focus,
+.field input[type="text"]:focus,
+.field input[type="number"]:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
+.field-check { flex-direction: row; align-items: center; gap: 8px; padding-bottom: 9px; }
+.field-check input { width: 15px; height: 15px; accent-color: var(--primary); }
+.sched-hint { font-size: 13px; color: var(--mute); margin: 0 0 16px; }
+.report-catalogue__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.report-catalogue__item { border: 1px solid var(--rule); padding: 18px; display: flex; flex-direction: column; align-items: flex-start; }
+.report-catalogue__item h3 { margin: 0 0 8px; font-size: 16px; }
+.report-catalogue__item p { margin: 0 0 14px; }
+.report-catalogue__item .meta { margin-top: auto; }
+.report-schedule-picker { margin: 0 0 18px; }
+
+/* ── Devices: stale view controls (PAT-701) ───────────────── */
+.toolbar-devices { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.toolbar-devices .search { flex: 1 1 240px; max-width: 340px; }
+.view-tabs { display: inline-flex; border: 1px solid var(--rule); background: var(--snow); }
+.view-tabs a {
+  font-family: var(--sans); font-size: 12px; font-weight: 600;
+  text-transform: none; letter-spacing: normal; text-decoration: none;
+  padding: 9px 14px; color: var(--mute); border-right: 1px solid var(--rule);
+  transition: color .16s, background .16s;
+}
+.view-tabs a:last-child { border-right: none; }
+.view-tabs a:hover { color: var(--slate); }
+.view-tabs a.tab-active { background: var(--slate); color: var(--snow); }
+/* PAT-1957: reporting-state tones on the Devices tabs, existing tokens only.
+   Inactive: the wash background with the tone colour as text. Active: the
+   solid tone colour with --snow text, so an active coloured tab is plainly
+   selected (solid fill, like the neutral active tab) and still reads as an
+   alert or warning. The colour follows the theme through --bad/--warn. */
+.view-tabs a[data-tone="bad"] { background: var(--bad-wash); color: var(--bad); }
+.view-tabs a[data-tone="warn"] { background: var(--warn-wash); color: var(--warn); }
+.view-tabs a[data-tone="bad"]:hover { color: var(--bad); }
+.view-tabs a[data-tone="warn"]:hover { color: var(--warn); }
+.view-tabs a[data-tone="bad"].tab-active { background: var(--bad); color: var(--snow); }
+.view-tabs a[data-tone="warn"].tab-active { background: var(--warn); color: var(--snow); }
+.view-tabs a:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+.threshold-picker { display: inline-flex; align-items: center; gap: 10px; }
+.threshold-label {
+  font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: normal;
+  text-transform: none; color: var(--mute); white-space: nowrap;
+}
+.toolbar-actions { display: inline-flex; gap: 8px; margin-left: auto; }
+.last-seen { color: var(--graphite); font-size: 13px; white-space: nowrap; }
+
+/* ── Buttons (website .btn family) ───────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: var(--sans); font-weight: 600; font-size: 15px;
+  letter-spacing: -0.01em; padding: 13px 22px; border-radius: var(--radius-sm);
+  border: 1px solid var(--rule); background: transparent; color: var(--slate);
+  cursor: pointer; text-decoration: none; white-space: nowrap;
+  transition: background .16s, color .16s, border-color .16s;
+}
+.btn:hover { border-color: var(--slate); }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); box-shadow: 0 8px 18px -10px rgba(37, 99, 235, .8); }
+.btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+.btn-small { padding: 7px 14px; font-size: 13px; }
+.btn-disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+
+/* ── Findings sections (PAT-1602 ruling, 2026-09-13) ──────────
+   CVE and CIS compliance findings render as distinct sections, never
+   interleaved as rows in one list - same ruling as the console's findings
+   list. */
+.findings-section { margin-bottom: 34px; }
+.findings-section:last-child { margin-bottom: 0; }
+.findings-section__head { margin-bottom: 14px; }
+.findings-section__head h2 { margin-bottom: 4px; }
+.findings-section__head .meta { margin: 0; }
+
+/* ── Pager (Findings, PAT-1201) ─────────────────────────────── */
+.pager { display: flex; align-items: center; gap: 16px; margin-top: 16px; }
+.pager-status {
+  font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: normal;
+  text-transform: none; color: var(--mute);
+}
+.toolbar-hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+
+/* ── Copy-able command blocks (Install page, PAT-453) ───────── */
+.code-block { border: 1px solid var(--hair-strong); background: var(--paper); margin: 0 0 14px; }
+.code-block__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 14px; border-bottom: 1px solid var(--hair-strong);
+}
+.code-block__copy {
+  font: inherit; font-family: var(--sans); font-size: 12px; font-weight: 600;
+  letter-spacing: normal; text-transform: none; color: var(--mute);
+  background: var(--snow); border: 1px solid var(--rule); border-radius: 0;
+  padding: 5px 10px; cursor: pointer; transition: color .14s, border-color .14s;
+}
+.code-block__copy:hover { color: var(--slate); border-color: var(--slate); }
+.code-block__copy.is-copied { color: var(--ok); border-color: var(--ok); }
+.code-block pre {
+  margin: 0; padding: 14px 16px; overflow-x: auto;
+  font-family: var(--mono); font-size: 13px; line-height: 1.6; color: var(--slate);
+}
+.code-block code { font-family: inherit; }
+
+/* notices: hairline card with a signal-orange edge (website .rung__callout) */
+.notice {
+  padding: 14px 18px; border: 1px solid var(--rule); border-left: 3px solid var(--primary);
+  background: var(--snow); margin-bottom: 18px; font-size: 14px; color: var(--graphite);
+}
+.notice-ok { border-left-color: var(--ok); }
+
+/* ── Footer (website slate footer) — permanent dark panel, see the
+   rail comment above for why it does not follow the app theme. ──── */
+.footer { background: var(--navy); color: var(--on-slate-mute); border-top: 1px solid var(--on-slate-hair); }
+:root[data-theme="dark"] .footer { background: var(--slate-2); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .footer { background: var(--slate-2); }
+}
+.footer__inner {
+  max-width: var(--maxw); margin: 0 auto; padding: 30px var(--pad);
+  display: grid; grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: 'logo meta';
+  align-items: center; gap: 18px 32px;
+}
+.footer__logo { grid-area: logo; display: flex; align-items: center; }
+.footer__logo img { display: block; width: 136px; height: 28px; }
+.footer__links { grid-area: links; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 22px; font-family: var(--sans); font-size: 12px; font-weight: 500; letter-spacing: normal; text-transform: none; }
+.footer__links a:hover { color: var(--on-slate-strong); }
+.footer__note, .footer__meta { font-family: var(--sans); font-size: 12px; letter-spacing: normal; text-align: center; text-transform: none; }
+.footer__note { grid-area: note; }
+.footer__meta { grid-area: meta; }
+
+/* ── Devices: decision-ordered groups (PAT-1642) ────────────
+   Reuses existing tokens only (--bad/--warn/--ok/--accent/--mute and the
+   pill and card families above) - no new colours.
+   PAT-2092: this comment used to word-join "pill" and "card" with a
+   hyphen-asterisk-slash, which a CSS parser reads as an asterisk
+   immediately followed by a slash - the two characters that end a
+   comment block, wherever they appear in its body. Everything from
+   there through the .kpi rule below parsed as one malformed statement
+   and was silently dropped by the browser, leaving every .kpi tile (all
+   three control-coverage counter cards, plus every other kpi_summary()
+   card on /devices, /homebrew, /exceptions and /software) with no flex
+   layout at all: default block display stacked each label/value pair in
+   one narrow column instead of a row of tiles. Pre-existing since
+   PAT-1642 (9de90ec) - not a PAT-2070 regression. Never place an
+   asterisk directly before a slash inside a CSS comment's body, even
+   where it would read fine as prose - always leave a space, word, or
+   punctuation mark between them. */
+.kpi { display: flex; flex-wrap: wrap; align-items: center; gap: 22px; }
+.kpi__item { display: flex; flex-direction: column; gap: 5px; }
+.kpi__label {
+  font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: normal;
+  text-transform: none; color: var(--mute);
+}
+.kpi__value { font-family: var(--display); font-size: 28px; font-weight: 800; color: var(--slate); }
+/* PAT-2140: a pre-existing, site-wide bug this ticket's own screenshot
+   check caught - .ok-text/.warn-text/.bad-text (and the new .mute-text/
+   .graphite-text above) are declared earlier in this file than
+   .kpi__value, so on equal (single-class) specificity .kpi__value's own
+   color always won the cascade and silently overrode every tone class
+   passed to kpi_summary()'s third item, on every page that uses it
+   (devices.html, exceptions.html, homebrew.html, this card, ...) - the
+   HTML carried the right class throughout, the colour just never
+   rendered. These compound selectors give the tone the higher specificity
+   it needs to actually win against .kpi__value, without touching what
+   .ok-text/.warn-text/.bad-text do anywhere they are used outside a
+   .kpi__value (sev-count, coverage-hero__pct, etc. are unaffected). */
+.kpi__value.ok-text { color: var(--ok); }
+.kpi__value.warn-text { color: var(--warn); }
+.kpi__value.bad-text { color: var(--bad); }
+.kpi__value.mute-text { color: var(--mute); }
+.kpi__value.graphite-text { color: var(--graphite); }
+.kpi__divider { width: 1px; align-self: stretch; background: var(--rule); }
+.kpi__note { flex: 1 1 320px; color: var(--graphite); font-size: 13.5px; line-height: 1.5; margin: 0; }
+.kpi__actions { margin-left: auto; }
+
+/* PAT-2120: the merged /software table replaces the old two-table pair
+   (a governance table with Product/Type/Installs/Evidence/Protected/
+   Signing/Decision/Approval, and a paginated inventory table with
+   Product/Platform/Versions/Installations/Evidence/Usage evidence/CVE
+   assessment/Approval) with one product table, one Approval treatment per
+   row. Column widths below are sized to sum comfortably under the
+   ~1142px measured card width at 1440px (the .col-secondary reveal tier)
+   and ~1142px again at 1680px (.col-tertiary) - the same measured budget
+   PAT-2092/PAT-2119 established for this page's tables. Protected and
+   Signing are no longer their own columns; protected_badge()/
+   signing_badge() render inline in the Product cell instead (PAT-2120
+   Data decision), so their old ellipsis-on-pill treatment and dedicated
+   column widths are retired along with them. */
+.software-table { min-width: 900px; table-layout: fixed; }
+/* Product carries the name plus several subtle lines (identifier,
+   reviewed identity, evidence basis, removal state for Not wanted rows,
+   decision provenance, and the Protected/Signing badges) - the widest,
+   most load-bearing column, and (per PAT-2092's lesson on this page) a
+   real pixel width rather than left unset. */
+.software-col-product { width: 260px; }
+/* Installs ("INSTALLS" header, and content like "12 devices on 3
+   versions", or an inventory-matched row's "2 on 2 devices" plus a
+   versions subtitle) needs more than 110px - "devices"/"versions" broke
+   mid-word at that width ("device/s on 2 version/s"). */
+.software-col-installs { width: 140px; }
+/* CVE assessment holds a nowrap pill ("Not yet assessed" is the longest
+   state) plus a mono last-matched date subtitle. */
+.software-col-cve { width: 160px; }
+/* PAT-2120: every row on this table now uses the select + Apply pattern
+   (PAT-2008 round 2/PAT-2119), not the old decision-table button list this
+   width was originally sized for - reusing the old inventory table's own
+   measured value instead (.inventory-col-decision, PAT-2119: "Approval's
+   second line - 16px checkbox, a mono pill up to UNREVIEWED, and HISTORY -
+   measures ~161px plus 24px cell padding; 195px leaves headroom for wider
+   Linux CI fonts"). 130px (sized for a couple of short nowrap buttons)
+   overflowed the card at 1440px+ once every row carried this richer
+   content. */
+.software-col-actions { width: 195px; }
+/* Type and Platform are .col-secondary (reveal tier 1440px); Evidence is
+   .col-tertiary (reveal tier 1680px, widths declared in that media query
+   above with software-col-evidence) - the same staged-reveal pattern the
+   old inventory table used, now carried by the merged table instead. */
+.cell-product { vertical-align: top; }
+.cell-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.cell-badges .pill { margin: 0; }
+.cell-subtle { display: block; margin-top: 4px; color: var(--mute); font-family: var(--sans); font-size: 12px; line-height: 1.35; }
+/* PAT-2119: a block for the Evidence date so tests can measure its own
+   height rather than the row's. */
+.cell-evidence__main { display: block; }
+.inventory-pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+/* PAT-2092: Previous/Next were `class="button button-secondary"`, a class
+   that had no CSS definition anywhere in this file (only this now-renamed
+   sibling-spacing rule referenced it), so they rendered as bare unstyled
+   browser buttons - the same defect as the inventory search button below.
+   Both now reuse .btn/.btn-small, the same component Download CSV on
+   /devices already uses. */
+.inventory-pagination .btn + .btn { margin-left: 6px; }
+.inventory-boundary { margin: 12px 0 0; }
+.software-inventory-unavailable { margin-bottom: 18px; }
+
+/* PAT-1846: exception decisions contain a status plus attributable evidence.
+   Keep that evidence in a deliberate vertical stack rather than relying on
+   inline wrapping, which otherwise makes dates and acceptors hard to scan. */
+.exceptions-toolbar { margin: 0 0 18px; }
+.exceptions-toolbar .search { width: 100%; max-width: 420px; }
+/* PAT-2070: 8 equal 135px columns (1080/8) forced a scroll at every
+   desktop width, and .exception-decision/.exception-review's min-width
+   (180/120) exceeded that equal share besides. Type (redundant next to the
+   product name and icon shown elsewhere) and Requested by (an email,
+   secondary to which product and what decision) are .col-secondary in both
+   the "Needs attention" and "Accepted" tables (same column positions in
+   both - 2 and 5); the remaining six columns get explicit widths that fit
+   the row at 1280px and above.
+   PAT-2092: Product was tried as min-width-only first, on the theory
+   that it would absorb the container's spare width - every other column
+   had an explicit width, which is why this table also stopped short of
+   the page width instead of using it (see findings-table's own comment
+   above for the general shape of that defect) - but measurement showed
+   a min-width-only column does not reliably even get its own declared
+   min-width respected: this exact column rendered at 117px against a
+   declared 180px min-width, breaking "ShadyCoupons" (an ordinary short
+   product name) mid-word for want of the room its own min-width was
+   supposed to guarantee it. 210px is a real width instead. Pills never
+   wrap (removed the white-space: normal override below); the
+   decision/status pills here ("Unaccepted", "Accepted", "Overdue") are
+   short enough that the existing 160px Decision column already fits
+   them nowrap.
+   Selectors moved from th:nth-child to a <colgroup> (added to both
+   tables) with named column classes, matching findings-table and
+   device-table: a fixed-layout table with no <colgroup> does not stretch
+   to fill its container even with width: 100%, which was the same
+   "doesn't use the page width" defect. Type and Requested by (both
+   .col-secondary) get their width from the shared reveal-tier media
+   query above, not a standing declaration - hidden or not, a <col>'s
+   own width still counts toward the table's total, so a standing width
+   here would eat into the space meant for Product exactly like it did
+   on findings-table (see that table's own comment for the measured
+   example).
+   PAT-2092, third pass: as on findings-table, a table with any hidden
+   column does not actually get table-layout: fixed's "proportional
+   stretch" - the container's spare width past the visible columns'
+   declared sum becomes unrecoverable dead space after the last visible
+   cell, confirmed here too (the coordinator's report: row content
+   stopping well short of the card on both the "Needs attention" and
+   "Accepted" tables). Product's width is set per reveal tier instead,
+   to this table's measured container width at each tested viewport
+   (982/1142/1518 at 1280/1440/1920) minus the sum of every other
+   visible column at that tier. The two tables have different trailing
+   column counts (Actions only on "Needs attention"; a second Date-width
+   column only on "Accepted"), so they need different Product widths and
+   get separate classes - .exception-col-product and
+   .exception-col-product-accepted - rather than one shared value that
+   either overflows one table or underfills the other. */
+.exception-table { min-width: 810px; table-layout: fixed; }
+/* 24 Sept review: the per-tier Product widths above were measured at exactly
+   1280/1440/1920 and overflowed at every width in between (a scrollbar under
+   an empty table at ~1500px). Product now carries no width, so fixed layout
+   hands it whatever is left at any viewport; every other column is fixed. */
+/* A 100% width on the flexible column makes Chromium give it the whole
+   remainder; left as auto, the colspan'd detail rows under each exception
+   made it split the remainder with the hidden columns instead. */
+.exception-col-product, .exception-col-product-accepted { width: 100%; }
+.exception-col-version { width: 100px; }
+.exception-col-devices { width: 80px; }
+.exception-col-decision { width: 160px; }
+.exception-col-date { width: 130px; }
+.exception-col-actions { width: 160px; }
+.cell-stack { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+.cell-detail { color: var(--graphite); font-size: 13px; line-height: 1.35; }
+.exception-acceptor, .exception-review { vertical-align: middle; }
+
+.devices-toolbar { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0 0 18px; overflow-x: auto; }
+.devices-toolbar .view-tabs { flex: 0 0 auto; }
+
+/* PAT-2212: the Cyber Essentials 14-day sentence shows only on the Silent
+   tab. The tab switch itself is JS-enhanced without a page reload
+   (portal.js's data-selected, set on click, overriding the server-rendered
+   data-initial) - matching either attribute keeps this in sync with the
+   selected tab whether or not JS ran. */
+.toolbar-hint[data-silent-only] { display: none; }
+.devices-toolbar:has(.view-tabs[data-selected="silent"]) ~ .toolbar-hint[data-silent-only],
+.devices-toolbar:has(.view-tabs[data-initial="silent"]:not([data-selected])) ~ .toolbar-hint[data-silent-only] {
+  display: block;
+}
+
+.group-card { padding: 0; overflow: hidden; }
+.group-card__head {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  padding: 12px 18px; background: var(--paper); border-bottom: 1px solid var(--rule);
+}
+.group-card__title { font-size: 14px; font-weight: 600; color: var(--slate); }
+.group-card__head > h2 {
+  margin: 0; font-family: var(--sans); font-size: 14px; font-weight: 600;
+  letter-spacing: normal; text-transform: none; color: var(--slate);
+}
+.group-card__desc { color: var(--mute); font-size: 12.5px; }
+.group-card__search {
+  width: calc(100% - 36px); max-width: 420px; margin: 14px 18px;
+}
+/* 24 Sept review (Homebrew): the body of a group card lines up on one 18px
+   gutter, the same as its head. Filter tabs and search share one toolbar row
+   instead of the tabs sitting flush against the card edge; empty and meta
+   lines get the gutter instead of touching the edge; and the first and last
+   table cells take 18px so column text starts where everything else does. */
+.group-card__toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+  padding: 14px 18px;
+}
+.group-card__toolbar .group-card__search { margin: 0; width: auto; flex: 1 1 260px; max-width: 420px; }
+.group-card > .empty, .group-card > .meta { padding: 14px 18px; }
+.group-card .data-table th:first-child, .group-card .data-table td:first-child { padding-left: 18px; }
+.group-card .data-table th:last-child, .group-card .data-table td:last-child { padding-right: 18px; }
+.homebrew-collection { margin: 0 0 18px; }
+/* Homebrew devices: auto layout let a long prefix path push the table past
+   its card. Mac and Prefix share what the fixed columns leave. */
+.homebrew-devices-table { table-layout: fixed; min-width: 760px; }
+.hb-col-owner { width: 110px; }
+.hb-col-num { width: 96px; }
+.hb-col-collection { width: 180px; }
+.hb-col-action { width: 120px; }
+.card-edge-bad { border-left: 3px solid var(--bad); }
+.card-edge-warn { border-left: 3px solid var(--warn); }
+.card-edge-ok { border-left: 3px solid var(--ok); }
+.card-edge-muted { border-left: 3px solid var(--mute); }
+
+.ask-link {
+  font-family: var(--sans); font-size: 12px; font-weight: 600;
+  letter-spacing: normal; text-transform: none; color: var(--accent-press);
+}
+.ask-link:hover { color: var(--accent); }
+.cell-actions .ask-link { display: block; }
+.cell-actions .ask-link + .ask-link { margin-top: 4px; }
+
+/* PAT-2135: the retire/unretire confirm-and-reason panel - a <details>
+   disclosure is the no-JS confirm step (click to reveal, then submit).
+   Used both compactly in a table cell (.cell-actions) and, larger, in the
+   device page's own Device card. */
+.retire-panel { display: block; margin-top: 6px; }
+.retire-panel summary { cursor: pointer; list-style: none; }
+.retire-panel summary::-webkit-details-marker { display: none; }
+.retire-form, .device-list-upload-form {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px;
+}
+.retire-form__note { width: 160px; padding-top: 6px; padding-bottom: 6px; font-size: 12.5px; }
+.cell-actions .retire-panel { text-align: left; }
+.cell-actions .retire-form__note { width: 120px; }
+.retire-history { margin-top: 10px; }
+.retire-history summary { cursor: pointer; font-size: 12.5px; color: var(--mute); }
+.retire-history__list { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.retire-history__list li { font-size: 12.5px; color: var(--graphite); }
+
+/* One explicit column contract keeps every device state aligned on desktop.
+   At narrow widths the table retains this useful shape inside table-scroll,
+   instead of squeezing evidence and actions into unreadable fragments.
+   PAT-1954: with a fixed layout, nowrap headers and badges used to spill out
+   of their cells and sit on top of the neighbouring column at about 1180px.
+   Headers, badges and the last-seen text may now wrap inside their own cell,
+   long tokens break rather than overflow, and the columns are fixed pixel
+   widths (the table grows to their sum when the actions column is present)
+   so the longest single word in each column always fits. */
+/* PAT-2070: OS version is the one column demoted to .col-secondary (hidden
+   below 1440px and shown above it - see .col-secondary's own comment) -
+   the exact build number is less essential to the roster view than
+   platform, score, findings and the two assurance pills, and it stays one
+   click away on the device detail page. The other eight columns were
+   trimmed (kept >= 96px on platform/findings per the header-wrap floor
+   below) so the full row - including Actions - fits without a horizontal
+   scroll at 1280px and above; PAT-1954's original 1064px/1294px totals
+   forced a scroll at every desktop width, since .page never exceeds 1200px
+   regardless of viewport. */
+/* PAT-2092: Hostname's original fixed 150px became the actions-gap bug
+   the owner reported - table-layout: fixed with width: 100% and every
+   column pinned distributes spare container width proportionally across
+   all of them (confirmed by measuring the rendered columns: each came
+   out ~5% wider than its own spec at 1440px, uniformly), so on a wide
+   window every short column - Score, Findings, Last seen, Actions -
+   stretched well past its content and the row actions ended up floating
+   far from Last seen with a large gap in between. A min-width-only
+   Hostname (letting it alone absorb the spare width) was tried next, but
+   measurement showed a min-width-only column does not reliably get even
+   its own declared min-width respected in this Chromium build (see
+   exception-col-product's own comment for the measured example) - 220px
+   is a real width instead, generous enough for an ordinary hostname, and
+   relies on the same uniform stretch that already grows every other
+   specified column here to fill whatever space is left over. */
+/* PAT-2336: primary OS context and reporting evidence fit the roster at
+   ordinary desktop widths. Long control labels wrap at spaces, never collide. */
+.device-table { min-width: 0; table-layout: fixed; }
+.device-col-hostname { width: 140px; }
+.device-col-platform { width: 96px; }
+.device-col-os { width: 165px; }
+.device-col-seen { width: 100px; }
+.device-col-score { width: 90px; }
+.device-col-encryption { width: 115px; }
+.device-col-updates { width: 125px; }
+.device-col-actions { width: 135px; }
+.device-table th { vertical-align: bottom; }
+.device-table .last-seen { white-space: normal; }
+.device-table .device-checks { display: block; color: var(--mute); font-size: 12px; }
+.device-table .pill { white-space: normal; overflow-wrap: normal; }
+.signals-table .pill { white-space: normal; overflow-wrap: normal; }
+.device-table .cell-actions { vertical-align: middle; }
+.device-table .cell-actions .ask-link { white-space: normal; }
+.device-table .retire-panel:not([open]) > form { display: none; }
+.device-table .retire-form__note, .device-table .retire-form .btn { max-width: 100%; white-space: normal; }
+.device-table .os-build { text-overflow: clip; display: block; max-width: 100%; white-space: nowrap; overflow-x: auto; }
+
+/* PAT-2155: alerts-table's own fixed-layout/colgroup widths, deliberately
+   placed here (before the phone media query below, like .homebrew-
+   devices-table above) rather than down with the rest of the Alerts
+   section's spacing/filter/form rules - this table now opts into
+   table-stack at 390px, and a same-specificity desktop rule declared
+   AFTER the media query that resets table-layout/min-width for
+   table-stack would win the cascade at every width regardless of the
+   media condition, silently keeping the table at its 620px min-width on
+   a 390px viewport (see .table-stack's own PAT-2137 comment - the exact
+   trap this placement avoids).
+
+   Fixed layout with a real colgroup, the same pattern the New software
+   table uses (PAT-2093/PAT-2140) rather than the auto layout this table
+   used to rely on - the per-tab column set (see software_alerts.html's
+   show_raised/show_ack/show_resolved/show_last_updated/show_actions)
+   means auto layout's own re-flow no longer has a stable set of visible
+   columns to work from tab to tab. Product is the one flexible column
+   (width: 100%, every sibling a measured pixel width) - the
+   exception-table shape PAT-2092 settled on after finding a
+   min-width-only column does not reliably even get its own min-width
+   respected under fixed layout (see that table's own comment for the
+   measured example). */
+.alerts-table { table-layout: fixed; min-width: 620px; }
+.alerts-col-product { width: 100%; }
+.alerts-col-device { width: 220px; }
+/* PAT-2256: 100px left 68px of content, and the "Acknowledged" pill (about
+   100px wide) ran into the Raised date beside it. 140px holds it with its
+   cell padding. */
+.alerts-col-status { width: 140px; }
+/* A plain single date+time cell (Raised, or All's Last updated) - the
+   PAT-2140 two-line date/time split (cell-evidence/cell-evidence__main/
+   cell-subtle). 110px (the New software table's own value at the same
+   mono size) measured 78px of content width here and still wrapped
+   "24 Sep 2026" itself across two lines ("24 Sep" / "2026"), stacking a
+   third line under it for the time and reproducing this ticket's own
+   defect at a smaller scale - a Chromium measurement, not a copy typo:
+   confirmed with Range.getClientRects() against the live page, two rects
+   for that one date string. 130px gives the date string's own ~85-90px
+   measured width room to sit on one line, so the cell is a clean two
+   lines (date, then time) rather than three. */
+.alerts-col-date { width: 130px; }
+/* Acknowledged/Resolved carry the same two-line date/time split plus a
+   third line (who acknowledged it, or why it was resolved) - wide enough
+   for a real email address or a short reason without wrapping that third
+   line either. */
+.alerts-col-detail { width: 175px; }
+.alerts-col-actions { width: 310px; }
+
+/* PAT-1997: the Waiting-on-a-decision table's Actions column had no
+   dedicated width, so table-layout:fixed split it evenly with Protected/
+   Signing/Decision and "Approve it ->"/"Remove it ->" wrapped mid-word
+   against the table-scroll edge instead of fitting on one line. Width kept
+   at 150px (test_pat1997) - PAT-2070 fits the rest of the row into that
+   budget instead of shrinking this column. */
+.software-table .cell-actions { vertical-align: middle; text-align: left; }
+
+/* Detail evidence remains deliberately scoped: the table names exactly what
+   was collected, while the concise boundary note prevents a complete section
+   from reading as estate-wide coverage. */
+/* Evidence collection leads the device page (24 Sept review): it says what
+   this device's evidence is and how fresh it is, so it is read before the
+   sections that rely on it. .card's own margin-bottom spaces it from the
+   grid below, so no extra top margin. */
+.evidence-card { margin-top: 0; }
+.evidence-card__meta { margin-bottom: 18px; }
+.evidence-card__table { min-width: 440px; }
+.evidence-card__boundary { margin: 16px 0 0; }
+
+.gap-card .group-card__head { border-bottom: none; }
+.gap-card__body { padding: 4px 18px 18px; color: var(--graphite); font-size: 13.5px; line-height: 1.6; }
+.gap-card__body ul { margin: 8px 0; padding-left: 20px; }
+.gap-card__body li { margin: 4px 0; }
+.gap-card__body p { margin: 0 0 10px; }
+.gap-card__body p:last-child { margin-bottom: 0; }
+
+/* PAT-2212: group_card_head's own right-aligned actions slot - header
+   buttons (Replace list/Clear list) and the upload-details line, so a
+   card can carry both without a bespoke head layout per caller. */
+.group-card__head-actions { margin-left: auto; display: flex; align-items: flex-end; }
+.dl-head-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.dl-head-buttons { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+/* The confirm form opens full width under the button row rather than
+   squeezing into the same line - .retire-panel's own summary keeps its
+   .btn look here via the .btn/.btn-small classes on the <summary>. */
+.dl-head-buttons .retire-panel[open] { flex: 1 1 100%; }
+.dl-upload-meta { color: var(--mute); font-size: 12.5px; text-align: right; }
+
+/* PAT-2212: the device-list card's own count tiles, reusing the Overview
+   estate cards' .ov-card look (root AGENTS.md house style - one tile
+   idiom, not two) rather than inventing a second tile component. Always
+   two columns (never the single-column stack .overview-cards__grid uses
+   below 680px) so three tiles never force the card wider than a 390px
+   viewport (rubric L1/L12) - two-up plus one wrapping is the requested
+   phone layout; three-up once there is room for all of them on one row. */
+.dl-tiles {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+  margin: 2px 0 16px;
+}
+@media (min-width: 560px) {
+  .dl-tiles { grid-template-columns: repeat(3, 1fr); }
+}
+.dl-tile { cursor: pointer; }
+.dl-tile.dl-tile--active { border-color: var(--primary); box-shadow: var(--shadow-float); }
+.dl-tile.dl-tile--active .ov-card__label { color: var(--primary); }
+.dl-tile__hint {
+  font-size: 11.5px; color: var(--mute); line-height: 1.3;
+  display: block; margin-top: 2px;
+}
+/* One line with a tick rather than a heading plus a sentence (PAT-2212) -
+   the empty state for whichever reconciliation group is selected. */
+.gap-card__body > p.empty { margin: 0; }
+.dl-matched summary { font-size: 13px; }
+/* PAT-2271: "Remove from list" (a <details> confirm) sits above "Install
+   the agent" in the same cell - a touch of space so the button does not
+   crowd the collapsed disclosure above it. */
+.cell-actions .retire-panel + .btn-small { margin-top: 6px; }
+.dl-matched-table td.mono { white-space: nowrap; }
+
+/* ── Software: application vs extension type tag (PAT-1742) ──────────
+   An icon plus a text label, not just a grey outlined pill - the two
+   product kinds need to be unmistakable at a glance, not read as one
+   undifferentiated "software" row. Colour reuses --slate/--uv-deep, no
+   new tokens. */
+.type-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; white-space: nowrap; }
+.type-tag__icon { flex: none; }
+/* --graphite (secondary text, already used for .meta/.kpi__note/.advisory)
+   rather than --slate: the rail/footer's dark-panel styling reads --slate
+   alongside the portal-only --slate-2 as a fixed-dark pair (root AGENTS.md
+   House style), so a future reader could reasonably treat --slate as
+   non-theme-following too - --graphite carries no such ambiguity and is
+   already the app's normal secondary-text token in both themes.
+   PAT-2163 (orchestrator follow-up, Andy's live desktop screenshot):
+   --uv-deep on the Extension tag read as a status/warning colour, not a
+   neutral type label (signal orange is reserved for action/selection,
+   never status - portal-rubric.md T6) - --mute matches the same muted
+   tone this file already uses for secondary metadata (.cell-subtle,
+   .toolbar-hint). The icon's <path fill="currentColor"> (the macro above)
+   follows this colour automatically, so it mutes with the text - no
+   separate icon rule needed. */
+.type-tag--app { color: var(--graphite); }
+.type-tag--ext { color: var(--mute); }
+
+/* ── Responsive ──────────────────────────────────────────── */
+
+/* Below this width the rail becomes an off-canvas drawer, toggled by
+   .topbar__burger (see the inline script at the bottom of base.html).
+   216px rail + a workable content column stops being comfortable well
+   before typical tablet width, so this is deliberately wider than the
+   820px compact-padding breakpoint below - the same two-breakpoint shape
+   the old top nav used (PAT-1200's lesson: keep the "does the chrome fit"
+   question separate from the "do we want mobile-style padding" question). */
+@media (max-width: 900px) {
+  .topbar__burger { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .rail {
+    position: fixed; top: 0; bottom: 0; left: 0; z-index: 60;
+    transform: translateX(-100%); transition: transform .2s ease;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, .35);
+  }
+  .rail.open { transform: translateX(0); }
+  .rail-backdrop {
+    display: none; position: fixed; inset: 0; z-index: 55;
+    background: rgba(0, 0, 0, .35);
+  }
+  .rail-backdrop.open { display: block; }
+}
+
+@media (max-width: 820px) {
+  :root { --pad: 24px; }
+  .topbar { padding: 0 16px; gap: 10px; }
+  .page { padding-top: 28px; }
+  .kpi { align-items: stretch; gap: 16px; }
+  .kpi__note { flex-basis: 100%; }
+  .kpi__actions { margin-left: 0; }
+  .group-card__head { align-items: flex-start; }
+  .control-coverage__head .meta { text-align: left; }
+  .attention-summary__item { grid-template-columns: 1fr; gap: 5px; }
+  /* PAT-2070: once the item is a single 1fr column, there is no adjacent
+     column for the CTA link to sit beside on one line - let it wrap like
+     ordinary text instead of keeping it forced onto one (narrow) line. */
+  .attention-summary__item a { white-space: normal; }
+}
+
+@media (max-width: 680px) {
+  .footer__inner { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'logo' 'meta'; }
+  .footer__logo { justify-self: center; }
+  .footer__links { justify-content: center; }
+  .card { padding: 20px; }
+  .group-card, .card-table { padding-left: 0; padding-right: 0; }
+  .kpi__divider { display: none; }
+  .kpi__item { flex: 1 1 120px; }
+  /* PAT-1957: the tab bar is wider than a phone, and with Reporting normally
+     now the default landing tab it must never be clipped off screen. Wrap the
+     tabs onto their own rows, drawing the dividers as a collapsed grid. */
+  .view-tabs { display: flex; flex-wrap: wrap; border: 0; border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); }
+  .devices-toolbar .view-tabs { flex: 1 1 100%; }
+  .view-tabs a, .view-tabs a:last-child { flex: 1 1 auto; padding: 9px 11px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .data-table th, .data-table td { padding-left: 12px; padding-right: 12px; }
+
+  /* PAT-2136: generic phone-width table-stack pattern - a table opts in
+     with the `table-stack` class (currently only the Compliance signals
+     table on /devices/{id}) and each row becomes a labelled block instead
+     of a table row, so no column is ever squeezed below its content's own
+     width (the device detail table-layout: fixed bug this ticket fixed -
+     three fixed-pixel columns already summed past this breakpoint's
+     available card width, so the two remaining columns computed to 0px
+     and wrapped their text one letter per line). table-layout resets to
+     auto here so the desktop-only fixed column widths (declared outside
+     this media query, e.g. .signals-table th:nth-child) stop applying -
+     they are harmless leftovers once every td is display: block, but
+     resetting it keeps the intent explicit rather than relying on that.
+     Reusable for any future table that needs the same treatment: add
+     `table-stack` to the <table> and a `data-label="<header text>"`
+     attribute (matching that column's real <th>, kept in the DOM but
+     visually hidden here for assistive tech) to every <td>.
+     PAT-2137: min-width resets to 0 alongside table-layout here too - a
+     table opting into table-stack may (like .homebrew-devices-table,
+     760px) also declare a desktop-only min-width outside this media
+     query to stop a long value stretching the table past its card at
+     wider widths. Once every row is display: block that min-width is a
+     leftover exactly like the fixed column widths above, except it does
+     not go inert on its own: a min-width applies however the element is
+     displayed, so left alone it would hold the stacked table (and the
+     card around it) open to 760px wide on a 390px viewport regardless of
+     how narrow each stacked row's own content is. */
+  .table-stack { table-layout: auto; min-width: 0; }
+  .table-stack thead th {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+  .table-stack, .table-stack tbody, .table-stack tr { display: block; width: 100%; }
+  .table-stack tbody tr {
+    padding: 14px 0; border-bottom: 1px solid var(--rule);
+  }
+  .table-stack tbody tr:first-child { padding-top: 0; }
+  .table-stack tbody tr:last-child { padding-bottom: 0; border-bottom: none; }
+  .table-stack td {
+    display: block; width: auto !important; padding: 4px 0 0; border: 0;
+    overflow-wrap: break-word;
+  }
+  .table-stack td:first-child { padding-top: 0; }
+  /* PAT-2303: a <details> inside a stacked cell (the version breakdown on
+     /reports/software/version-sprawl) keeps a closed panel's text laid out
+     just below the summary, and Chromium still reports those line boxes.
+     Once every cell is a block, they sit on top of the next cell. Nothing is
+     painted, but a closed panel has no business taking space, so it is
+     removed from layout until the details element is opened. */
+  .table-stack td > details:not([open]) > .table-scroll { display: none; }
+  .table-stack td[data-label]::before {
+    content: attr(data-label); display: block; margin-bottom: 3px;
+    font-family: var(--sans); font-size: 11px; font-weight: 600;
+    text-transform: none; letter-spacing: normal; color: var(--mute);
+  }
+  /* signals-table__rule's desktop overflow-wrap: normal (portal.css, main
+     rule set) would stop a long snake_case rule id from ever wrapping in
+     this single-column layout, where it has nowhere else to go but its
+     own <wbr> break points - break-word here is the stacked-row default,
+     not the desktop nowrap-until-<wbr> behaviour. */
+  .signals-table__rule { overflow-wrap: break-word; }
+}
+
+
+/* ── Software approval controls (PAT-2008) ────────────────────────────
+   Inline row controls, the filter row, the bulk bar, the result notice and
+   the history drawer. Colours come only from theme-following tokens, so
+   both themes are covered by the token cascade at the top of this file. */
+.cell-select { width: 40px; text-align: center; vertical-align: middle; }
+.data-table th.cell-select { padding-left: 12px; padding-right: 0; }
+.data-table td.cell-select { padding-left: 12px; padding-right: 0; }
+.approval-select { width: 16px; height: 16px; margin: 0; accent-color: var(--primary); cursor: pointer; }
+.approval { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.approval__btn {
+  font: inherit; font-family: var(--sans); font-size: 12px; font-weight: 600;
+  letter-spacing: normal; text-transform: none; white-space: nowrap;
+  color: var(--accent-press); background: transparent; border: 0; padding: 0;
+  cursor: pointer; text-align: left;
+}
+.approval__btn:hover { color: var(--accent); }
+.approval__btn:focus-visible, .approval__history:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.approval__btn:disabled { opacity: 0.5; cursor: progress; }
+.data-table td a.approval__history,
+.approval__history {
+  font-family: var(--sans); font-size: 12px; font-weight: 500; letter-spacing: normal;
+  text-transform: none; white-space: nowrap; color: var(--mute); border-bottom: 0;
+}
+.data-table td a.approval__history:hover, .approval__history:hover { color: var(--slate); }
+.approval__lock { color: var(--mute); font-size: 12.5px; line-height: 1.45; }
+.removal-state { margin-top: 6px; }
+.data-table td.cell-approval { padding-left: 12px; padding-right: 12px; }
+.approval-row-form { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; margin: 0 0 6px; }
+.approval-row-form__state {
+  min-width: 0; flex: 1 1 auto; font: inherit; font-size: 12.5px; padding: 3px 4px;
+  border: 1px solid var(--rule); border-radius: 0; background: var(--snow); color: var(--graphite);
+}
+/* PAT-2119: 6px gap and tighter pill padding buy the Approval column width. */
+.approval-row-meta { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; white-space: nowrap; }
+.approval-row-meta .pill { margin: 0; padding: 3px 6px; }
+
+.approval-tools { margin: 0 0 18px; }
+
+/* PAT-2022: the AI Tooling view deliberately reuses the shared KPI, filter,
+   approval and table primitives. These rules only provide the two layouts
+   that are unique to its coverage evidence. */
+.ai-tooling-boundary-note { margin: -10px 0 18px; }
+.ai-collection-card { margin-bottom: 18px; }
+.ai-collection-card h2,
+.ai-privacy-panel h2 { margin-top: 0; }
+.ai-collection-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 14px 0;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+}
+.ai-collection-item {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  background: var(--paper);
+}
+.ai-collection-item span { color: var(--mute); font-size: .82rem; line-height: 1.45; }
+.ai-products-table { min-width: 1260px; }
+.ai-products-table td[data-label="First seen"] { white-space: nowrap; }
+.ai-devices-table { min-width: 900px; }
+.ai-device-items-table { min-width: 1100px; }
+.ai-privacy-panel { margin-left: 0; }
+/* PAT-2213 review: rows sat flush against the card's left edge, misaligned
+   with the .group-card__head's own 18px gutter above them - the same 18px
+   inset every other group-card body element already takes (.group-card
+   .data-table th:first-child etc., the "24 Sept review (Homebrew)" comment
+   above). */
+.settings-list { border-top: 1px solid var(--rule); }
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+  padding: 14px 18px; border-bottom: 1px solid var(--rule);
+}
+.settings-row > div { min-width: 0; }
+.settings-row form { display: flex; align-items: center; gap: 12px; margin: 0; }
+.settings-row .field-check { display: inline-flex; align-items: center; gap: 7px; }
+/* PAT-2213: the combined notifications card's one shared Save (replacing
+   the old per-row form+Save pair) sits at the same 18px gutter as the
+   rows above it. */
+.settings-actions { padding: 14px 18px; margin: 0; }
+
+@media (max-width: 980px) {
+  .ai-collection-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 680px) {
+  .ai-collection-grid { grid-template-columns: 1fr; }
+  .ai-products-table,
+  .ai-devices-table,
+  .ai-device-items-table { min-width: 0; }
+  .settings-row { align-items: flex-start; flex-direction: column; }
+}
+
+/* PAT-2213: the AI Tooling Products card's own filter bar is nested inside
+   a zero-padding .group-card (unlike /software's, which sits on the page
+   directly above its card) - without this it would sit flush against the
+   card's edges, the exact "search flush against the card border" defect
+   rubric L2 already names. Matches .group-card__toolbar's own 18px gutter. */
+.group-card > .filter-bar { padding: 14px 18px 0; }
+.group-card > .ai-products-count { padding: 0 18px 14px; }
+
+/* PAT-2213: a zero-count Type/State/Assessment option stays visible in its
+   dropdown (Andy ruling: never hidden silently) but reads as inactive,
+   distinct from a real, actionable option. */
+.filter-dropdown__option--muted { color: var(--mute); }
+
+/* Local admins retains the responsive estate card grid (PAT-2215).
+   AI Tooling uses the separate compact .ai-review-summary below. */
+.ai-summary { margin-bottom: 18px; }
+.ai-summary-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+}
+@media (min-width: 680px) {
+  .ai-summary-grid { grid-template-columns: repeat(4, 1fr); }
+}
+.ai-summary-actions { margin: 10px 0 0; }
+/* Zero values remain quieter than a nonzero estate headline. */
+.ai-summary-grid .ov-card--zero .ov-card__headline {
+  font-family: var(--sans); font-size: 18px; font-weight: 600; color: var(--mute);
+}
+.software-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.software-filters__field { display: inline-flex; align-items: center; gap: 8px; }
+.software-filters__field .search { width: auto; min-width: 0; padding-top: 7px; padding-bottom: 7px; }
+.software-filters__field select.search { max-width: 260px; }
+.software-filters__devices { width: 84px; }
+.software-filters__unit { color: var(--mute); font-size: 13px; }
+.software-filters__check {
+  display: inline-flex; align-items: center; gap: 8px; font-size: 14px;
+  color: var(--graphite); cursor: pointer; white-space: nowrap;
+}
+.software-filters__check input { accent-color: var(--primary); width: 16px; height: 16px; margin: 0; }
+.software-filters__hint { margin: 8px 0 12px; }
+.software-filters__search { width: 220px; padding-top: 7px; padding-bottom: 7px; }
+/* PAT-2008 round 2: a decision group whose rows the tab, filters or
+   search all hide (portal.js updateGroups). */
+.group-card.is-filtered-out { display: none; }
+
+.bulk-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+  padding: 12px 16px; border: 1px solid var(--rule); border-left: 3px solid var(--mute);
+  background: var(--snow);
+}
+.bulk-bar__count { font-size: 14px; color: var(--graphite); font-weight: 500; white-space: nowrap; }
+.bulk-bar__reason { flex: 1 1 220px; min-width: 0; }
+.bulk-bar__reason .search { width: 100%; padding-top: 7px; padding-bottom: 7px; }
+.bulk-bar__actions { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+.bulk-bar .btn:disabled { opacity: 0.45; cursor: default; }
+/* PAT-2163 (orchestrator follow-up): visibility (hidden until something is
+   selected) and the phone-only fixed-to-viewport-bottom position live in
+   that ticket's own CSS block at the end of this file, next to the rest of
+   its filter-bar/chip rules, rather than here - this rule stays for the
+   one part that is not width-dependent: the active-state highlight. */
+.bulk-bar.js-bulk.is-active { border-left-color: var(--primary); }
+
+.approval-result p { margin: 0; }
+.approval-result p + p, .approval-result__lines { margin-top: 6px; }
+.approval-result__lines { padding-left: 18px; margin-bottom: 0; }
+.approval-result__warning { color: var(--warn); }
+.approval-result__close {
+  font: inherit; font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: normal;
+  text-transform: none; background: transparent; border: 1px solid var(--rule);
+  color: var(--mute); padding: 4px 8px; margin-top: 10px; cursor: pointer;
+}
+.approval-result__close:hover { color: var(--slate); border-color: var(--slate); }
+.approval-result.is-toast {
+  position: fixed; right: 16px; bottom: 16px; z-index: 70; margin: 0;
+  width: min(440px, calc(100vw - 32px)); box-shadow: 0 10px 30px var(--hair-strong);
+}
+.approval-result:focus { outline: none; }
+html.is-busy, html.is-busy * { cursor: progress; }
+
+.history-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 80;
+  width: min(460px, 100vw); overflow-y: auto; background: var(--snow);
+  border-left: 1px solid var(--rule); box-shadow: -12px 0 32px var(--hair-strong);
+  padding: 20px 22px 28px;
+}
+.history-drawer[hidden] { display: none; }
+.history-drawer__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.history-drawer__head h2 { margin: 0; }
+.history__product { margin: 0 0 12px; color: var(--slate); overflow-wrap: anywhere; }
+.history__list { list-style: none; margin: 0; padding: 0; }
+.history__item { padding: 12px 0; border-top: 1px solid var(--hair); }
+.history__item p { margin: 0 0 4px; font-size: 14px; }
+.history__change { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.history__meta { color: var(--mute); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.history__reason { color: var(--graphite); overflow-wrap: break-word; }
+.history__warning { color: var(--warn); }
+.history-card { padding: 18px 22px; }
+/* .btn sets display, which would otherwise override the hidden attribute. */
+.bulk-bar [hidden], .approval-result [hidden] { display: none; }
+
+/* PAT-2155 ================================================================
+   Alerts (PAT-2097), layout rebuilt: dates that wrapped over four lines
+   (Andy, live, 2026-09-25: "This looks shit" - the same defect PAT-2140
+   fixed on the Overview card), the raw "macos" platform key (platform_
+   display, PAT-2119), Product/Device claiming most of a mostly-empty
+   table, Acknowledged/Resolved reading "-" down every row of the Open tab,
+   "Product key"/"Device ID" filter boxes asking for internal identifiers,
+   and the tabs sitting flush against the filter row.
+
+   The table's own fixed-layout/colgroup-width rules live earlier in this
+   file, next to .device-table/.homebrew-devices-table (PAT-2137's own
+   lesson: this table now also opts into table-stack at phone width, and a
+   desktop table-layout/min-width declared AFTER the phone media query
+   block below would win the cascade at every width on equal specificity,
+   silently defeating table-stack's own reset of both - see that block's
+   comment). Everything here is spacing/filter/form only. */
+
+/* Tabs sat flush against the filter row below them. */
+.alerts-tabs { margin-bottom: 14px; }
+
+/* PAT-2155: product-name search runs client-side over the rendered rows
+   (data-table-search, the same idiom /devices, /findings and /exceptions
+   already use) - the platform's own filter contract only takes an exact
+   product_key, and there is no name-search endpoint to map a typed name
+   onto one server-side (contracts/portal-api.md "GET /v1/portal/software-
+   alerts"). The device picker is a real <select>, not a text box, so it
+   needs its own sizing alongside the existing text-input rule below. */
+.alerts-filter-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 18px; }
+.alerts-filter-form .search { width: auto; min-width: 0; max-width: 220px; padding-top: 7px; padding-bottom: 7px; }
+.alerts-filter-form select.search { max-width: 200px; }
+
+/* Acknowledge: the note and button used to be a wrapping flex row - a
+   240px actions column could not fit the 140px note input plus the button
+   on one line, so the button dropped to a second line under the note on
+   every Open-tab row. nowrap plus a narrower, still-comfortable note
+   input keeps them on one row within the wider column above. */
+.alert-ack-form { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.alert-ack-form__note { width: 110px; flex: 0 1 auto; padding-top: 6px; padding-bottom: 6px; font-size: 12.5px; }
+/* nowrap is scoped to the list table's compact row form only - the alert
+   detail page's own form (.alert-ack-form--detail below) relies on the
+   base flex-wrap: wrap to drop its note+button onto a new line under its
+   full-width label at narrow widths; forcing nowrap on the shared base
+   rule instead (tried first) pushed that label, a 280px note and the
+   button onto one unbreakable row and forced the whole document to
+   scroll sideways at 390px - caught by the walker's own overflow check
+   on /software/alerts/{id}, not by this ticket's own new e2e coverage
+   (which only exercises the list page). */
+.cell-actions .alert-ack-form { flex-wrap: nowrap; }
+.cell-actions .alert-ack-form__note { width: 140px; }
+.alert-ack-form--detail { margin: 14px 0 4px; align-items: flex-end; }
+.alert-ack-form--detail label { display: block; font-size: 12.5px; color: var(--mute); margin-bottom: 4px; width: 100%; }
+.alert-ack-form--detail .alert-ack-form__note { width: 280px; }
+
+/* ── New software (PAT-2093, layout PAT-2140) ─────────────────
+   Used to be auto-layout with only Urgency/Devices/Actions pinned, so
+   Product (the one column with no explicit width) claimed roughly half
+   the row - the "a lot of white space" complaint from Andy's live review.
+   This is a much narrower table than .software-table (six columns, no
+   CVE/Installs), so it does not need that table's .col-secondary
+   1440px-reveal idiom either - Platform and First seen used to be tagged
+   .col-secondary here and were consequently invisible below 1440px,
+   contradicting PAT-2140's own "First seen reads at 1280px" requirement.
+   Fixed layout with every column pinned keeps Product a sane width and
+   keeps Platform/First seen on screen at every desktop width; the
+   .table-scroll wrapper still takes over with a horizontal scroll rather
+   than clipping if a narrower viewport cannot fit the sum. */
+.new-software-table { table-layout: fixed; min-width: 620px; }
+.new-software-table .ns-col-product { width: 200px; }
+.new-software-table .ns-col-platform { width: 90px; }
+.new-software-table .ns-col-urgency { width: 130px; }
+/* First seen now renders date and time on their own lines (see
+   overview.html) - 110px comfortably fits "24 Sep 2026" and "20:51 UTC"
+   each on one line at the mono mini-label size .cell-subtle already uses. */
+.new-software-table .ns-col-first-seen { width: 110px; }
+.new-software-table .ns-col-devices { width: 90px; }
+.new-software .meta { margin: 0 0 12px; }
+.ns-reasons { margin-top: 4px; }
+.ns-reasons summary {
+  cursor: pointer; color: var(--slate); font-weight: 500; font-size: 12.5px;
+  list-style: none;
+}
+.ns-reasons summary::-webkit-details-marker { display: none; }
+.ns-reasons summary::before { content: "\25B8  "; }
+.ns-reasons[open] summary::before { content: "\25BE  "; }
+.ns-reasons summary:hover { color: var(--primary); }
+.ns-reasons summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.ns-reasons__list {
+  list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px;
+  max-width: 320px; font-size: 12.5px; color: var(--graphite);
+}
+.ns-reasons__list li { padding-left: 0; }
+.ns-reasons__list strong { color: var(--slate); }
+
+/* PAT-2141 ================================================================
+   Device detail: the top Device card (Identification + Evidence collection,
+   Andy's follow-up ruling 25 Sept 2026 - "Identification section should be
+   at the top. Evidence collection can be in the same section alongside the
+   ID details.") and the compacted Hardware card (Compute/Battery paired,
+   Physical disks/Storage volumes as tight fixed-layout tables). New rules
+   only - nothing above this block is touched, to keep this ticket's diff
+   clean of the concurrent PAT-2155 worktree also editing this file. No new
+   colour tokens: every rule below reuses --ok/--warn/--mute/--rule/--hair/
+   --slate/--graphite/--paper/--mono/--uv, same as the rest of this file. */
+
+/* Device card: Identification (left) and Evidence collection (right) as two
+   columns at >=1024px, stacking below it. min-width: 0 lets either column's
+   content (a long computer name, a wrapped evidence chip row) shrink to its
+   track instead of forcing the grid wider than the card (PAT-2070 shape). */
+.device-card__grid {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px 40px; align-items: start;
+}
+@media (max-width: 1023.98px) {
+  .device-card__grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+}
+.device-card__col { min-width: 0; }
+.device-card__facts { margin: 0 0 12px; }
+
+/* Evidence collection: named collections as an inline chip list, each
+   optionally linking to the card that shows that collection's own data. */
+.evidence-chips { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0 0 10px; padding: 0; }
+.evidence-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px;
+  border: 1px solid var(--rule); background: var(--paper); font-size: 12.5px;
+  color: var(--slate); text-decoration: none; transition: border-color .14s, color .14s;
+}
+a.evidence-chip:hover { border-color: var(--primary); color: var(--accent-press); }
+.evidence-chip__name { font-weight: 500; }
+
+/* Identification / Hardware: a small freshness line above each card's body,
+   matching the sticky topbar's height so an in-page jump from an Evidence
+   collection chip does not land the target under it. */
+.evidence-inline { display: flex; align-items: center; gap: 10px; margin: 0 0 18px; font-size: 13px; color: var(--graphite); }
+#identification, #hardware, #cve-assessment, #compliance-signals { scroll-margin-top: 72px; }
+
+/* Count strip (PAT-2141 follow-up - Andy's live feedback, 25 Sept 2026):
+   two whole-tile links reusing the shared .kpi/.kpi__item/.kpi__label/
+   .kpi__value/.kpi__divider classes and their existing tone modifiers, so
+   this reads as the same idiom as every other .kpi row in the app. An
+   anchor needs its own link-reset (no underline, inherit colour) that a
+   plain .kpi__item div never needed, plus a visible hover/focus affordance
+   since the whole tile is now clickable, not just decorative. */
+a.kpi__item {
+  text-decoration: none; color: inherit; border-radius: 0;
+  padding: 4px 6px; margin: -4px -6px; transition: background-color .14s;
+}
+a.kpi__item:hover, a.kpi__item:focus-visible { background: var(--hair); }
+a.kpi__item:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+/* A stale device's count strip figure stays a real number (Andy's
+   follow-up ruling, 25 Sept 2026 - hiding it behind "Stale" hid a known
+   failure); this is the caveat sub-line under it instead. */
+.kpi__sub { font-size: 11px; color: var(--mute); }
+
+/* Hardware: Compute and Battery are both short key/value groups (2-3 rows
+   each), so they sit side by side at >=1024px (Andy's follow-up ruling -
+   "Hardware tab could also be compacted / tidied") instead of each taking
+   the card's own full width. Physical disks and Storage volumes stay their
+   own full-width blocks below the pair - they are real tables, and a grid
+   column narrow enough to sit alongside Compute/Battery measured too
+   narrow for them at ordinary desktop widths (a 4-column volumes table
+   needs ~295-313px, more than a 2-up grid column has at 1280px) - but now
+   as tight table-layout: fixed tables (below) instead of auto-layout
+   tables that stretched across the whole card with a half-empty column. */
+.hardware-groups > * + * { margin-top: 20px; }
+.hardware-group--pair {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 360px)); gap: 20px 48px;
+}
+@media (max-width: 1023.98px) {
+  .hardware-group--pair { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+}
+/* PAT-2262: Firmware's BIOS/System/Baseboard sub-sections - three columns
+   at desktop widths, one below (same breakpoint as the pair above) rather
+   than a fourth grid-column width just for this one section. */
+.hardware-group--triple {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px 32px;
+}
+@media (max-width: 1023.98px) {
+  .hardware-group--triple { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+}
+.hardware-block h3, .device-card__subhead {
+  margin: 0 0 10px; font-family: var(--sans); font-size: 12px; font-weight: 600;
+  letter-spacing: normal; text-transform: none; color: var(--mute);
+}
+/* Same treatment as .hardware-block h3 above, kept as its own rule (rather
+   than joined into that selector list) so tests/test_pat2187_typography_
+   spacing.py's exact-selector lookup for ".hardware-block h3,
+   .device-card__subhead" keeps matching unchanged. */
+.firmware-section h4 {
+  margin: 0 0 10px; font-family: var(--sans); font-size: 12px; font-weight: 600;
+  letter-spacing: normal; text-transform: none; color: var(--mute);
+}
+.firmware-section .meta { margin-top: 8px; }
+.hardware-block .table-scroll { margin-top: 4px; }
+
+/* PAT-2263: Known vulnerable drivers - the driver-list provenance row
+   (source, version, fetch date, stale pill) above the matches table. Plain
+   list, no bullets, each item a flexible row so the Stale pill (when
+   present) sits on the same line as the rest rather than wrapping alone. */
+.driver-lists {
+  list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: 6px;
+}
+.driver-lists li {
+  display: flex; align-items: baseline; gap: 10px; font-size: 13px; color: var(--graphite);
+}
+.driver-lists li > span:first-child { font-weight: 500; min-width: 132px; }
+#kernel-drivers { scroll-margin-top: 72px; }
+#kernel-drivers .driver-matches-table td { vertical-align: top; }
+/* Tight, content-sized tables instead of stretching to the card's full
+   width - table-layout: fixed with an explicit width per column (sized to
+   each column's real content, including pill text under the wider
+   system-ui fallback Linux CI renders with, PAT-2070) plus width: auto on
+   the table itself so the unused remainder of the card is never spent on a
+   half-empty column. table-stack (below, @media max-width: 680px) already
+   resets table-layout to auto and stacks every row into label/value blocks
+   at phone width, so none of these widths apply there. */
+.hardware-disks-table, .hardware-volumes-table { table-layout: fixed; width: 100%; min-width: 0; }
+.hardware-disks-table .hwd-col-device { width: auto; }
+.hardware-disks-table .hwd-col-smart { width: 150px; }
+.hardware-disks-table .hwd-col-type { width: 140px; }
+.hardware-volumes-table .hwv-col-volume { width: auto; }
+.hardware-volumes-table .hwv-col-used { width: 110px; }
+.hardware-volumes-table .hwv-col-free { width: 110px; }
+.hardware-volumes-table .hwv-col-pct { width: 180px; }
+/* Tighter row padding on these two tables only (never the shared .data-table
+   default, which other, denser tables on other pages still rely on) - each
+   one has at most a handful of rows, so the ordinary 12/11px table padding
+   reads as wasted height on a card this ticket's whole point is compacting. */
+.hardware-disks-table th, .hardware-disks-table td,
+.hardware-volumes-table th, .hardware-volumes-table td { padding-top: 8px; padding-bottom: 8px; }
+
+/* Scoped to #hardware only (an id selector, not a change to the shared
+   .card/h2 rules every other card still uses) - the same "compacted /
+   tidied" follow-up ruling as the Compute/Battery pairing above. Verified
+   against a throwaway `git worktree add --detach origin/main` 39704dd
+   measurement of this same card (dev-mac-001, 1280px): 620.2px baseline: */
+#hardware { padding-top: 20px; padding-bottom: 22px; }
+#hardware h2 { margin-bottom: 11px; }
+#hardware .evidence-inline { margin-bottom: 10px; }
+#hardware .hardware-groups > * + * { margin-top: 14px; }
+#hardware .hardware-block h3 { margin-bottom: 8px; }
+#hardware .hardware-block .kv { gap: 6px 20px; }
+
+/* Hardware: a volume's used% bar/figure, warned at >=90% used. */
+.volume-used { display: inline-flex; align-items: center; gap: 8px; }
+.volume-bar { display: inline-block; width: 64px; height: 8px; background: var(--hair); overflow: hidden; flex: 0 0 auto; }
+.volume-bar__fill { display: block; height: 100%; background: var(--ok); }
+.volume-used--warn .volume-bar__fill { background: var(--warn); }
+.volume-used--warn .mono { color: var(--warn); }
+
+/* PAT-2157: "What's new" - the nav-rail pin and its unread dot, plus the
+   /whats-new page itself. One delimited block at the end of the file, on
+   purpose: other worktrees are editing /alerts, the device page and this
+   file concurrently, so every PAT-2157 rule lives here rather than mixed
+   into the sections above, to keep merges clean. New rules only - nothing
+   above this block is touched. No new colour tokens: every rule below
+   reuses --uv/--ok/--warn/--hair/--graphite/--mute/--rule/--on-slate-* /
+   --accent-press, same as the rest of this file; the tag pills reuse the
+   existing .pill-info/.pill-ok/.pill-warn classes wholesale rather than
+   inventing new ones. */
+
+/* Rail: "What's new" sits in its own pinned block between the alphabetical
+   nav list and the Support contact block, not inside rail__nav (so it
+   never touches N1's locked Findings/Devices/Software/Exceptions/Reports
+   position or the Overview-then-alphabetical ordering test). rail__pinned
+   takes over the margin-top: auto that used to belong to rail__specialist
+   alone, pushing itself - and rail__specialist right after it, which this
+   block resets to margin-top: 0 - to the bottom of the rail together, in
+   that order: What's new above Support. */
+.rail__pinned { margin-top: auto; padding: 4px 8px 0; flex-shrink: 0; }
+.rail__specialist { margin-top: 0; }
+.rail__whats-new { display: flex; align-items: center; gap: 8px; }
+.rail__unread-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--primary); flex: 0 0 auto;
+}
+.rail__unread-dot[hidden] { display: none; }
+
+/* /whats-new page: dated entries grouped by month, newest first. */
+.changelog-list { list-style: none; margin: 0; padding: 0; }
+.changelog-entry { padding: 16px 0; border-top: 1px solid var(--rule); }
+.changelog-entry:first-child { padding-top: 0; border-top: none; }
+.changelog-entry__head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+.changelog-entry__date { color: var(--mute); font-size: 12.5px; }
+.changelog-entry__title {
+  font-family: var(--sans); font-weight: 600; font-size: 15.5px;
+  letter-spacing: -0.01em; color: var(--slate); margin: 0 0 4px;
+}
+.changelog-entry__title a { color: inherit; }
+.changelog-entry__title a:hover { color: var(--accent-press); }
+.changelog-entry__body { color: var(--graphite); font-size: 14px; line-height: 1.55; margin: 0; }
+/* PAT-2188: keep the navigation rail available on desktop, but leave the
+   footer in normal document flow. A sticky bottom footer painted over cards
+   while scrolling and created an intrusive wordmark strip beside Support. */
+@media (min-width: 901px) {
+  .footer__inner { padding-top: 14px; padding-bottom: 14px; }
+  .rail { position: sticky; top: 0; height: 100vh; align-self: flex-start; }
+  .rail__nav { flex: 1 1 auto; min-height: 0; }
+}
+
+/* PAT-2159: merged "Needs attention" card - CIS checks failing and
+   Confirmed CVEs render as one row each, with severity counts as pills
+   (reusing the existing .pill-critical/.pill-high/.pill-muted tones
+   declared above - no new colour tokens), inside the single
+   .attention-summary card rather than a second "CVE attention" card. New
+   rules only - nothing above this block is touched, to keep this ticket's
+   diff clean of the concurrent worktrees also editing this file. */
+.attention-row {
+  padding: 16px; border: 1px solid var(--hair); border-radius: var(--radius);
+  background: var(--surface-sunken);
+}
+/* The head wraps rather than reserving desktop-only columns, so its action
+   and status chips stay usable at every width. */
+.attention-row__head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
+.attention-row__label {
+  font-family: var(--sans); font-size: 14px; font-weight: 650;
+  letter-spacing: normal; text-transform: none; color: var(--slate);
+}
+.attention-pills { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.attention-pills .pill {
+  border-color: color-mix(in srgb, currentColor 24%, transparent);
+  border-radius: var(--radius-pill); padding: 4px 9px; font-size: 12px;
+}
+.attention-row__head a { color: var(--accent-press); font-weight: 600; white-space: nowrap; }
+.attention-row__meta { margin: 8px 0 0; color: var(--mute); font-size: 13px; line-height: 1.5; }
+/* Andy, 25 Sept 2026: the freshness line under the CVE pills sat too close
+   to them; 12px separates the reading line from the pills row. */
+/* Stale/unavailable evidence reads as a caveat, not an alarm - the same
+   --warn (not --bad) reading .attention-summary__unknown already uses for
+   "CVE attention is not yet available", so a historical-only CIS count or
+   an unreachable CVE feed never carries the same visual weight as a
+   confirmed critical/high finding. */
+.attention-row__meta--warn { color: var(--warn); }
+.attention-summary__foot { margin-top: 14px; padding-top: 0; border-top: 0; }
+/* Metadata follows its row directly. A fixed desktop indent made short CVE
+   messages appear detached from the content and wasted a large part of the
+   card; the wrapping head already keeps desktop and mobile layouts compact. */
+
+/* PAT-2141 polish (Andy, 25 Sept 2026: "alignment issues", "poor layout").
+   Key/value labels on the device page sit on their value's baseline rather
+   than floating above it (the shared .kv's padding-top suits plain text but
+   misaligns beside a pill); the evidence chips form an even grid instead of
+   a ragged wrap; and the macOS system volumes collapse into a disclosure. */
+.device-card .kv, #hardware .kv { align-items: baseline; }
+.device-card .kv dt, #hardware .kv dt { padding-top: 0; }
+.evidence-chips { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+/* Andy, 25 Sept 2026 ("alignment issues"): a wrapping chip grid made
+   names like "Hardware health: battery" wrap and rows uneven. One tidy
+   row per collection - name left, status right, every row the same
+   height - cannot go ragged at any width. */
+.evidence-chip__name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.evidence-chip { justify-content: space-between; width: 100%; box-sizing: border-box; }
+.hardware-system-volumes { margin-top: 10px; }
+.hardware-system-volumes > summary {
+  cursor: pointer; font-size: 13px; color: var(--graphite); padding: 6px 0;
+}
+.hardware-system-volumes > summary:hover { color: var(--accent-press); }
+.hardware-system-volumes .meta { margin: 4px 0 8px; font-size: 12.5px; }
+
+
+
+/* PAT-2156 */
+/* One device's Software installed view (/devices/{id}/software). Pill,
+   evidence-cell and approval-cell styling all come from the shared idioms
+   already defined elsewhere in this file (.pill, .cell-evidence, the
+   PAT-2008 approval cell). The tab nav and table-stack phone treatment are
+   the same .view-tabs / .table-stack classes /software and the device page
+   already use; deliberately no new CSS for either. */
+
+/* Tabs and search share one slim toolbar row above the table (Andy review,
+   2026-09-25) - same row when there is room, wrapping onto its own line
+   under the tabs when there is not, rather than a separate full-width card
+   the way the first pass wrapped the search box on its own. */
+.device-software-toolbar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.device-software-search { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; }
+.device-software-search .search, .device-extension-search {
+  flex: 1 1 220px; min-width: 160px; width: auto; max-width: 320px;
+  padding-top: 7px; padding-bottom: 7px;
+}
+
+/* Fixed layout so the Usage/First-seen date columns get a reliable share of
+   the table's width - auto layout let the Approval column (dropdown +
+   Apply + checkbox + pill + History) balloon past its content's real need
+   and starved the two date columns, wrapping "24 Sep 2026" over two lines
+   on top of the time subtitle (rubric L13, Andy review 2026-09-25). Widths
+   mirror already-proven values elsewhere in this file rather than new
+   guesses: Approval at 195px is /software's own .software-col-actions
+   figure (PAT-2119 - the minimum that never clips its controls, rubric
+   L10); CVE at 160px is .software-col-cve; the date columns at 115px are
+   .new-software-table's .ns-col-first-seen figure (PAT-2140, "110px
+   comfortably fits '24 Sep 2026' and '20:51 UTC' each on one line") with a
+   5px margin. table-layout: fixed scales every declared width
+   proportionally to the table's actual rendered width, so these stay
+   relative shares, not hard pixel floors - the .table-stack media query
+   resets table-layout to auto at 390px (rubric L12) exactly as every other
+   table using that pattern already does. */
+.device-software-table {
+  table-layout: fixed; min-width: 905px;
+}
+.device-software-col-product { width: 230px; }
+.device-software-col-versions { width: 90px; }
+.device-software-col-approval { width: 195px; }
+.device-software-col-cve { width: 160px; }
+.device-software-col-date { width: 115px; }
+.device-extension-table { min-width: 520px; }
+
+/* PAT-2160 */
+/* "Top 3 actions" + "Your estate at a glance" welcome block, sitting above
+   the "Needs attention" pill card. Deliberately compact - a handful of
+   short lines per column, tighter card padding than the standard .card -
+   so it never pushes that card below the fold at 1280x800. One column
+   below 1024px (stacked, actions first, glance second - source order in
+   the template), two from 1024px up, actions on the left with the wider
+   share of the row. New rules only, appended at the end of this file per
+   this repo's concurrent-worktree convention - nothing above this block
+   is touched.
+
+   Andy's ruling (2026-09-25, "Actions only, trim duplicates"): actions
+   are the headline, so .welcome-col--actions gets its own, stronger
+   heading and list treatment (larger, dark, not the small muted eyebrow
+   label); .welcome-col--glance, trimmed to three facts at most, is a
+   compact muted secondary column - smaller text, no bold link weight. */
+.welcome-block { padding: 20px 28px 22px; }
+.overview-hero {
+  color: var(--text-on-dark);
+  background:
+    radial-gradient(circle at 108% -28%, transparent 0 104px, rgba(59, 130, 246, .58) 105px 138px, transparent 139px),
+    radial-gradient(circle at 82% 132%, transparent 0 110px, rgba(37, 99, 235, .32) 111px 144px, transparent 145px),
+    var(--navy);
+  border-color: rgba(96, 165, 250, .28); box-shadow: var(--shadow-float);
+}
+.welcome-grid { display: grid; gap: 22px; }
+.welcome-col h2 {
+  font-family: var(--sans); font-size: 12px; font-weight: 650;
+  letter-spacing: normal; text-transform: none; color: var(--blue-100);
+  margin: 0 0 10px;
+}
+.welcome-col--actions h2 {
+  font-family: var(--display); font-size: 18px; font-weight: 700;
+  letter-spacing: -0.02em; text-transform: none; color: var(--text-on-dark);
+  margin: 0 0 12px;
+}
+.welcome-list {
+  list-style: none; margin: 0; padding: 0; display: grid; gap: 10px;
+  font-size: 13.5px; line-height: 1.5; color: var(--blue-100);
+}
+.welcome-list li a {
+  color: var(--text-on-dark); font-weight: 500; white-space: nowrap;
+}
+.welcome-list li a:hover { color: var(--cyan-400); }
+.welcome-list--actions {
+  list-style: decimal; padding-left: 22px; gap: 12px 0; font-size: 14.5px;
+}
+.welcome-list--actions li { padding-left: 4px; }
+.welcome-list--actions li::marker {
+  color: var(--cyan-400); font-family: var(--sans); font-size: 13px; font-weight: 600;
+}
+.welcome-list--actions li a {
+  color: var(--text-on-dark); font-weight: 600; white-space: normal;
+}
+.welcome-list--actions li a:hover { color: var(--cyan-400); }
+.welcome-empty { margin: 0; padding: 4px 0; color: var(--blue-100); font-size: 13.5px; }
+/* Compact muted secondary column - smaller text, quieter link weight than
+   the actions list beside it, so the eye lands on actions first. */
+.welcome-col--glance .welcome-list { font-size: 12.5px; color: var(--blue-100); gap: 8px; }
+.welcome-col--glance .welcome-list li a { font-weight: 500; }
+
+@media (min-width: 1024px) {
+  .welcome-grid { grid-template-columns: 3fr 2fr; gap: 0 36px; }
+  .overview-hero .welcome-col--glance { border-left: 1px solid rgba(255, 255, 255, .18); padding-left: 36px; }
+}
+
+/* PAT-2163 */
+/* /software's filter bar (templates/_macros.html's filter_bar macro): a
+   Type <select>, a Publisher <select>, an Approval checkbox
+   <details>/<summary> popover, an optional "More filters" popover (holds
+   "On at least N devices") and the page search, replacing the two rows of
+   segmented-tab boxes plus a separate Publisher/devices/Unreviewed/Select-
+   all-shown toolbar that used to eat ~540-990px of a phone screen before
+   any software showed (Andy, live, 2026-09-25 on the original tabs; the
+   orchestrator's live follow-up review on the rest). Every colour below is
+   an existing theme-following token (--snow/--rule/--graphite/--uv/--mute/
+   --slate/--on-accent/--accent-wash), so both themes are covered by the
+   token cascade at the top of this file with no extra dark-mode rules
+   needed, same as every other component here. Sized deliberately small
+   (13px controls, tight padding) so the whole bar plus its active-filter
+   chips stays at or under the ~140px budget the e2e phone-width test
+   measures from the first filter control's own top to the table's top -
+   see e2e/test_pat2163_software_filter_bar.py. */
+.filter-bar { margin: 0 0 18px; }
+.filter-bar__row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+/* The <form> disappears from layout so its own two fields (the Type field,
+   the Approval dropdown) become direct flex items of .filter-bar__row,
+   sitting alongside the search box outside the form - see the macro's own
+   comment for why search is a sibling of the form rather than a field
+   inside it. */
+.filter-bar__form { display: contents; }
+.filter-field { display: inline-flex; }
+.filter-select {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: inherit; font-family: var(--sans); font-size: 13px; color: var(--graphite);
+  background: var(--snow); border: 1px solid var(--rule); border-radius: 0;
+  padding: 7px 11px; cursor: pointer; white-space: nowrap;
+  transition: border-color .16s;
+}
+.filter-select:hover { border-color: var(--slate); }
+select.filter-select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.filter-dropdown { position: relative; }
+.filter-dropdown__summary { list-style: none; user-select: none; }
+.filter-dropdown__summary::-webkit-details-marker { display: none; }
+.filter-dropdown__summary::after { content: "\25BE"; margin-left: 2px; color: var(--mute); font-size: 11px; }
+.filter-dropdown__summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.filter-dropdown[open] > .filter-dropdown__summary { border-color: var(--primary); }
+.filter-dropdown__count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
+  background: var(--primary); color: var(--on-accent); font-family: var(--sans);
+  font-size: 10.5px; font-weight: 700; line-height: 16px;
+}
+.filter-dropdown__count[hidden] { display: none; }
+.filter-dropdown__panel {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 20;
+  min-width: 240px; max-width: min(320px, calc(100vw - 32px));
+  background: var(--snow); border: 1px solid var(--rule);
+  box-shadow: 0 8px 24px rgba(15, 17, 21, 0.16);
+  padding: 8px; display: flex; flex-direction: column; gap: 1px;
+}
+.filter-dropdown__option {
+  display: flex; align-items: center; gap: 8px; padding: 6px 4px;
+  font-family: var(--sans); font-size: 13.5px; color: var(--graphite);
+  cursor: pointer; white-space: nowrap;
+}
+.filter-dropdown__option:hover { background: var(--paper); }
+.filter-dropdown__option input {
+  accent-color: var(--primary); width: 15px; height: 15px; margin: 0; flex-shrink: 0;
+}
+.filter-dropdown__option span { overflow: hidden; text-overflow: ellipsis; }
+.filter-dropdown__actions {
+  margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--rule);
+  display: flex; justify-content: flex-end;
+}
+/* "More filters" popover content (a caller-supplied {% call %} block in
+   the macro - only "On at least N devices" today, but styled generically
+   so a future field dropped in there matches without its own rules). */
+.filter-dropdown__field {
+  display: flex; align-items: center; gap: 8px; padding: 4px;
+  font-family: var(--sans); font-size: 13.5px; color: var(--graphite);
+}
+.filter-dropdown__field .search { width: 84px; min-width: 0; padding: 5px 8px; }
+.filter-dropdown__unit { color: var(--mute); font-size: 12.5px; }
+/* PAT-2326: a checkbox group inside the "More filters" panel (/software's
+   Usage), laid out like the dropdown's own options. */
+.filter-dropdown__group { border: 0; margin: 0; padding: 4px 0 0; min-width: 0; }
+.filter-dropdown__group > legend { padding: 0 4px 2px; }
+.filter-bar__search {
+  flex: 1 1 200px; min-width: 160px; max-width: 320px;
+  padding-top: 7px; padding-bottom: 7px; font-size: 13px;
+}
+
+.filter-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.filter-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--sans); font-size: 12.5px; color: var(--slate);
+  background: var(--accent-wash); border: 1px solid var(--primary); border-radius: 999px;
+  padding: 4px 10px; text-decoration: none; white-space: nowrap;
+  transition: background .14s, color .14s;
+}
+.filter-chip:hover { background: var(--primary); color: var(--on-accent); }
+.filter-chip__remove { font-family: var(--sans); font-size: 13px; line-height: 1; }
+.filter-chip--clear { background: transparent; border-color: var(--rule); color: var(--mute); }
+.filter-chip--clear:hover { background: transparent; border-color: var(--slate); color: var(--slate); }
+
+/* PAT-2163 (orchestrator follow-up): the bulk-action bar (PAT-2008's
+   #approval-form.bulk-bar) now stays hidden until at least one row is
+   selected - static/js/portal.js's refreshBulkBar() already toggles
+   .is-active on every selection change; this is the CSS half. js-bulk is
+   added by that same script, so a JS-less browser (which never adds it)
+   keeps the bar visible always - the "without JS, keep a working path"
+   requirement, with no template/markup difference between the two cases. */
+.bulk-bar.js-bulk:not(.is-active) { display: none; }
+
+/* Phone width: force the search box onto its own row below the dropdown
+   controls (rather than relying on it happening to wrap) so the bar wraps
+   predictably, give each popover room to sit inside the viewport instead
+   of overflowing off the right edge, and tighten every control/chip
+   further - measured against the ~140px "first filter control top to
+   table top" e2e budget (e2e/test_pat2163_software_filter_bar.py) with
+   two real chips (a Type and an Approval one) plus Clear all on screen,
+   and nothing selected (the bulk bar hidden, per above). Desktop keeps the
+   more comfortable sizing above; phone width is the only place a handful
+   of pixels here matters. The bulk bar, when active, pins to the bottom of
+   the viewport rather than sitting inline - screen height is too precious
+   on a phone to also reserve a permanent inline slot for it - and
+   bulk-bar-active (toggled on <body> by refreshBulkBar()) reserves room
+   under the table so its last row is never hidden behind the pinned bar. */
+@media (max-width: 680px) {
+  .bulk-bar.js-bulk.is-active {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    border-left: none; border-top: 3px solid var(--primary);
+    box-shadow: 0 -6px 18px var(--hair-strong);
+  }
+  body.bulk-bar-active { padding-bottom: 84px; }
+  .filter-bar { margin-bottom: 2px; }
+  .filter-bar__row { gap: 4px; }
+  .filter-select { padding: 3px 8px; font-size: 12.5px; }
+  /* Type/Publisher <select> text is the selected option's own label
+     (main.py puts a count in Type's, and a real publisher name can run
+     long) - capped and ellipsised so two of them share row 1 instead of
+     each wrapping onto its own row. Approval/More filters' <summary>
+     trigger text is short and fixed (never a customer value), so it needs
+     no cap - capping it too would only risk clipping "More filters"
+     itself for no space saved. */
+  select.filter-select { max-width: 138px; overflow: hidden; text-overflow: ellipsis; }
+  .filter-bar__search {
+    flex: 1 1 100%; max-width: none; padding-top: 5px; padding-bottom: 5px;
+    font-size: 12.5px;
+  }
+  /* Two popovers (Approval, More filters) now share row 2, and whichever
+     one sits further from the row's own left edge would overflow the
+     viewport if anchored to its own trigger (Approval, first on that row,
+     overflowed off the *left* edge under the narrower phone layout, the
+     opposite direction from the single-popover overflow the base rule's
+     right:0 was written for). Anchoring both to the row itself instead -
+     not to whichever trigger opened them - fixes both directions at once:
+     the row's own left edge is always inside the viewport, and the panel's
+     max-width (min(320px, 100vw-32px), base rule) already keeps its right
+     edge inside too. */
+  .filter-bar__row { position: relative; }
+  .filter-dropdown { position: static; }
+  .filter-dropdown__panel { left: 0; right: auto; }
+  .filter-chips { margin-top: 4px; gap: 4px; }
+  .filter-chip { padding: 3px 8px; font-size: 11.5px; gap: 4px; }
+}
+
+/* PAT-2164 */
+/* Device page tabs (Overview/Hardware/Software/Vulnerabilities/Compliance/
+   Evidence, templates/_macros.html's device_page_head). The bar reuses the
+   exact .devices-toolbar/.view-tabs idiom /devices' own Silent/Quiet/Normal
+   tabs already use, rather than a second navigation idiom for what is,
+   structurally, the same thing: a row of links to a filtered/scoped view of
+   one page. .devices-toolbar already scrolls horizontally
+   (overflow-x: auto) rather than ever forcing the page itself to scroll
+   sideways (rubric L12) - .device-tab-bar only adds this section's own
+   vertical rhythm and widens the touch targets slightly, since six tabs in
+   one row read better as "blades" (Andy's own word) with a little more
+   breathing room than the three-tab Devices control was sized for. */
+.device-tab-bar { margin: 16px 0 22px; }
+.device-tab-bar .view-tabs a { padding: 10px 16px; }
+
+/* 390px decision (rubric L12): a horizontally-scrolling bar, not a
+   <select>. /devices already proves the scrolling idiom works at 390px
+   with no JavaScript required for it to function - every tab stays a
+   plain <a href>, so the back button and deep links work with nothing
+   extra (this ticket's own "no JS needed" rule for tab navigation). A
+   <select> would need a JS onchange handler (or a second, JS-free submit
+   button next to it) just to navigate at all, for a page that already has
+   six short, single-word labels - short enough that a scrolling row of
+   real links reads better than collapsing them behind one extra control.
+   portal.js scrolls the active tab into view as a JS enhancement only; the
+   bar is fully usable by touch-scrolling without it.
+
+   The existing @media (max-width: 680px) .view-tabs rule (above, PAT-1843)
+   wraps a short tab set (Devices' own Silent/Quiet/Normal) onto its own
+   lines instead of scrolling it - fine for three tabs, but six wrapped
+   tabs read as a messy block rather than blades in a row, and defeats the
+   scroll-into-view enhancement (nothing to scroll to). This overrides that
+   wrap back to a single scrolling row, specifically for the device tab bar
+   - the compound .device-tab-bar.devices-toolbar selector (both classes
+   are on the one wrapping element) outranks that rule's specificity
+   regardless of source order, so this cannot regress if the two blocks are
+   ever reordered. */
+.device-tab-bar.devices-toolbar .view-tabs {
+  display: inline-flex; flex-wrap: nowrap; flex: 0 0 auto; border: 1px solid var(--rule);
+}
+.device-tab-bar.devices-toolbar .view-tabs a {
+  flex: 0 0 auto; border-bottom: none;
+}
+
+/* PAT-2177/PAT-2231: ongoing-review cards on the Overview (High-risk
+   software, Browser extensions) and the compact CIS posture card.
+   Severity tones reuse the existing pill classes; unknown/not assessed
+   keep pill-info. PAT-2231 redesign: the pair now stretches to equal
+   height (grid's own default align-items - the earlier `align-items:
+   start` is what let one short card sit noticeably shorter than its
+   neighbour) and each card is one `.risk-card__summary` (headline figure
+   + its badges, reading as one block instead of separate paragraphs),
+   an optional top-N preview list, and exactly one `.btn`-styled primary
+   action pinned to the card foot - so the two cards share spacing,
+   typography and CTA placement rather than each inventing its own. */
+.grid-review { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); margin-bottom: 18px; }
+.risk-card { display: flex; flex-direction: column; border-top: 3px solid var(--primary); }
+.risk-card__head h2 { margin-bottom: 0; }
+.risk-card__head .meta { margin: 4px 0 0; }
+/* PAT-2231 review: the grid stretches this pair to equal height, which
+   can leave the shorter card (a "1 elevated" Browser extensions next to
+   a fuller High-risk software) with dead space if nothing absorbs it.
+   The summary block - the one part of the card whose content genuinely
+   scales with how much room it has - is the part allowed to grow
+   (flex: 1 0 auto) and centre its row vertically as it does, so extra
+   height reads as breathing room around the headline figure. Everything
+   below it (preview list, primary action) keeps its natural size and
+   sits right after the summary rather than being pushed to the card's
+   true bottom. */
+.risk-card__summary {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px 18px;
+  margin: 16px 0 4px; flex: 1 0 auto;
+}
+.risk-card__figure { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 10px; }
+.risk-card__count { font-family: var(--display); font-weight: 700; font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums; }
+.risk-card__unit { color: var(--graphite); font-size: 15px; }
+/* PAT-2254: the Overview's software counts, pills and preview rows are
+   links into a filtered /software (a global `a` already inherits colour and
+   drops the underline, so each needs its own hover/focus affordance). */
+a.risk-card__count:hover, a.risk-card__count:focus-visible,
+.risk-list__row-name a:hover strong, .risk-list__row-name a:focus-visible strong {
+  text-decoration: underline; text-underline-offset: 3px;
+}
+a.pill:hover, a.pill:focus-visible { text-decoration: underline; text-underline-offset: 2px; }
+a.risk-card__count:focus-visible, .risk-list__row-name a:focus-visible, a.pill:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.risk-card__badges { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.risk-card__note { margin: 2px 0 0; }
+/* A card whose whole body is one fallback line (unavailable/empty, no
+   summary block at all) gets the same growth treatment directly, so a
+   short "could not be read" card doesn't leave dead space of its own. */
+.risk-card__filler { flex: 1 0 auto; display: flex; align-items: center; margin: 0; }
+.risk-card .card-foot { margin-top: 14px; }
+.risk-list { list-style: none; margin: 14px 0 0; padding: 0; }
+.risk-list > li { padding: 12px 0; border-top: 1px solid var(--hair); }
+/* PAT-2231 review: both cards' preview rows are now the identical
+   compact shape - a severity pill (High-risk only) plus name on the
+   left, one short muted meta line on the right - rather than High-risk's
+   old nested per-reason bullet list. Device counts, first-seen dates and
+   findings detail belong on /software; this is a preview, not the
+   record. */
+.risk-list--compact > li.risk-list__row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 8px 14px;
+  flex-wrap: wrap; padding: 9px 0;
+}
+.risk-list__row-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.risk-list__row-name strong { overflow-wrap: anywhere; }
+.risk-list__meta { color: var(--graphite); font-size: 13px; white-space: nowrap; }
+.info-text { color: var(--graphite); text-decoration: underline dotted; text-underline-offset: 4px; }
+.cis-compact__row { display: flex; align-items: baseline; gap: 10px; margin: 12px 0; }
+.cis-compact__score { font-family: var(--display); font-weight: 700; font-size: 34px; line-height: 1; }
+.cis-detail { padding: 0; }
+.cis-detail > summary { cursor: pointer; padding: 18px 28px; font-weight: 600; }
+.cis-detail > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.cis-detail[open] > summary { border-bottom: 1px solid var(--rule); }
+.cis-detail > .grid, .cis-detail > .card { margin: 18px 28px; }
+@media (max-width: 720px) {
+  .grid-review { grid-template-columns: minmax(0, 1fr); }
+  .risk-list__meta { white-space: normal; }
+  .cis-detail > .grid, .cis-detail > .card { margin: 12px; }
+}
+
+/* PAT-2190 (orchestrator ruling): the ten Overview information cards,
+   placed after Needs attention and before the first detailed chart or
+   evidence section (see overview.html's own placement comment - PAT-2160's
+   shipped 1280x800 fold guarantee for Top 3 actions and Needs attention
+   holds, so these cards never render between the welcome block and Needs
+   attention). Each interactive card is one link (never a nested
+   control), so the whole surface is the click/tap target and the keyboard
+   focus ring sits on the card itself; recent_activity has no real filtered
+   view to link to and renders as a plain, non-focusable block instead
+   (overview.html's `{% if card.href %}` branch - no `<a>`, no tabindex).
+   State colour is a left accent border only, never the only signal (T6):
+   the label and figures stay in plain text regardless of tone, and
+   unknown/unavailable get a muted, not a bad, border - they are absent
+   evidence, not a confirmed problem.
+
+   A wrapping grid, not the earlier horizontal-scroll strip: 5 columns at
+   1440px and up (two rows of 10), 4 at 1280-1439px, 2 from 680px (tablet),
+   1 below that - explicit column counts via grid-template-columns, not
+   auto-fit/minmax, so the count at each width is exact rather than
+   whatever the content happens to fit. */
+.overview-cards { margin-bottom: 18px; }
+.overview-cards__grid {
+  display: grid; grid-template-columns: 1fr; gap: 12px;
+}
+@media (min-width: 680px) {
+  .overview-cards__grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1280px) {
+  .overview-cards__grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (min-width: 1440px) {
+  .overview-cards__grid { grid-template-columns: repeat(5, 1fr); }
+}
+.ov-card {
+  display: flex; flex-direction: column; gap: 4px; min-width: 0;
+  background: var(--snow); border: 1px solid var(--rule); border-left: 3px solid var(--hair-strong);
+  border-radius: var(--radius-sm); padding: 12px 14px; text-decoration: none; color: inherit;
+  transition: border-color .16s, box-shadow .16s;
+}
+a.ov-card:hover, a.ov-card:focus-visible { box-shadow: var(--shadow-float); border-color: rgba(37, 99, 235, .22); }
+a.ov-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* PAT-2230: the left accent now follows content tone, not contract state -
+   a complete (`value`/`zero`) card must not paint green just because it is
+   complete ("146 vulnerabilities" read as healthy before this fix). `tone`
+   is computed server-side (main.py's _overview_card_tone) from the card's
+   own figures; `ov-card--value`/`--zero` no longer carry a colour of their
+   own. `partial` keeps its amber state accent regardless of tone, and
+   `unknown`/`unavailable` stay neutral grey - both are absent evidence,
+   not a scored outcome. */
+.ov-card--value.ov-card--tone-bad, .ov-card--zero.ov-card--tone-bad { border-left-color: var(--bad); }
+.ov-card--value.ov-card--tone-warn, .ov-card--zero.ov-card--tone-warn { border-left-color: var(--warn); }
+.ov-card--value.ov-card--tone-ok, .ov-card--zero.ov-card--tone-ok { border-left-color: var(--ok); }
+.ov-card--value.ov-card--tone-neutral, .ov-card--zero.ov-card--tone-neutral { border-left-color: var(--hair-strong); }
+.ov-card--partial { border-left-color: var(--warn); }
+.ov-card--unknown, .ov-card--unavailable { border-left-color: var(--hair-strong); }
+/* PAT-2190 review: "a mono label" - the identifier-style treatment this
+   codebase already reserves for evidence/versions/counts, applied here to
+   the card's own name. */
+.ov-card__label {
+  font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  text-transform: uppercase; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* The one headline figure, large type - the same scale .risk-card__count
+   already uses elsewhere on this page for a primary number. Unknown/
+   unavailable reuse this exact slot for their neutral state word (never a
+   digit), at a smaller size since a state word runs longer than a number. */
+.ov-card__headline {
+  font-family: var(--display); font-weight: 700; line-height: 1.1;
+  font-size: 30px; font-variant-numeric: tabular-nums; color: var(--graphite);
+  /* PAT-2230: the label/support/freshness slots already clip with an
+     ellipsis below - the headline never did, which is exactly what let an
+     unrounded platform float (37.096774193548384) blow the card out and
+     put a horizontal scrollbar on the whole page at 1162px in production.
+     Rounding the figure (main.py's _format_cis_score) fixes the root
+     cause; this is the same defence-in-depth every other slot already
+     has, for whatever headline is long next time. */
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ov-card--unknown .ov-card__headline, .ov-card--unavailable .ov-card__headline {
+  font-size: 16px; font-weight: 600; color: var(--mute);
+}
+/* PAT-2254: a headline figure that needs a label to be readable ("3" is
+   nothing until it says "with collection issues") sits in one baseline row
+   with a small unit beside it. The figure keeps its own clipping; the unit
+   shrinks and clips before it does, and the card's title attribute always
+   carries both in full. */
+.ov-card__figure { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.ov-card__unit {
+  font-size: 13px; line-height: 1.2; color: var(--graphite); min-width: 0; flex: 0 1 auto;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* At most one supporting line (Andy review) - "." separated stat breakdown
+   when complete, or the plain-English reason when the card is not. PAT-2230:
+   clamped to 2 lines (was a single-line ellipsis) so the vertical rhythm
+   holds across a row regardless of how long the line runs - the full text
+   always stays available via the element's own `title`. */
+.ov-card__support {
+  font-size: 13px; line-height: 1.3; color: var(--graphite);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  line-clamp: 2; overflow: hidden; text-overflow: ellipsis;
+  min-height: 2.6em;
+}
+.ov-card--unknown .ov-card__support, .ov-card--unavailable .ov-card__support { color: var(--mute); }
+/* PAT-2230: pinned to the card bottom with the flex column's own
+   margin-top:auto, so the label/headline/support/freshness rhythm lines up
+   across every card in a row, whatever the mix of one- and two-line
+   support copy above it (CSS Grid already stretches every card in a row to
+   the tallest one, so this reaches the true bottom, not just its own
+   content's bottom). */
+.ov-card__freshness {
+  font-size: 10.5px; color: var(--mute); white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; margin-top: auto;
+}
+.overview-cards__unavailable {
+  background: var(--snow); border: 1px solid var(--rule); border-radius: var(--radius-sm);
+  padding: 14px 16px; color: var(--mute); font-size: 14.5px; margin: 0;
+}
+
+/* ── Feedback (PAT-2037) ───────────────────────────────────── */
+body.feedback-open { overflow: hidden; }
+.feedback-backdrop {
+  position: fixed; inset: 0; z-index: 100; display: grid; place-items: center;
+  padding: 24px; background: rgba(15, 23, 42, .62);
+}
+.feedback-backdrop[hidden] { display: none; }
+.feedback-panel {
+  width: min(680px, 100%); max-height: min(820px, calc(100vh - 48px)); overflow: auto;
+  background: var(--snow); color: var(--slate); border: 1px solid var(--rule);
+  box-shadow: 0 24px 72px rgba(15, 23, 42, .32); padding: 26px;
+}
+.feedback-panel__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 22px; }
+.feedback-panel__head h2 { margin: 0; font-size: 24px; }
+.feedback-close { font: inherit; background: transparent; border: 0; color: var(--graphite); cursor: pointer; padding: 5px; text-decoration: underline; }
+.feedback-field { display: grid; gap: 7px; margin: 0 0 18px; border: 0; padding: 0; min-width: 0; }
+.feedback-field[hidden] { display: none; }
+.feedback-page { max-width: 680px; }
+.feedback-sent-notice { max-width: 680px; margin-bottom: 24px; }
+.feedback-sent-notice h2 { margin: 0 0 8px; font-size: 18px; }
+.feedback-field > label, .feedback-field legend { font-family: var(--sans); font-size: 13px; font-weight: 700; color: var(--slate); }
+.feedback-field fieldset { border: 0; }
+.feedback-field input[type="text"], .feedback-field select, .feedback-field textarea {
+  width: 100%; box-sizing: border-box; font: inherit; color: var(--slate); background: var(--snow);
+  border: 1px solid var(--hair-strong); border-radius: 0; padding: 10px;
+}
+.feedback-field textarea { resize: vertical; min-height: 118px; }
+.feedback-field input:focus, .feedback-field select:focus, .feedback-field textarea:focus,
+.feedback-close:focus-visible, .topbar__feedback:focus-visible, .topbar__requests:focus-visible {
+  outline: 2px solid var(--primary); outline-offset: 2px;
+}
+.feedback-field label:has(input[type="radio"]) { font-size: 14px; font-weight: 500; color: var(--graphite); }
+.feedback-field input[type="radio"] { accent-color: var(--primary); }
+.feedback-warning { margin: 0; padding: 10px 12px; border-left: 3px solid var(--warn); background: var(--warn-wash); color: var(--graphite); font-size: 13px; }
+.feedback-error { margin: 0 0 16px; padding: 10px 12px; border-left: 3px solid var(--bad); background: var(--bad-wash); color: var(--slate); }
+.feedback-preview { display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; align-items: center; gap: 12px; border: 1px solid var(--rule); padding: 10px; }
+.feedback-preview[hidden] { display: none; }
+.feedback-preview img { display: block; width: 84px; height: 58px; object-fit: cover; border: 1px solid var(--rule); }
+.feedback-preview span { overflow-wrap: anywhere; font-size: 13px; color: var(--graphite); }
+.feedback-context { margin: 20px 0; border: 1px solid var(--rule); }
+.feedback-context summary { cursor: pointer; padding: 11px 12px; font-weight: 700; }
+.feedback-context .kv { padding: 0 12px 12px; }
+.feedback-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; }
+.feedback-success { padding: 18px; border-left: 3px solid var(--ok); background: var(--ok-wash); }
+.feedback-success h3 { margin: 0 0 8px; }
+.feedback-success p { margin: 0 0 16px; }
+.feedback-empty { max-width: 680px; }
+
+@media (max-width: 680px) {
+  .topbar { gap: 8px; padding: 0 14px; }
+  .topbar__feedback, .topbar__requests { padding: 6px 8px; font-size: 12px; }
+  .topbar__requests { display: none; }
+  .identity { max-width: 100px; }
+  .feedback-backdrop { padding: 10px; }
+  .feedback-panel { max-height: calc(100vh - 20px); padding: 18px; }
+  .feedback-preview { grid-template-columns: 58px minmax(0, 1fr); }
+  .feedback-preview img { width: 58px; height: 48px; }
+  .feedback-preview .btn { grid-column: 1 / -1; justify-self: start; }
+}
+
+/* PAT-2258: cyber insurance evidence pack. One block per question inside
+   the card, divided by the existing hairline rule; existing tokens only. */
+.insurance-list { display: grid; gap: 0; }
+.insurance-item { padding: 16px 0; border-top: 1px solid var(--hair); }
+.insurance-item:first-child { border-top: 0; padding-top: 4px; }
+.insurance-item__head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; }
+.insurance-item__head h3 { margin: 0; font-size: 15px; }
+.insurance-item__question { margin: 4px 0 8px; color: var(--mute); font-style: italic; }
+.insurance-item__headline { margin: 0 0 6px; color: var(--slate); font-weight: 600; }
+.insurance-item p { overflow-wrap: anywhere; }
+.insurance-item__facts { margin: 10px 0; font-size: 13px; }
+
+/* PAT-2255: /software is the review workspace (Andy, 28 Sep 2026), and
+   /homebrew shares its filter bar and Approval cell. Existing tokens only.
+
+   Rows keep a compact second line for labelled installed versions beneath
+   the product name and publisher, one approval state, and the Set
+   state control beside it, so at least 15 rows fit a 1280x800 screen
+   (e2e/test_pat2255_software_review.py measures it in both themes). Long
+   values truncate with an ellipsis and keep their full text in a title,
+   the walker's accepted idiom (PAT-2128). Below 680px the table stacks
+   into labelled blocks (.table-stack, rubric L12).
+
+   Column budget at 1280px (card ~912px wide): select 40, installs 128,
+   CVE 136, signing 96, approval 266, leaving the product ~242px. Type and
+   Platform move to the 1680px reveal tier (were 1440px): at 1440px their
+   230px would have squeezed the product name to ~150px, and the Type
+   filter and the Platform in the product detail carry the same facts. */
+.software-table td { padding: 4px 10px; vertical-align: middle; }
+.software-table th { padding: 10px 10px; }
+.software-table .cell-select { width: 40px; }
+.software-col-product { width: auto; }
+/* Reserve room for Installed: Not reported plus an unknown count in wide fonts. */
+.software-col-installs { width: 128px; }
+.software-col-cve { width: 136px; }
+.software-col-signing { width: 96px; }
+.software-col-actions { width: 266px; }
+@media (max-width: 1679.98px) {
+  .software-table .col-secondary { display: none; }
+}
+@media (min-width: 1440px) and (max-width: 1679.98px) {
+  /* Hidden but still widthed columns are "spent" by table-layout: fixed
+     (PAT-2092), so they drop to the same 1px the shared rule uses. */
+  .software-col-type, .software-col-platform { width: 1px; }
+}
+@media (min-width: 1680px) {
+  /* 230px includes cell padding and the widest supported font's usage line. */
+  .software-col-evidence { width: 230px; }
+}
+.product-line {
+  display: flex; align-items: center; gap: 8px; min-width: 0; white-space: nowrap;
+}
+.product-line .pill { flex: 0 0 auto; padding: 2px 6px; }
+/* The name keeps its room first: the publisher beside it gives way. */
+.product-name {
+  flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  font-weight: 600; color: var(--slate);
+}
+.data-table td a.product-name {
+  border-bottom: 0; font-weight: 600; text-decoration: underline;
+  text-decoration-color: var(--rule); text-underline-offset: 3px;
+}
+.data-table td a.product-name:hover { color: var(--accent-press); text-decoration-color: currentColor; }
+.product-publisher {
+  flex: 0 100 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  color: var(--mute); font-size: 12.5px;
+}
+.cell-line {
+  display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cell-line__muted { color: var(--mute); font-size: 12.5px; }
+.software-table .product-line { line-height: 20px; }
+.software-table .product-line .pill { line-height: 14px; }
+.installed-versions {
+  display: flex; gap: 4px; min-width: 0; font-size: 12px; line-height: 14px;
+  color: var(--mute); white-space: nowrap;
+}
+.installed-versions__label, .installed-versions__unknown { flex: 0 0 auto; }
+.installed-versions__value { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.installed-versions__unknown::before { content: "· "; }
+@media (max-width: 680px) {
+  .installed-versions { flex-wrap: wrap; white-space: normal; }
+  .installed-versions__value { overflow: visible; overflow-wrap: anywhere; }
+}
+.software-table .cell-evidence__main { white-space: nowrap; }
+/* Keep the verdict below the evidence date on one line, including wide fonts,
+   so the Evidence cell retains its two-line budget. */
+.software-table .cell-usage {
+  display: block; margin-top: 2px; white-space: nowrap; overflow-wrap: normal;
+}
+.software-table .cell-usage--ok { color: var(--ok); }
+.software-table .cell-usage--warn { color: var(--warn); }
+.cell-cve .pill { max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.cell-signing .signing { color: var(--graphite); font-size: 12.5px; white-space: nowrap; }
+.cell-signing .signing--unknown, .cell-signing .signing--none { color: var(--mute); }
+.cell-signing .signing--not_notarized { color: var(--warn); }
+
+/* One approval state per row, in the Approval column only. Own class
+   names rather than pill-ok/pill-bad: pill-ok is the protected-software
+   badge's class and tests key on it (PAT-1821). */
+.pill-state--unreviewed { background: var(--warn-wash); color: var(--warn); }
+.pill-state--approved { background: var(--ok-wash); color: var(--ok); }
+.pill-state--unapproved { background: var(--bad-wash); color: var(--bad); }
+.pill-state--ignored, .pill-state--unknown { background: var(--hair); color: var(--mute); }
+.review-line { display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; }
+.review-line .pill-state { flex: 0 0 auto; padding: 2px 6px; }
+.review-form.approval-row-form { flex: 1 1 auto; min-width: 0; margin: 0; gap: 6px; }
+.review-form .approval-row-form__state { flex: 0 0 108px; width: 108px; padding: 2px 4px; }
+.review-line .approval__lock {
+  flex: 1 1 auto; min-width: 0; font-size: 12px; line-height: 1.35;
+}
+
+/* The "N new since your last review" banner is the way into the review
+   queue; in queue mode the heading states what is being reviewed. */
+.review-queue-banner p { margin: 0; }
+.review-queue-banner a, .review-queue a, .page-head .meta--note a, .software-urgency-note a {
+  color: var(--accent-press); text-decoration: underline; text-underline-offset: 2px;
+}
+.software-headline { font-size: 15px; color: var(--graphite); }
+.software-headline strong { color: var(--slate); }
+.review-queue { margin: 0 0 18px; padding: 14px 18px; border-left: 3px solid var(--primary); background: var(--surface-sunken); }
+.review-queue h2 { margin: 0 0 4px; font-size: 17px; }
+.review-queue .meta { margin: 4px 0 0; }
+.meta--note { font-size: 13px; }
+.page-head .meta--note { margin-top: 4px; }
+.software-urgency-note { margin: -8px 0 12px; }
+
+/* The product detail's Identifiers section (history drawer and page). */
+.product-identifiers { margin: 0 0 16px; }
+.product-identifiers__title { margin: 14px 0 8px; font-size: 13px; font-weight: 650; color: var(--mute); }
+.product-identifiers__list { margin: 0; display: grid; gap: 6px; }
+.product-identifiers__row { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px; font-size: 13px; }
+.product-identifiers__row dt { color: var(--mute); }
+.product-identifiers__row dd { margin: 0; color: var(--slate); }
+
+/* /homebrew: the shared Approval cell needs the same room it has on
+   /software; its tables keep their own column rhythm otherwise. */
+.homebrew-table th, .homebrew-table td { padding-left: 10px; padding-right: 10px; }
+.homebrew-table td { vertical-align: middle; }
+.homebrew-table td[data-label="First seen"] { white-space: nowrap; }
+.homebrew-table td.cell-review { width: 250px; }
+.homebrew-table .product-line { flex-wrap: wrap; white-space: normal; row-gap: 2px; }
+.homebrew-table .review-form .approval-row-form__state { flex-basis: 96px; width: 96px; }
+
+@media (max-width: 680px) {
+  /* Stacked rows: each fact is one label/value line under the product
+     name, and the one-line truncation relaxes so a name or a lock reason
+     wraps instead of vanishing into an ellipsis on a narrow card. Evidence
+     stays hidden below its 1680px reveal tier, as on desktop. */
+  .software-table tbody tr { padding: 10px 0; }
+  .software-table td { padding: 2px 0; }
+  .software-table td[data-label]:not(.cell-product):not(.col-secondary):not(.col-tertiary) {
+    display: grid; grid-template-columns: 104px minmax(0, 1fr); align-items: baseline; gap: 8px;
+  }
+  .software-table td[data-label] > * { justify-self: start; max-width: 100%; }
+  .software-table td[data-label]::before { margin: 0; }
+  .software-table td.cell-product::before { display: none; }
+  .software-table td.col-secondary, .software-table td.col-tertiary { display: none; }
+  .software-table td.cell-approval { padding-left: 0; padding-right: 0; }
+  .software-table td.cell-select { padding: 0 0 2px; text-align: left; }
+  .product-line, .review-line { flex-wrap: wrap; white-space: normal; }
+  .product-name, .product-publisher, .cell-line { white-space: normal; overflow: visible; }
+  .review-line .approval__lock { white-space: normal; overflow: visible; }
+  .review-form .approval-row-form__state { flex-basis: 120px; width: 120px; }
+  .homebrew-table td.cell-review { min-width: 0; padding-left: 0; }
+  /* The stacked table hides its header row, which on these two review
+     tables also holds "Select all shown"; that one header cell stays on
+     screen, with its label, above the first product. */
+  .software-table.table-stack thead, .software-table.table-stack thead tr,
+  .homebrew-table.table-stack thead, .homebrew-table.table-stack thead tr { display: block; }
+  .software-table.table-stack thead th.cell-select,
+  .homebrew-table.table-stack thead th.cell-select {
+    position: static; display: block; width: auto; height: auto; margin: 0 0 6px;
+    padding: 0; overflow: visible; clip: auto; white-space: normal; border: 0; text-align: left;
+  }
+  .software-table.table-stack .cell-select__all .visually-hidden,
+  .homebrew-table.table-stack .cell-select__all .visually-hidden {
+    position: static; width: auto; height: auto; margin: 0 0 0 8px; overflow: visible;
+    clip: auto; white-space: normal;
+  }
+  .cell-select__all { display: inline-flex; align-items: center; font-size: 13px; color: var(--graphite); }
+}
+
+/* PAT-2332: reserve room for long dotted values within the same 905px
+   table budget. Each value stays intact; lists wrap between versions. */
+.device-software-col-product { width: 140px; }
+.device-software-col-versions { width: 180px; }
+.device-software-version {
+  display: inline-block; max-width: 100%; vertical-align: bottom;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+@media (max-width: 680px) {
+  .device-software-table.table-stack { min-width: 0; table-layout: auto; }
+}
+@media (min-width: 680.01px) {
+  /* Leave room for the longest ordinary version and its attached comma. */
+  .device-software-table td[data-label="Version(s)"] { padding-right: 8px; }
+}
+
+/* PAT-2243: AI uses Software's compact review cells and filter bar. The
+   product name opens native evidence disclosure; closed rows stay one line. */
+.ai-review-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 20px; margin: 0 0 10px; }
+.ai-summary__item { font-size: 13px; color: var(--mute); }
+.ai-summary__item strong { color: var(--graphite); }
+.ai-summary__item--zero strong { font-weight: 400; color: var(--mute); }
+.ai-coverage-notice { font-size: 13px; margin: 0 0 12px; color: var(--mute); }
+.ai-coverage-notice a { text-decoration: underline; }
+.ai-review-table { table-layout: fixed; min-width: 0; width: 100%; }
+.ai-review-table td { padding: 6px 10px; vertical-align: middle; }
+.ai-review-table th { padding: 10px; }
+.ai-review-table .cell-select { width: 40px; }
+.ai-col-type { width: 106px; }
+.ai-col-count { width: 64px; }
+.ai-col-collection { width: 110px; }
+.ai-col-assessment { width: 162px; }
+.ai-col-approval { width: 280px; }
+.ai-review-table td > .pill { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: fit-content; }
+.ai-evidence { min-width: 0; }
+.ai-evidence > summary { display: flex; gap: 5px; align-items: center; cursor: pointer; min-width: 0; list-style: none; }
+.ai-evidence > summary::-webkit-details-marker { display: none; }
+.ai-evidence > summary::before { content: '▸'; flex: 0 0 auto; color: var(--mute); }
+.ai-evidence[open] > summary::before { content: '▾'; }
+.ai-review-table .ai-evidence .product-name { color: var(--graphite); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ai-evidence__body { white-space: normal; overflow-wrap: anywhere; font-size: 13px; padding: 10px 0; }
+.ai-evidence__body p { margin: 0 0 8px; }
+.ai-evidence__body dl { margin: 0 0 10px; }
+.ai-evidence__body dt { font-weight: 600; margin-top: 7px; }
+.ai-evidence__body dd { margin: 0; color: var(--mute); }
+.ai-evidence__body a { text-decoration: underline; }
+@media (max-width: 680px) {
+  .ai-review-table.table-stack tbody tr { padding: 10px 0; }
+  .ai-review-table.table-stack td { padding: 3px 0; min-width: 0; }
+  .ai-review-table.table-stack td[data-label] { display: grid; grid-template-columns: 76px minmax(0, 1fr); column-gap: 10px; }
+  .ai-review-table.table-stack td[data-label]::before { margin: 0; }
+  .ai-review-table.table-stack td.cell-product { display: block; }
+  .ai-review-table.table-stack td.cell-product::before { display: none; }
+  .ai-review-table .cell-select { width: auto; }
+  .ai-review-table.table-stack td.cell-review { display: block; }
+  .ai-review-table.table-stack td.cell-review::before { margin-bottom: 4px; }
+  .ai-review-table .review-line { flex-wrap: wrap; }
+  .ai-review-table .review-form { flex: 0 1 auto; }
+  .ai-review-table td > .pill { white-space: normal; overflow-wrap: anywhere; }
+  .ai-review-table .product-name { white-space: nowrap; }
+}
+
+.ai-evidence:not([open]) > .ai-evidence__body { display: none; }
+.ai-device-coverage > summary { cursor: pointer; }
+.ai-device-coverage:not([open]) > :not(summary) { display: none; }
+
+.ai-device-coverage > summary::before { content: '▸'; color: var(--mute); }
+.ai-device-coverage[open] > summary::before { content: '▾'; }
+@media (max-width: 680px) {
+  .ai-review-table.table-stack td.cell-select { text-align: left; padding: 0 0 3px; }
+}
+
+/* PAT-2339: one endpoint investigation, with collection gaps before facts. */
+.device-page-head { margin-bottom: 12px; }
+.device-tab-caveat { display: block; font-size: 10px; font-weight: 400; }
+.device-tab-bar .tab-active .device-tab-label { color: inherit; }
+.device-page-head h1 { font-size: 26px; }
+.device-overview-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 24px; }
+.device-identity-facts { grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr); gap: 8px 16px; }
+.device-assurance .kv { gap: 8px 12px; }
+.device-card #retirement { border-top: 1px solid var(--rule); margin-top: 16px; padding-top: 12px; }
+.device-card #retirement .device-card__subhead { display: inline; margin-right: 8px; }
+.device-card #retirement > .meta { display: inline; }
+.device-collection-alert { border-left: 3px solid var(--warn); background: var(--paper); padding: 12px 16px; margin: 0 0 16px; }
+.device-collection-alert h2 { font-size: 14px; margin: 0 0 6px; }
+/* Unmapped collection subjects remain readable without widening the page. */
+.device-collection-alert p { margin: 0; overflow-wrap: anywhere; }
+.device-collection-alert__issue + .device-collection-alert__issue { margin-top: 10px; }
+.device-collection-alert details { font-size: 12px; color: var(--mute); margin-top: 4px; }
+.device-collection-alert summary { cursor: pointer; }
+@media (max-width: 1100px) {
+  .device-overview-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+}
+@media (max-width: 600px) {
+  .device-page-head h1 { font-size: 22px; overflow-wrap: anywhere; }
+  .device-identity-facts { grid-template-columns: minmax(0, max-content) minmax(0, 1fr); }
+}
+
+/* Public certificate expiry: native disclosures keep detailed evidence available. */
+.certificate-upload { margin-bottom: 20px; }
+.certificate-upload > summary { font-weight: 600; cursor: pointer; }
+.certificate-form { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; margin: 16px 0; }
+.certificate-form .field { width: 100%; max-width: 440px; min-width: 0; }
+.certificate-form input { max-width: 100%; box-sizing: border-box; }
+.certificate-form input[type="file"] { font: inherit; font-size: 13px; }
+.certificate-table { table-layout: fixed; width: 100%; }
+.certificate-table th:first-child { width: 40%; }
+.certificate-table th:nth-child(2) { width: 12%; }
+.certificate-table th:nth-child(3) { width: 25%; }
+.certificate-table td { vertical-align: top; }
+.certificate-table td:first-child { overflow-wrap: anywhere; }
+.certificate-evidence, .certificate-edit { margin-top: 10px; }
+.certificate-evidence summary, .certificate-edit summary { cursor: pointer; font-size: 13px; }
+.certificate-evidence dl { margin: 12px 0; font-size: 13px; }
+.certificate-evidence dt { color: var(--mute); margin-top: 8px; }
+.certificate-evidence dd { margin: 3px 0 0; overflow-wrap: anywhere; }
+.certificate-remove { border-top: 1px solid var(--rule); padding-top: 12px; }
+@media (max-width: 680px) {
+  .certificate-table td { min-width: 0; }
+  .certificate-table td .nowrap { white-space: normal; }
+}
+
+/* Support shares the bounded form and readable status table with Feedback. */
+.support-layout { display: grid; grid-template-columns: minmax(0, 680px) minmax(220px, 1fr); gap: 24px; align-items: start; margin-bottom: 28px; }
+.support-layout .card { margin: 0; min-width: 0; }
+.support-alternative { overflow-wrap: anywhere; }
+.support-alternative h2:not(:first-child) { margin-top: 24px; }
+.support-device { overflow-wrap: anywhere; }
+.feedback-field input[type="file"] { max-width: 100%; min-width: 0; }
+.feedback-context dd { overflow-wrap: anywhere; min-width: 0; }
+.feedback-requests td[data-label="Title"] { overflow-wrap: anywhere; }
+@media (max-width: 1000px) {
+  .support-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Approved software declarations: the known-product choice on the detail page
+   and the lookup results on the add page. Plain wrapping text, no ellipsis. */
+.declaration-choices { border: 0; margin: 16px 0 14px; padding: 0; min-width: 0; }
+.declaration-choice { display: flex; align-items: flex-start; gap: 8px; margin: 6px 0; overflow-wrap: anywhere; }
+.declaration-choice input { margin-top: 3px; flex: none; }
+.declaration-products { margin: 12px 0 0; padding-left: 18px; overflow-wrap: anywhere; }
+.declaration-products li { margin: 6px 0; }
+.declaration-use { margin-left: 8px; white-space: nowrap; }

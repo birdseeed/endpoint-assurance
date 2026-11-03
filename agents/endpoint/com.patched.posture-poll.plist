@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.patched.posture-poll — lightweight device posture poller.
+
+  Runs patched-fetch-posture.sh every 15 minutes.
+
+  Install to /Library/LaunchDaemons/ (root:wheel, mode 644), then:
+    sudo launchctl bootstrap system /Library/LaunchDaemons/com.patched.posture-poll.plist
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.patched.posture-poll</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/patched-updater/patched-fetch-posture.sh</string>
+    </array>
+
+    <!-- Poll every 15 minutes. -->
+    <key>StartInterval</key>
+    <integer>900</integer>
+
+    <!-- Fetch immediately on bootstrap (install or reboot). -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/var/log/patched-update.log</string>
+    <key>StandardErrorPath</key>
+    <string>/var/log/patched-update.log</string>
+
+    <key>LowPriorityIO</key>
+    <true/>
+    <key>Nice</key>
+    <integer>10</integer>
+</dict>
+</plist>

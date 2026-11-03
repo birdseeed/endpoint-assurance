@@ -1,0 +1,82 @@
+[
+  {
+    "Id": "00000000-0000-4000-8000-000000000001",
+    "Author": "Synthetic",
+    "Created": "2026-07-01",
+    "MitreID": "T1068",
+    "Category": "vulnerable driver",
+    "Verified": "TRUE",
+    "Commands": {"Command": "sc.exe create gdrv binPath= C:\\windows\\temp\\gdrv.sys type=kernel", "Description": "synthetic", "Usecase": "Elevate privileges", "Privileges": "kernel", "OperatingSystem": "Windows 10"},
+    "Resources": ["https://example.invalid/synthetic"],
+    "Acknowledgement": {"Person": "", "Handle": ""},
+    "Detection": [],
+    "Tags": ["gdrv.sys"],
+    "KnownVulnerableSamples": [
+      {
+        "Filename": "gdrv.sys",
+        "MD5": "00000000000000000000000000000001",
+        "SHA1": "d348d0ef0d72cf831c6cbfb9479ff27318bc8715",
+        "SHA256": "357c27a02e97161fc2fbb97dc21a8b3d60053a591a1f1d760d91159fcc507cf1",
+        "Signature": "",
+        "Date": "",
+        "Publisher": "",
+        "Company": "Synthetic",
+        "Description": "synthetic",
+        "Product": "synthetic",
+        "ProductVersion": "1.0",
+        "FileVersion": "1.0",
+        "MachineType": "AMD64",
+        "OriginalFilename": "gdrv.sys",
+        "Authentihash": {"MD5": "00000000000000000000000000000002", "SHA1": "6666666666666666666666666666666666666666", "SHA256": "7777777777777777777777777777777777777777777777777777777777777777"},
+        "LoadsDespiteHVCI": "FALSE"
+      },
+      {
+        "Filename": "gdrv2.sys",
+        "MD5": "",
+        "SHA1": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+        "SHA256": "",
+        "Authentihash": null
+      }
+    ]
+  },
+  {
+    "Id": "00000000-0000-4000-8000-000000000002",
+    "Category": "malicious",
+    "Tags": ["evil.sys"],
+    "KnownVulnerableSamples": [
+      {
+        "Filename": "evil.sys",
+        "SHA1": "cccccccccccccccccccccccccccccccccccccccc",
+        "SHA256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "Authentihash": {"SHA1": "", "SHA256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"}
+      }
+    ]
+  },
+  {
+    "Id": "00000000-0000-4000-8000-000000000003",
+    "Category": "vulnerable driver",
+    "Tags": ["pe.sys"],
+    "KnownVulnerableSamples": [
+      {
+        "Filename": "pe.sys",
+        "SHA1": "",
+        "SHA256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "Authentihash": {"SHA1": "9999999999999999999999999999999999999999", "SHA256": ""}
+      },
+      {
+        "Filename": "broken.sys",
+        "SHA1": 12345,
+        "SHA256": "not-a-hash",
+        "Authentihash": "not-an-object"
+      }
+    ]
+  },
+  {
+    "Id": "00000000-0000-4000-8000-000000000004",
+    "Category": "unknown category",
+    "Tags": ["x.sys"],
+    "KnownVulnerableSamples": [
+      {"Filename": "x.sys", "SHA256": "1234123412341234123412341234123412341234123412341234123412341234"}
+    ]
+  }
+]

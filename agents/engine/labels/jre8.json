@@ -1,0 +1,31 @@
+{
+  "label": "jre8",
+  "name": "Java Runtime Environment 8",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "relative-path-version-component",
+    "template": "Java 8 Update {version_component}.app/Contents/Resources/JavaAppletPlugin.pkg",
+    "separator": ".",
+    "component_index": 3,
+    "version_source": "sparkle-enclosure-version"
+  },
+  "app_path": "/Applications/Java Runtime Environment 8.app",
+  "expected_team_id": "VB5E2TV963",
+  "download": {
+    "method": "resolved",
+    "strategy": "sparkle-appcast",
+    "source": "https://javadl-esd-secure.oracle.com/update/mac/ba687cb3cbb24342adc8fdf890b993dc/au-1.8.0_501-b26-cb.xml"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true. PAT-1280 (2026-08-13): 'no matching HTTPS enclosure' was not Oracle going HTTP-only or moving the appcast -- the previously-pinned source (map-mac-1.8.0.xml) was never itself a Sparkle appcast. It is Oracle's own version-redirect map (root element <java-update-map>, entries <mapping><version>/<url>), structurally incompatible with the verifier's <rss><item><enclosure> parser regardless of vendor health -- it would have failed every single night since import. Installomator.sh's own jre8 case (engine/Installomator.sh ~6553-6556) only ever used that map as an intermediate lookup: it fetches map-mac-1.8.0.xml, takes the LAST <mapping>'s <url> ([last] in its xpath), and only that second URL is the real Sparkle appcast. Source above is that real leaf appcast, hand-verified 2026-08-13 (valid rss/sparkle XML, HTTPS enclosure, resolves to Java 8u501 build 26). CAVEAT for future triage: this leaf URL is Oracle's own per-build appcast (path segment 'au-1.8.0_501-b26-cb.xml' is tied to build b26) and WILL 404 again at Oracle's next Java 8 critical patch update -- cadence looks closer to monthly than quarterly (b08 pubDate b26-cb pubDate 7 Jul 2026, both from the same map fetch on 2026-08-13). This is a stopgap, not a durable fix: the verifier's sparkle-appcast strategy has no two-hop/indirect-map resolution, and the label schema's strategy enum is closed (github-release/sparkle-appcast/http-redirect/vendor-api) with no slot for one. A durable fix needs either a new deterministic two-hop resolver strategy (no vendor scrape needed, unlike PAT-1262's structurally-unresolvable Installomator variables -- both hops are static HTTPS fetches) or accepting a recurring manual re-pin each Oracle Java 8 CPU release. Flagged to Andy rather than built, since jre8 is EOL-adjacent and whether it's worth the engineering investment is a product call, not something PAT-1280's triage scope should decide unilaterally."
+  }
+}

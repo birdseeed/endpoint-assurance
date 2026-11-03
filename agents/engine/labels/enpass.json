@@ -1,0 +1,26 @@
+{
+  "label": "enpass",
+  "name": "Enpass",
+  "type": "pkg",
+  "app_path": "/Applications/Enpass.app",
+  "expected_team_id": "7ADB8CC6TF",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.enpass.io/download/macos/website/stable",
+    "vendor_api_referer": "https://www.enpass.io/downloads/"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "pat-663",
+    "reviewed_at": "2026-07-04",
+    "notes": "PAT-663: converted from method=static to method=resolved strategy=vendor-api. The source URL uses CloudFront hotlink protection that returns HTTP 403 without a Referer header from the enpass.io domain. vendor_api_referer set so the pipeline resolver sends the correct Referer, causing a 307 redirect to the versioned pkg URL at dl.enpass.io. Confirmed working 2026-07-04 — resolves to https://dl.enpass.io/stable/mac/package/6.12.3.2597/Enpass.pkg.",
+    "ring_policy": "immediate"
+  }
+}

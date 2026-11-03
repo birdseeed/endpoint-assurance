@@ -1,0 +1,25 @@
+{
+  "label": "salesforcesfdx",
+  "name": "Salesforce CLI",
+  "type": "pkg",
+  "app_path": "/Applications/Salesforce CLI.app",
+  "expected_team_id": "62J96EUJ9N",
+  "download": {
+    "method": "static",
+    "url": "https://developer.salesforce.com/media/salesforce-cli/sf/channels/stable/sf-arm64.pkg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "NONE"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

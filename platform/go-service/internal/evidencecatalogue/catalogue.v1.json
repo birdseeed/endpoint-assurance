@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "catalogue_version": "2026.09.20.1",
+  "published_at": "2026-09-20T00:00:00Z",
+  "entries": [
+    {
+      "id": "google-chrome.macos",
+      "rationale": "Common managed browser whose bundle identity must be distinguished from Chrome channels and lookalike applications.",
+      "canonical_identity": {"product_key": "google-chrome", "product_name": "Google Chrome", "vendor_name": "Google LLC"},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.google.Chrome"}],
+      "permitted_paths": ["/Applications/Google Chrome.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "EQHXZ8M8AV"},
+      "sources": [{"kind": "primary_vendor", "url": "https://www.google.com/chrome/", "supports": "Vendor product and macOS distribution; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "153.0.8010.48", "code_directory_hash": "d92528bd16f0d327979e413018ec73492ab1d2b9"}
+    },
+    {
+      "id": "mozilla-firefox.macos",
+      "rationale": "Common managed browser with multiple release channels that share similar display names.",
+      "canonical_identity": {"product_key": "mozilla-firefox", "product_name": "Mozilla Firefox", "vendor_name": "Mozilla Corporation"},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "org.mozilla.firefox"}],
+      "permitted_paths": ["/Applications/Firefox.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "43AQ936H96"},
+      "sources": [{"kind": "primary_vendor", "url": "https://www.mozilla.org/firefox/new/", "supports": "Vendor product and macOS distribution; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "155.0.1", "code_directory_hash": "c21930e9b091b8391fb75baf88c2735589bd5f2e"}
+    },
+    {
+      "id": "microsoft-word.macos",
+      "rationale": "Core Microsoft 365 application whose shared Microsoft signer cannot identify the product by itself.",
+      "canonical_identity": {"product_key": "microsoft-word", "product_name": "Microsoft Word", "vendor_name": "Microsoft Corporation"},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.microsoft.Word"}],
+      "permitted_paths": ["/Applications/Microsoft Word.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "UBF8T346G9"},
+      "sources": [{"kind": "primary_vendor", "url": "https://learn.microsoft.com/en-us/microsoft-365-apps/mac/deploy-mac-app-store", "supports": "Microsoft documents Word distribution for macOS; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "16.113.1", "code_directory_hash": "712c0ba68d2e82fb9ab7196234368868fd2af746"}
+    },
+    {
+      "id": "microsoft-excel.macos",
+      "rationale": "Core Microsoft 365 application whose shared Microsoft signer cannot identify the product by itself.",
+      "canonical_identity": {"product_key": "microsoft-excel", "product_name": "Microsoft Excel", "vendor_name": "Microsoft Corporation"},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.microsoft.Excel"}],
+      "permitted_paths": ["/Applications/Microsoft Excel.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "UBF8T346G9"},
+      "sources": [{"kind": "primary_vendor", "url": "https://learn.microsoft.com/en-us/microsoft-365-apps/mac/deploy-mac-app-store", "supports": "Microsoft documents Excel distribution for macOS; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "16.113.1", "code_directory_hash": "838da7c9bebcb2775c18b67da0a452880e33b186"}
+    },
+    {
+      "id": "microsoft-powerpoint.macos",
+      "rationale": "Core Microsoft 365 application whose shared Microsoft signer cannot identify the product by itself.",
+      "canonical_identity": {"product_key": "microsoft-powerpoint", "product_name": "Microsoft PowerPoint", "vendor_name": "Microsoft Corporation"},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.microsoft.Powerpoint"}],
+      "permitted_paths": ["/Applications/Microsoft PowerPoint.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "UBF8T346G9"},
+      "sources": [{"kind": "primary_vendor", "url": "https://learn.microsoft.com/en-us/microsoft-365-apps/mac/deploy-mac-app-store", "supports": "Microsoft documents PowerPoint distribution for macOS; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "16.113.1", "code_directory_hash": "f0fa94d9151faf4dc38971fcfdd582d970a7b74d"}
+    },
+    {
+      "id": "microsoft-outlook.macos",
+      "rationale": "Core Microsoft 365 application whose shared Microsoft signer cannot identify the product by itself.",
+      "canonical_identity": {"product_key": "microsoft-outlook", "product_name": "Microsoft Outlook", "vendor_name": "Microsoft Corporation"},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.microsoft.Outlook"}],
+      "permitted_paths": ["/Applications/Microsoft Outlook.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "UBF8T346G9"},
+      "sources": [{"kind": "primary_vendor", "url": "https://learn.microsoft.com/en-us/microsoft-365-apps/mac/deploy-mac-app-store", "supports": "Microsoft documents Outlook distribution for macOS; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "16.113.1", "code_directory_hash": "75455b4d2c2b36be764b2a648efe2480ea853a3c"}
+    },
+    {
+      "id": "microsoft-onenote.macos",
+      "rationale": "Microsoft note-taking application whose shared Microsoft signer cannot identify the product by itself.",
+      "canonical_identity": {"product_key": "microsoft-onenote", "product_name": "Microsoft OneNote", "vendor_name": "Microsoft Corporation"},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.microsoft.onenote.mac"}],
+      "permitted_paths": ["/Applications/Microsoft OneNote.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "UBF8T346G9"},
+      "sources": [{"kind": "primary_vendor", "url": "https://learn.microsoft.com/en-us/microsoft-365-apps/mac/deploy-mac-app-store", "supports": "Microsoft documents OneNote distribution for macOS; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "16.113.1", "code_directory_hash": "0a0c1353d2b9407e9e88ef68e92a99ade5332c53"}
+    },
+    {
+      "id": "microsoft-teams.macos",
+      "rationale": "Business collaboration client whose current bundle identity must not be confused with Teams classic.",
+      "canonical_identity": {"product_key": "microsoft-teams", "product_name": "Microsoft Teams", "vendor_name": "Microsoft Corporation"},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.microsoft.teams2"}],
+      "permitted_paths": ["/Applications/Microsoft Teams.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "UBF8T346G9"},
+      "sources": [{"kind": "primary_vendor", "url": "https://learn.microsoft.com/en-us/microsoft-365-apps/deploy/teams-install", "supports": "Microsoft documents Teams distribution for macOS; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "26225.1708.5124.9749", "code_directory_hash": "b96bb0a36362159b64e31d83e0c6d8bdc042120c"}
+    },
+    {
+      "id": "microsoft-onedrive.macos",
+      "rationale": "Enterprise sync client with different direct-download and App Store identities.",
+      "canonical_identity": {"product_key": "microsoft-onedrive", "product_name": "Microsoft OneDrive", "vendor_name": "Microsoft Corporation"},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.microsoft.OneDrive-mac"}],
+      "permitted_paths": ["/Applications/OneDrive.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "UBF8T346G9"},
+      "sources": [{"kind": "primary_vendor", "url": "https://www.microsoft.com/en-us/microsoft-365/onedrive/download", "supports": "Microsoft product distribution page; identity, path and signer were read from the reviewed signed App Store artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "26.158.0816", "code_directory_hash": "2133cb361fa283812c7933c341625833a1241bde"}
+    },
+    {
+      "id": "microsoft-windows-app.macos",
+      "rationale": "Remote Windows access client whose legacy bundle identifier differs from its current product name.",
+      "canonical_identity": {"product_key": "microsoft-windows-app", "product_name": "Windows App", "vendor_name": "Microsoft Corporation"},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.microsoft.rdc.macos"}],
+      "permitted_paths": ["/Applications/Windows App.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "UBF8T346G9"},
+      "sources": [{"kind": "primary_vendor", "url": "https://learn.microsoft.com/en-us/windows-app/whats-new", "supports": "Microsoft documents the Windows App macOS distribution; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "11.4.1", "code_directory_hash": "fb739d1f2bf7bf401118444c8d5645e13968b7cd"}
+    },
+    {
+      "id": "slack.macos",
+      "rationale": "Common collaboration client with direct-download and App Store distribution variants.",
+      "canonical_identity": {"product_key": "slack", "product_name": "Slack", "vendor_name": "Slack Technologies, LLC"},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.tinyspeck.slackmacgap"}],
+      "permitted_paths": ["/Applications/Slack.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "BQR82RBBHL"},
+      "sources": [{"kind": "primary_vendor", "url": "https://slack.com/downloads/mac", "supports": "Slack macOS distribution page; identity, path and signer were read from the reviewed signed App Store artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "4.52.155", "code_directory_hash": "e40135f56a714e16d774f8eacc8decda125f994a"}
+    },
+    {
+      "id": "zoom-workplace.macos",
+      "rationale": "Common conferencing client whose generic display name is insufficient installation evidence.",
+      "canonical_identity": {"product_key": "zoom-workplace", "product_name": "Zoom Workplace", "vendor_name": "Zoom Video Communications, Inc."},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "us.zoom.xos"}],
+      "permitted_paths": ["/Applications/zoom.us.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "BJ4HAAB9B3"},
+      "sources": [{"kind": "primary_vendor", "url": "https://zoom.us/download", "supports": "Zoom product distribution page; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "7.1.5 (84650)", "code_directory_hash": "afbaee060d237cc89cd21875af4c8c44afe4ead8"}
+    },
+    {
+      "id": "google-drive.macos",
+      "rationale": "Enterprise sync client sharing Google's signer with unrelated products.",
+      "canonical_identity": {"product_key": "google-drive", "product_name": "Google Drive", "vendor_name": "Google LLC"},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.google.drivefs"}],
+      "permitted_paths": ["/Applications/Google Drive.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "EQHXZ8M8AV"},
+      "sources": [{"kind": "primary_vendor", "url": "https://www.google.com/drive/download/", "supports": "Google product distribution page; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "130.0", "code_directory_hash": "6f6818e49ecf8a56615b92bd3b88e280e062715f"}
+    },
+    {
+      "id": "github-desktop.macos",
+      "rationale": "Developer source-control client whose installation confidence matters on engineering endpoints.",
+      "canonical_identity": {"product_key": "github-desktop", "product_name": "GitHub Desktop", "vendor_name": "GitHub, Inc."},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.github.GitHubClient"}],
+      "permitted_paths": ["/Applications/GitHub Desktop.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "VEKTX9H2N7"},
+      "sources": [{"kind": "primary_vendor", "url": "https://desktop.github.com/download/", "supports": "GitHub product distribution page; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "3.5.12", "code_directory_hash": "7dc391cf817b22832831e3aa9f5bf9449b398d3e"}
+    },
+    {
+      "id": "notion.macos",
+      "rationale": "Common workspace client with a non-obvious bundle identifier that cannot be derived from its display name.",
+      "canonical_identity": {"product_key": "notion", "product_name": "Notion", "vendor_name": "Notion Labs, Inc."},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "notion.id"}],
+      "permitted_paths": ["/Applications/Notion.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "LBQJ96FQ8D"},
+      "sources": [{"kind": "primary_vendor", "url": "https://www.notion.com/desktop", "supports": "Notion product distribution page; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "7.34.0", "code_directory_hash": "fb28d0f00b714146c1d39df8f1b6c2645a280513"}
+    },
+    {
+      "id": "linear.macos",
+      "rationale": "Issue-tracking client used in engineering workflows and signed separately from similarly named tools.",
+      "canonical_identity": {"product_key": "linear", "product_name": "Linear", "vendor_name": "Linear Orbit, Inc."},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.linear"}],
+      "permitted_paths": ["/Applications/Linear.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "7VZ2S3V9RV"},
+      "sources": [{"kind": "primary_vendor", "url": "https://linear.app/download", "supports": "Linear product distribution page; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "1.32.4", "code_directory_hash": "1bdc9b41a115bf53bd8652fd59d0ea3b9e69d105"}
+    },
+    {
+      "id": "tailscale.macos",
+      "rationale": "Privileged network client whose identity and expected location are high-value assurance evidence.",
+      "canonical_identity": {"product_key": "tailscale", "product_name": "Tailscale", "vendor_name": "Tailscale Inc."},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "io.tailscale.ipn.macsys"}],
+      "permitted_paths": ["/Applications/Tailscale.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "W5364U7YZB"},
+      "sources": [{"kind": "primary_vendor", "url": "https://tailscale.com/download/mac", "supports": "Tailscale macOS distribution page; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "1.102.4", "code_directory_hash": "3130e544a2a085b0fdd60ae53350d31fd662b3d7"}
+    },
+    {
+      "id": "claude.macos",
+      "rationale": "Generative AI desktop client with enterprise data-handling implications and a vendor-specific signature.",
+      "canonical_identity": {"product_key": "claude", "product_name": "Claude", "vendor_name": "Anthropic PBC"},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.anthropic.claudefordesktop"}],
+      "permitted_paths": ["/Applications/Claude.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "Q6L2SF6YDW"},
+      "sources": [{"kind": "primary_vendor", "url": "https://claude.ai/download", "supports": "Anthropic product distribution page; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "2.2553.1", "code_directory_hash": "5d5509ae7039452e0b25700ed11f0453e864263f"}
+    },
+    {
+      "id": "discord.macos",
+      "rationale": "Communication client frequently present in mixed business estates and unsuitable for display-name-only classification.",
+      "canonical_identity": {"product_key": "discord", "product_name": "Discord", "vendor_name": "Discord Inc."},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.hnc.Discord"}],
+      "permitted_paths": ["/Applications/Discord.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "53Q6R32WPB"},
+      "sources": [{"kind": "primary_vendor", "url": "https://discord.com/download", "supports": "Discord product distribution page; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "0.0.410", "code_directory_hash": "21fb7d572ecf33061c90f898dccdf97faa13e5d9"}
+    },
+    {
+      "id": "sublime-text.macos",
+      "rationale": "Developer editor whose short generic display name is unsafe as identity evidence.",
+      "canonical_identity": {"product_key": "sublime-text", "product_name": "Sublime Text", "vendor_name": "Sublime HQ Pty Ltd"},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.sublimetext.4"}],
+      "permitted_paths": ["/Applications/Sublime Text.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "Z6D26JE4Y4"},
+      "sources": [{"kind": "primary_vendor", "url": "https://www.sublimetext.com/download", "supports": "Sublime Text product distribution page; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "Build 4200", "code_directory_hash": "ce50b505925e80ceba74540e50659caca3879a5b"}
+    },
+    {
+      "id": "tableplus.macos",
+      "rationale": "Database client with access to sensitive systems and a non-obvious bundle identity.",
+      "canonical_identity": {"product_key": "tableplus", "product_name": "TablePlus", "vendor_name": "TablePlus Inc."},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.tinyapp.TablePlus"}],
+      "permitted_paths": ["/Applications/TablePlus.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "3X57WP8E8V"},
+      "sources": [{"kind": "primary_vendor", "url": "https://tableplus.com/download", "supports": "TablePlus product distribution page; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "6.8.0", "code_directory_hash": "67643168fc08bb6147c461a7e521d456d461ce9e"}
+    },
+    {
+      "id": "vmware-fusion.macos",
+      "rationale": "Virtualisation software with privileged components whose application identity is valuable assurance evidence.",
+      "canonical_identity": {"product_key": "vmware-fusion", "product_name": "VMware Fusion", "vendor_name": "VMware, Inc."},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.vmware.fusion"}],
+      "permitted_paths": ["/Applications/VMware Fusion.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "EG7KH642X6"},
+      "sources": [{"kind": "primary_vendor", "url": "https://www.vmware.com/products/desktop-hypervisor/workstation-and-fusion", "supports": "VMware product page; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "25.0.1", "code_directory_hash": "cc61dd35252da079fd658dbce0200c1912d4c8f7"}
+    },
+    {
+      "id": "duckduckgo-browser.macos",
+      "rationale": "Privacy-focused browser whose generic product name is not sufficient installation evidence.",
+      "canonical_identity": {"product_key": "duckduckgo-browser", "product_name": "DuckDuckGo Browser", "vendor_name": "Duck Duck Go, Inc."},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.duckduckgo.macos.browser"}],
+      "permitted_paths": ["/Applications/DuckDuckGo.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "HKE973VLUW"},
+      "sources": [{"kind": "primary_vendor", "url": "https://duckduckgo.com/mac", "supports": "DuckDuckGo macOS distribution page; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "1.190.0", "code_directory_hash": "8ca2b87b7880ca7d88f01265ba978f3e3ad1e357"}
+    },
+    {
+      "id": "spotify.macos",
+      "rationale": "Common consumer media client found in mixed estates and unsuitable for display-name-only classification.",
+      "canonical_identity": {"product_key": "spotify", "product_name": "Spotify", "vendor_name": "Spotify AB"},
+      "platform": "macos",
+      "stable_identifiers": [{"kind": "bundle_id", "value": "com.spotify.client"}],
+      "permitted_paths": ["/Applications/Spotify.app"],
+      "expected_signer": {"kind": "apple_team_id", "value": "2FNC3A47ZF"},
+      "sources": [{"kind": "primary_vendor", "url": "https://www.spotify.com/download/mac/", "supports": "Spotify product distribution page; identity, path and signer were read from the reviewed signed artifact.", "reviewed_at": "2026-09-20T00:00:00Z"}],
+      "review": {"reference": "PAT-1874", "method": "codesign_bundle_inspection", "reviewed_at": "2026-09-20T00:00:00Z", "artifact_version": "1.2.99.317", "code_directory_hash": "0e46462174a886e92ba3600960dd4ced1bb5967c"}
+    }
+  ]
+}

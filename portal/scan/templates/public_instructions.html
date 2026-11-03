@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Intune Export Instructions | Patched.im</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="icon" type="image/svg+xml" href="{{ static_url('favicon.svg') }}">
+<link rel="stylesheet" href="{{ static_url('css/public-brand.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/site.css') }}">
+</head>
+<body>
+<div class="pub-page">
+
+{% include "_site_nav.html" %}
+
+  <main class="pub-main pub-main--wide">
+
+    <div class="pub-hero">
+      <div class="pub-eyebrow">Export guide</div>
+      <h1 class="pub-h1">How to export your Intune data</h1>
+      <p class="pub-sub">Two simple exports. Takes about 2 minutes each.</p>
+    </div>
+
+    <!-- Export 1 -->
+    <div class="pub-section-lbl"><span class="dot"></span>Export 1: Device inventory</div>
+    <div class="pub-steps-card">
+      <h2>Intune Admin Centre &rarr; Devices &rarr; Export</h2>
+      <div class="pub-step">
+        <div class="pub-step-num">1</div>
+        <div class="pub-step-body">
+          Open a browser and go to
+          <strong>Microsoft Intune Admin Centre</strong>
+          (<code>intune.microsoft.com</code>).
+          Sign in with your work account.
+        </div>
+      </div>
+      <div class="pub-step">
+        <div class="pub-step-num">2</div>
+        <div class="pub-step-body">
+          In the left-hand menu, click <strong>Devices</strong>,
+          then click <strong>All devices</strong>.
+        </div>
+      </div>
+      <div class="pub-step">
+        <div class="pub-step-num">3</div>
+        <div class="pub-step-body">
+          Near the top of the device list, click the
+          <strong>Export</strong> button (it looks like a downward arrow).
+          A file called something like <code>Devices_&lt;date&gt;.csv</code> will download.
+        </div>
+      </div>
+      <div class="pub-step">
+        <div class="pub-step-num">4</div>
+        <div class="pub-step-body">
+          That's it. Upload this file on the report page.
+          It covers device names, operating systems, compliance state, and last check-in dates.
+        </div>
+      </div>
+    </div>
+
+    <!-- Export 2 -->
+    <div class="pub-section-lbl"><span class="dot"></span>Export 2: Discovered applications</div>
+    <div class="pub-steps-card">
+      <h2>Apps &rarr; Monitor &rarr; Discovered apps &rarr; Export</h2>
+      <div class="pub-step">
+        <div class="pub-step-num">1</div>
+        <div class="pub-step-body">
+          In the Intune Admin Centre left-hand menu, click <strong>Apps</strong>.
+        </div>
+      </div>
+      <div class="pub-step">
+        <div class="pub-step-num">2</div>
+        <div class="pub-step-body">
+          Under <strong>Monitor</strong>, click <strong>Discovered apps</strong>.
+          (If you don't see Monitor, look for it under Apps &rarr; Monitor in the sub-menu.)
+        </div>
+      </div>
+      <div class="pub-step">
+        <div class="pub-step-num">3</div>
+        <div class="pub-step-body">
+          On the Discovered apps page, click the <strong>Export</strong> button at the top.
+          A file called something like <code>DiscoveredApps_&lt;date&gt;.csv</code> will download.
+        </div>
+      </div>
+      <div class="pub-step">
+        <div class="pub-step-num">4</div>
+        <div class="pub-step-body">
+          Upload this file on the report page. It contains the names and versions of
+          all software detected across your enrolled devices.
+        </div>
+      </div>
+    </div>
+
+    <!-- Which one? -->
+    <div class="pub-which-card">
+      <h2>Which one should I send?</h2>
+      <div class="pub-which-row">
+        <span class="badge">Devices</span>
+        <span>
+          Use the <strong>Devices export</strong> if you want to see which devices are running
+          out-of-date operating systems, which are non-compliant, and which haven't checked in recently.
+          Good for an estate health-check.
+        </span>
+      </div>
+      <div class="pub-which-row">
+        <span class="badge">Apps</span>
+        <span>
+          Use the <strong>Discovered apps export</strong> if you want to see which
+          installed applications have known security vulnerabilities (CVEs).
+          Good for a software risk assessment.
+        </span>
+      </div>
+      <div style="margin-top:8px;font-size:13px;color:var(--mute)">
+        You can upload both. They produce separate reports.
+      </div>
+    </div>
+
+    <!-- What shows in the report -->
+    <div class="pub-what-shows">
+      <h2>What your report will show</h2>
+      <ul>
+        <li>
+          <strong>Devices report:</strong> How many devices are on the latest OS version,
+          how many are compliant, ownership breakdown, and a list of devices that haven't
+          checked in for more than two weeks.
+        </li>
+        <li>
+          <strong>Applications report:</strong> Which installed apps have known CVEs
+          (matched against the NIST National Vulnerability Database), the severity
+          of each vulnerability, and how many apps Patched.im could patch automatically.
+        </li>
+      </ul>
+    </div>
+
+    <div class="pub-cta-row">
+      <a href="/public/intune-upload" class="pub-btn-link">Upload my export</a>
+    </div>
+    <div class="pub-links">
+      <a href="/public/privacy">Privacy policy</a>
+    </div>
+
+  </main>
+
+{% include "_site_footer.html" %}
+
+</div>
+<script>document.querySelectorAll('[data-year]').forEach(function(e){e.textContent=new Date().getFullYear();});</script>
+</body>
+</html>

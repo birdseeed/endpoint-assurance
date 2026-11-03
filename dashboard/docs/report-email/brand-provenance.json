@@ -1,0 +1,19 @@
+{
+  "url": "https://patched.im/apple-touch-icon.png?v=2026-09-26-brand-v3",
+  "status": 200,
+  "content_type": "image/png",
+  "final_url": "https://patched.im/apple-touch-icon.png?v=2026-09-26-brand-v3",
+  "bytes": 13923,
+  "sha256": "4a5c7557a703f534109f4840c1a2a6f4059f06b324d0298f85ff79e73258812a",
+  "credentials_sent": false,
+  "note": "Default Python User-Agent returned 403; descriptive public-asset User-Agent returned 200.",
+  "brand_source_sha": "adf89fd85c5e830ebb5fcf4aa777f454ccd5bbfb",
+  "brand_source_path": "kit/favicon/apple-touch-icon.png",
+  "website_path": "apple-touch-icon.png",
+  "website_sha256": "4a5c7557a703f534109f4840c1a2a6f4059f06b324d0298f85ff79e73258812a",
+  "verification_date": "2026-10-03",
+  "width": 180,
+  "height": 180,
+  "existing_website_reference": "index.html apple-touch-icon link",
+  "staff_auth_required": false
+}

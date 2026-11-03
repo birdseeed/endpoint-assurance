@@ -1,0 +1,25 @@
+{
+  "label": "thunderbird-intl",
+  "name": "Thunderbird",
+  "type": "dmg",
+  "app_path": "/Applications/Thunderbird.app",
+  "expected_team_id": "43AQ936H96",
+  "download": {
+    "method": "static",
+    "url": "https://download.mozilla.org/?product=thunderbird-latest&os=osx&lang=$userLanguage"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [
+    "thunderbird"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

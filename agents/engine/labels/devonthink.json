@@ -1,0 +1,24 @@
+{
+  "label": "devonthink",
+  "name": "DEVONthink 3",
+  "type": "appindmginzip",
+  "app_path": "/Applications/DEVONthink 3.app",
+  "expected_team_id": "679S2QUWR8",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.devontechnologies.com/apps/devonthink"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

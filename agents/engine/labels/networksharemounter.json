@@ -1,0 +1,24 @@
+{
+  "label": "networksharemounter",
+  "name": "NetworkShareMounter",
+  "type": "pkg",
+  "app_path": "/Applications/NetworkShareMounter.app",
+  "expected_team_id": "C8F68RFW4L",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://gitlab.rrze.fau.de/api/v4/projects/506/releases/release-"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

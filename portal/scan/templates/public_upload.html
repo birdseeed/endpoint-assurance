@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Free Intune Report | Patched.im</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="icon" type="image/svg+xml" href="{{ static_url('favicon.svg') }}">
+<link rel="stylesheet" href="{{ static_url('css/public-brand.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/site.css') }}">
+{% if turnstile_site_key %}
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+{% endif %}
+</head>
+<body>
+<div class="pub-page">
+
+
+{% include "_site_nav.html" %}
+
+  <main class="scan-main">
+    <div class="scan-wrap">
+
+
+    {% if uploaded %}
+    <!-- Confirmation state -->
+    <div class="pub-success">
+      <div class="pub-success-icon">&#10003;</div>
+      <h2>Report on its way!</h2>
+      <p>
+        We're generating your report now and will email it to<br>
+        <strong>{{ submitted_email }}</strong> shortly.
+      </p>
+      <p style="margin-top:12px">
+        For large exports with many applications, this may take a few minutes.
+        Check your spam folder if it doesn't arrive within 10 minutes.
+      </p>
+    </div>
+    <div class="pub-links" style="margin-top:24px">
+      <a href="/public/intune-upload">Upload another file</a>
+      &middot;
+      <a href="/public/intune-instructions">Export instructions</a>
+    </div>
+
+    {% else %}
+    <!-- Upload form -->
+    <div class="pub-card">
+      {% if error %}
+      <div class="pub-alert-err">{{ error }}</div>
+      {% endif %}
+
+      <div class="pub-type-hint">
+        <strong>Devices export</strong> → patch-currency &amp; estate report&ensp;&middot;&ensp;
+        <strong>Discovered apps export</strong> → application CVE report.
+        <br>Not sure which to upload? See the <a href="/public/intune-instructions">export instructions</a>.
+      </div>
+
+      <form method="post" enctype="multipart/form-data" id="upload-form">
+        <div class="pub-field">
+          <label class="pub-label" for="email">Your email address</label>
+          <input class="pub-input" type="email" id="email" name="email" required
+                 placeholder="you@yourcompany.com"
+                 value="{{ prefill_email or '' }}">
+          <div class="pub-hint">Your report will be sent here. We don't store it beyond {{ retention_days }} days.</div>
+        </div>
+
+        <div class="pub-field">
+          <label class="pub-label" for="file">Intune CSV export</label>
+          <input class="pub-file" type="file" id="file" name="file" accept=".csv,text/csv" required>
+          <div class="pub-hint">CSV file only &middot; max 10&thinsp;MB</div>
+        </div>
+
+        {% if turnstile_site_key %}
+        <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-theme="dark"></div>
+        {% endif %}
+
+        <button type="submit" class="pub-btn" id="submit-btn">
+          Generate my report
+        </button>
+      </form>
+
+      <div class="pub-privacy-blurb">
+        <strong>What happens to my data?</strong><br>
+        Your CSV is processed immediately and deleted from our servers as soon as your report
+        is generated. The report is stored on Patched.im infrastructure (Hetzner, EU) and also
+        emailed to you as an attachment through Patched's Microsoft 365 mailbox, hosted in the
+        UK. The stored copy is auto-deleted after <strong>{{ retention_days }} days</strong>.
+        Patched.im does not share your data with third parties. <a href="/public/privacy">Read the full privacy notice</a>.
+      </div>
+      <div class="pub-links">
+        <a href="/public/intune-instructions">How to export from Intune</a>
+        &middot;
+        <a href="/public/scan">Free CVE assessment</a>
+        &middot;
+        <a href="/public/privacy">Privacy policy</a>
+      </div>
+    </div>
+    {% endif %}
+
+    </div>
+  </main>
+
+{% include "_site_footer.html" %}
+
+</div>
+
+<script>document.querySelectorAll('[data-year]').forEach(function(e){e.textContent=new Date().getFullYear();});</script>
+<script>
+document.getElementById("upload-form") && document.getElementById("upload-form").addEventListener("submit", function() {
+  var btn = document.getElementById("submit-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "Uploading…"; }
+});
+</script>
+</body>
+</html>

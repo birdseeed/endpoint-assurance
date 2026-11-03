@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    PAT-1983: a test-only child process that blocks until it is killed.
+
+    InstallationEvidenceProbe.RunHelperAsync has to be exercised against a real
+    process that outlives its budget. That child used to be the runner image's own
+    powershell.exe, which made a gating test depend on a binary and a start-up
+    profile this repository does not control - the same fragility PAT-1971 removed
+    from the Authenticode test. This project is built from source on every build, so
+    the timeout path is proved against something the repository owns.
+
+    Deliberately plain net8.0, not the Service's Windows target: nothing here touches
+    a Windows API, and a neutral target keeps it buildable wherever the solution is.
+    It is a sibling of the test projects rather than a directory inside Service.Tests
+    so the test project's own **/*.cs glob cannot compile this Main into the test
+    assembly.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Patched.Tests.SpinForeverHelper</RootNamespace>
+    <AssemblyName>SpinForeverHelper</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+    <!-- The test launches the apphost by path, so it must be produced. -->
+    <UseAppHost>true</UseAppHost>
+  </PropertyGroup>
+</Project>

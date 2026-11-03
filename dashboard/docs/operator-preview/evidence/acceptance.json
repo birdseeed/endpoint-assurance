@@ -1,0 +1,39 @@
+{
+  "checks": [
+    "Keyboard skip link reaches main",
+    "Search, tenant switch, support link and reload retain correct tenant",
+    "Support dialog initial focus, Escape, return focus; unavailable session cannot start",
+    "Consultant cannot see owner lifecycle actions; intelligence contains no tenant observations",
+    "Retired and unsupported hashes never revive a screen",
+    "Empty/loading/error/retry/degraded remain distinct from unavailable",
+    "1440/1024 layouts, keyboard focus outline, zero external requests and zero JS errors"
+  ],
+  "screenshots": [
+    "service-1440.png",
+    "tenants-1440.png",
+    "tenant-alder-1440.png",
+    "support-alder-1440.png",
+    "operations-1440.png",
+    "intelligence-1440.png",
+    "service-empty-1440.png",
+    "service-loading-1440.png",
+    "service-error-1440.png",
+    "service-degraded-1440.png",
+    "keyboard-focus-1440.png",
+    "service-1024.png",
+    "tenants-1024.png",
+    "tenant-alder-1024.png",
+    "support-alder-1024.png",
+    "operations-1024.png",
+    "intelligence-1024.png",
+    "service-empty-1024.png",
+    "service-loading-1024.png",
+    "service-error-1024.png",
+    "service-degraded-1024.png",
+    "keyboard-focus-1024.png"
+  ],
+  "browser": "129.0.6668.29",
+  "viewport_heights": 1000,
+  "synthetic_only": true,
+  "acceptance_sha256": "ac61a636455f030103271ff09d2b2b5e7406c2cfb31101a7ebd12e94103e0560"
+}

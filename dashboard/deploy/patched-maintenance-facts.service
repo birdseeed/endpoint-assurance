@@ -1,0 +1,88 @@
+[Unit]
+Description=Write patch/reboot/timer drift snapshot for patched-prod-01 (PAT-989)
+Documentation=file:///opt/patched-dashboard/deploy/patched-maintenance-facts.sh
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Root-run, read-only queries (apt-check, Pro's attachment-status API,
+# reboot-required, systemctl show/is-enabled) — never applies updates or reboots. Writes
+# /var/lib/patched/maintenance.json world-readable (0644) since the dashboard
+# process reading it on this box runs as www-data, not root.
+User=root
+ExecStart=/opt/patched-dashboard/deploy/patched-maintenance-facts.sh
+StandardOutput=journal
+StandardError=journal
+# Don't hammer anything on transient failure — let the timer try again next cycle.
+Restart=no
+TimeoutStartSec=2min
+
+# Hardening floor (PAT-991/PAT-1237, patched.im/docs/systemd-hardening-floor.md).
+# This unit shipped with ZERO hardening directives for 12 days -- 9.6 UNSAFE,
+# the worst score of any Patched unit -- until PAT-1237's drift guard caught
+# it and PAT-1439 closed the gap. This exact directive set was proven
+# empirically against a temporary probe unit on all three boxes (prod-01,
+# api-01, portal-01): Result=success, exit 0, correct output including
+# pro_attached: true, output file 0644 root:root, and `systemd-analyze
+# security` = 2.0 OK on every box. Copy it verbatim rather than re-deriving
+# CapabilityBoundingSet or the ReadWritePaths set per box.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+# ReadWritePaths includes /var/lib/ubuntu-advantage, /var/log/ubuntu-
+# advantage.log and /run/ubuntu-advantage in addition to this unit's own
+# state dir: the Pro client writes its own lock/log files there even for a
+# read-only API query, and under ProtectSystem=strict those paths are
+# otherwise read-only. Before PAT-1796 narrowed the query, `pro status`
+# hit this sandbox mismatch on api-01 (2026-08-07); PAT-990 then exposed the
+# resulting false detached reading. Do not trim these three paths as
+# "unused".
+# StateDirectory, not a ReadWritePaths entry, for /var/lib/patched
+# (PAT-1439). The two are not equivalent: StateDirectory CREATES the
+# directory at the mode below if it is absent, whereas ReadWritePaths
+# requires it to already exist and fails the whole unit with
+# status=226/NAMESPACE if it does not -- verified on portal-01, not
+# assumed. portal-01's unit already used StateDirectory before this
+# ticket; making all three uniform by dropping it would have traded a
+# self-healing mechanism for a box-state assumption, on a fresh box
+# build or if anything ever removed the directory. So the uniformity
+# goes the other way: all three now use StateDirectory, and
+# ReadWritePaths carries only the ubuntu-advantage paths below.
+# 0755 matters on prod-01 specifically: the dashboard reads
+# maintenance.json as www-data, so the directory must stay traversable.
+StateDirectory=patched
+StateDirectoryMode=0755
+ReadWritePaths=/var/lib/ubuntu-advantage /var/log/ubuntu-advantage.log /run/ubuntu-advantage
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+ProcSubset=pid
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+# Empty, not CAP_DAC_READ_SEARCH (PAT-1439). The floor doc requires this
+# set be derived empirically -- start minimal, widen only on an observed
+# failure -- so it was: an earlier candidate granted CAP_DAC_READ_SEARCH,
+# and dropping it to nothing was then tested on all three boxes and made
+# no difference to the output (same key count, pro_attached still true)
+# while improving the exposure score from 2.0 to 1.8. The script runs as
+# root and every file it reads is root-owned, so owner DAC permits the
+# read with no capability at all. Do not add one back without a run that
+# actually fails without it.
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

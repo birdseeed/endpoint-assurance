@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Patched staff console — Components and colour</title>
+<!-- Design reference for the staff console rebuild. Static mockup, invented data.
+     Source of truth for layout, spacing and colour. Colours and radii are theme.css tokens. -->
+<style>
+    body { margin:0; font-family:system-ui,-apple-system,'Segoe UI',sans-serif; font-size:14px; color:#0f1115; background:#f5f5f3; -webkit-font-smoothing:antialiased; }
+    a { color:#c93f04; text-decoration:none; } a:hover { color:#9f3003; }
+    .lbl { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:#7d8089; }
+    .mono { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; }
+    .num { font-family:system-ui,-apple-system,'Segoe UI',sans-serif; font-weight:700; letter-spacing:-.02em; }
+    .pill { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; padding:2px 6px; border-radius:4px; white-space:nowrap; }
+    .card { background:#fff; border:1px solid rgba(15,17,21,.12); border-radius:6px; padding:16px 18px; }
+    .sw { display:flex; flex-direction:column; gap:6px; }
+    .chip { height:44px; border-radius:4px; }
+    .note { font-size:12px; color:#2a2d33; line-height:1.5; }
+  </style>
+</head>
+<body>
+<div style="width:1200px; padding:26px; display:flex; flex-direction:column; gap:16px; background:#f5f5f3;">
+
+  <div>
+    <h1 style="margin:0; font-family:system-ui,-apple-system,'Segoe UI',sans-serif; font-size:21px; font-weight:700; letter-spacing:-.015em;">Console components</h1>
+    <div class="note" style="margin-top:5px;">Colour, radii and spacing are the existing tokens in <span class="mono">theme.css</span>, not invented. Two deliberate changes: the rail goes slate, and type is the platform system font rather than the website's brand faces, which is the rule the native apps already follow.</div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px;">
+
+    <div class="card">
+      <div class="lbl" style="color:#0f1115; font-size:11px;">Surfaces and text</div>
+      <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:13px;">
+        <div class="sw"><div class="chip" style="background:#f5f5f3; border:1px solid rgba(15,17,21,.12);"></div><div class="mono" style="font-size:10px;">#f5f5f3</div><div style="font-size:11px; color:#7d8089;">canvas</div></div>
+        <div class="sw"><div class="chip" style="background:#ffffff; border:1px solid rgba(15,17,21,.12);"></div><div class="mono" style="font-size:10px;">#ffffff</div><div style="font-size:11px; color:#7d8089;">surface</div></div>
+        <div class="sw"><div class="chip" style="background:#0f1115;"></div><div class="mono" style="font-size:10px;">#0f1115</div><div style="font-size:11px; color:#7d8089;">rail, text</div></div>
+        <div class="sw"><div class="chip" style="background:#7d8089;"></div><div class="mono" style="font-size:10px;">#7d8089</div><div style="font-size:11px; color:#7d8089;">muted</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="lbl" style="color:#0f1115; font-size:11px;">Status and accent</div>
+      <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:13px;">
+        <div class="sw"><div class="chip" style="background:#f5530a;"></div><div class="mono" style="font-size:10px;">#f5530a</div><div style="font-size:11px; color:#7d8089;">signal</div></div>
+        <div class="sw"><div class="chip" style="background:#b91c1c;"></div><div class="mono" style="font-size:10px;">#b91c1c</div><div style="font-size:11px; color:#7d8089;">danger</div></div>
+        <div class="sw"><div class="chip" style="background:#c2410c;"></div><div class="mono" style="font-size:10px;">#c2410c</div><div style="font-size:11px; color:#7d8089;">warning</div></div>
+        <div class="sw"><div class="chip" style="background:#15803d;"></div><div class="mono" style="font-size:10px;">#15803d</div><div style="font-size:11px; color:#7d8089;">success</div></div>
+      </div>
+      <div class="note" style="margin-top:12px;">Signal is for action and selection only, never for status. Danger and warning carry severity. Green is used sparingly, because a green estate is rarer than a dashboard suggests.</div>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px;">
+
+    <div class="card">
+      <div class="lbl" style="color:#0f1115; font-size:11px;">Severity and state</div>
+      <div style="display:flex; flex-wrap:wrap; gap:7px; margin-top:13px;">
+        <span class="pill" style="background:#fef2f2; color:#b91c1c;">31 HIGH</span>
+        <span class="pill" style="background:#fff7ed; color:#c2410c;">64 MED</span>
+        <span class="pill" style="background:#f5f5f3; color:#7d8089;">OPEN</span>
+        <span class="pill" style="background:#fef2f2; color:#b91c1c;">PAST 14 DAYS</span>
+        <span class="pill" style="background:#fff7ed; color:#c2410c;">UNCLASSIFIED</span>
+        <span class="pill" style="background:#f5f5f3; color:#7d8089;">RISK ACCEPTED</span>
+      </div>
+      <div class="lbl" style="color:#0f1115; font-size:11px; margin-top:17px;">Class tags</div>
+      <div style="display:flex; flex-wrap:wrap; gap:7px; margin-top:11px;">
+        <span class="pill" style="background:#f5f5f3; color:#7d8089;">PATCH</span>
+        <span class="pill" style="background:#f5f5f3; color:#7d8089;">CONFIG</span>
+        <span class="pill" style="background:#f5f5f3; color:#7d8089;">ACCESS</span>
+        <span class="pill" style="background:#f5f5f3; color:#7d8089;">SOFTWARE</span>
+      </div>
+      <div class="note" style="margin-top:12px;">Class is neutral, severity is coloured. Colouring both makes every row shout.</div>
+    </div>
+
+    <div class="card">
+      <div class="lbl" style="color:#0f1115; font-size:11px;">Evidence basis</div>
+      <div style="display:flex; flex-direction:column; gap:9px; margin-top:13px;">
+        <div style="display:flex; align-items:center; gap:8px;"><span class="mono" style="font-size:11px; color:#15803d;">version confirmed</span><span class="note" style="color:#7d8089;">read from the bundle</span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span class="mono" style="font-size:11px; color:#c2410c;">name match only</span><span class="note" style="color:#7d8089;">weaker, say so</span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span class="mono" style="font-size:11px; color:#7d8089;">unclassified</span><span class="note" style="color:#7d8089;">no decision yet</span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span class="mono" style="font-size:11px; color:#2a2d33;">not inspected</span><span class="note" style="color:#7d8089;">never counts as a pass</span></div>
+      </div>
+      <div class="note" style="margin-top:13px;">The website promises findings carry their basis. This is where that promise is kept, so it is type rather than an icon.</div>
+    </div>
+
+    <div class="card">
+      <div class="lbl" style="color:#0f1115; font-size:11px;">Bars</div>
+      <div style="margin-top:14px;">
+        <div style="font-size:11px; color:#7d8089; margin-bottom:5px;">Magnitude, findings list</div>
+        <div style="height:7px; background:#f5f5f3; border-radius:1px; overflow:hidden;"><div style="width:78%; height:100%; background:#b91c1c;"></div></div>
+      </div>
+      <div style="margin-top:14px;">
+        <div style="font-size:11px; color:#7d8089; margin-bottom:5px;">Coverage, with what is unseen</div>
+        <div style="display:flex; height:16px; border-radius:3px; overflow:hidden;">
+          <div style="width:89.5%; background:#15803d;"></div><div style="width:2.4%; background:#c2410c;"></div><div style="width:1.6%; background:#b91c1c;"></div><div style="width:4.8%; background:#2a2d33;"></div><div style="width:1.7%; background:#7c3aed;"></div>
+        </div>
+      </div>
+      <div style="margin-top:14px;">
+        <div style="font-size:11px; color:#7d8089; margin-bottom:5px;">Drawdown, advisory hours</div>
+        <div style="height:7px; background:#f5f5f3; border-radius:1px; overflow:hidden;"><div style="width:92%; height:100%; background:#c2410c;"></div></div>
+      </div>
+      <div class="note" style="margin-top:14px;">Stacked bars, not pie charts. Every proportion on this console is a bar, so nothing has a truncated leader line and two estates can be compared by eye.</div>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:16px;">
+    <div class="card">
+      <div class="lbl" style="color:#0f1115; font-size:11px;">KPI tile</div>
+      <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:11px; margin-top:13px;">
+        <div style="border:1px solid rgba(15,17,21,.12); border-radius:6px; padding:13px 15px;">
+          <div class="lbl">Reporting</div>
+          <div class="num" style="font-size:26px; margin-top:5px;">222<span style="font-size:15px; color:#7d8089;">/248</span></div>
+          <div style="font-size:11px; color:#b91c1c; margin-top:2px; font-weight:500;">89.5% coverage</div>
+        </div>
+        <div style="border:1px solid rgba(15,17,21,.12); border-radius:6px; padding:13px 15px;">
+          <div style="display:flex; justify-content:space-between; align-items:start;"><div class="lbl">Findings</div>
+            <div style="display:flex; flex-direction:column; gap:3px; align-items:flex-end;"><span class="pill" style="background:#fef2f2; color:#b91c1c;">31 HIGH</span><span class="pill" style="background:#fff7ed; color:#c2410c;">64 MED</span></div></div>
+          <div class="num" style="font-size:26px; margin-top:5px;">95</div>
+        </div>
+        <div style="border:1px solid rgba(15,17,21,.12); border-radius:6px; padding:13px 15px;">
+          <div class="lbl">Advisory hours</div>
+          <div class="num" style="font-size:26px; margin-top:5px; color:#c2410c;">9.2<span style="font-size:15px; color:#7d8089;">/10</span></div>
+          <div style="font-size:11px; color:#c2410c; margin-top:2px; font-weight:500;">quote before overrunning</div>
+        </div>
+      </div>
+      <div class="note" style="margin-top:12px;">A number on this console carries its denominator. 94% compliant without a denominator is the claim the product exists to argue against.</div>
+    </div>
+
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div style="padding:16px 18px 13px;"><div class="lbl" style="color:#0f1115; font-size:11px;">Controls and rail</div></div>
+      <div style="display:flex; gap:9px; padding:0 18px 15px; align-items:center; flex-wrap:wrap;">
+        <div style="background:#c93f04; color:#fff; border-radius:6px; padding:7px 12px; font-size:12px; font-weight:600;">Primary</div>
+        <div style="border:1px solid rgba(15,17,21,.12); border-radius:6px; padding:6px 11px; font-size:12px; font-weight:500;">Secondary</div>
+        <div style="background:#0f1115; color:#fff; border-radius:6px; padding:7px 11px; font-size:12px; font-weight:600;">Generate</div>
+        <div style="border:1px solid rgba(15,17,21,.12); border-radius:6px; padding:6px 10px; font-size:12px; color:#7d8089; display:flex; gap:6px; align-items:center;">Filter
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7d8089" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg></div>
+      </div>
+      <div style="background:#0f1115; padding:9px 0;">
+        <div style="display:flex; align-items:center; gap:10px; padding:7px 16px; color:#fff; font-size:13px; border-left:2px solid #f5530a; background:rgba(255,255,255,.07); font-weight:500;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/></svg>Selected</div>
+        <div style="display:flex; align-items:center; gap:10px; padding:7px 16px; color:rgba(255,255,255,.72); font-size:13px; border-left:2px solid transparent;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 18V6M10 18V10M16 18V4M22 18H2"/></svg>Default</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

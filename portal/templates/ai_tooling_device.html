@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% from "_macros.html" import review_cell, approval_select, approval_select_head, filter_bar %}
+{% block content %}
+<div class="page-head">
+  <div class="page-head__title">
+    <a class="back-link" href="/ai-tooling">← AI Tooling</a>
+    <h1>{{ hostname }}</h1>
+  </div>
+  <p class="meta">Current allowlisted AI-tooling evidence for this device. Raw paths, arguments, environment values, credentials and content are never shown.</p>
+</div>
+
+{% if approval_result %}
+<div class="notice approval-result{% if not approval_result.error %} notice-ok{% endif %}" id="approval-result" role="status" tabindex="-1" data-approval-result>
+  {% if approval_result.error %}<p><strong>{{ approval_result.error }}</strong></p>
+  {% else %}<p><strong>Marked {{ approval_result.requested }} item{{ '' if approval_result.requested == 1 else 's' }} {{ approval_result.state_label }}.</strong></p>{% endif %}
+</div>
+{% endif %}
+
+<div class="card group-card">
+  <div class="group-card__head card-edge-muted">
+    <h2>Collected items</h2>
+    <span class="pill pill-muted">{{ items | length }} of {{ total }}</span>
+    <a class="btn btn-small" href="/ai-tooling/devices/{{ device_id }}.pdf">Download device PDF</a>
+    <a class="btn btn-small" href="/ai-tooling/devices/{{ device_id }}.csv">Download device CSV</a>
+  </div>
+  {% if items %}
+  {% if can_edit %}
+  <form id="approval-form" class="bulk-bar" method="post" action="/software/approvals" data-bulk-bar>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="return_to" value="{{ return_to }}" data-approval-return>
+    <span class="bulk-bar__count" data-bulk-count aria-live="polite">Select items to mark several at once.</span>
+    <span class="bulk-bar__actions">
+      <button type="submit" class="btn btn-small" name="state" value="approved" data-bulk-submit>Approve</button>
+      <button type="submit" class="btn btn-small" name="state" value="unapproved" data-bulk-submit>Unapprove</button>
+      <button type="submit" class="btn btn-small" name="state" value="ignored" data-bulk-submit>Ignore</button>
+      <button type="button" class="btn btn-small bulk-bar__clear" data-bulk-clear hidden>Clear</button>
+    </span>
+  </form>
+  {% endif %}
+  {% if role_unavailable %}<p class="toolbar-hint">Approval controls are unavailable right now because your account role could not be checked. Existing decisions are still shown.</p>
+  {% elif not can_edit %}<p class="toolbar-hint">Your account can view approval decisions. An administrator on your account can change them.</p>{% endif %}
+  {{ filter_bar('/ai-tooling/devices/' ~ device_id, '', [], '', '', [], '', '', [], '', '',
+      'ai-tooling-search', '.ai-device-items-table', 'Search AI tooling',
+      ai_filter_bar.chips, ai_filter_bar.clear_url,
+      hidden_fields=ai_filter_bar.hidden_fields, search_value=ai_filter_bar.search,
+      multi_filters=ai_filter_bar.multi_filters) }}
+  <p class="meta ai-products-count">Filters apply to these {{ items | length }} items on this page. Collection gaps remain unknown rather than clean.</p>
+  <div class="table-scroll" role="region" aria-label="AI tooling items for {{ hostname }}" tabindex="0">
+  <table class="data-table table-stack ai-device-items-table ai-review-table">
+    <thead><tr>{{ approval_select_head(can_edit) }}<th>Item and evidence</th><th class="ai-col-type">Type</th><th class="ai-col-collection">Collection</th><th class="ai-col-assessment">Assessment</th><th class="ai-col-approval">Approval</th></tr></thead>
+    <tbody>
+    {% for item in items %}
+      <tr id="{{ item.row_id }}" class="{{ 'row-hide-filter' if item.hidden_filter }} {{ 'row-hide-search' if item.hidden_search }}" data-search="{{ item.search_text }}" data-filter-ai_type="{{ item.type }}" data-filter-ai_state="{{ item.approval_filter }}" data-filter-ai_vulnerability="{{ item.assessment.filter }}" data-approval-row data-approval-state="{{ item.approval_filter }}">
+        {{ approval_select(item, can_edit) }}
+        <td data-label="Item" class="cell-product">
+          <details class="ai-evidence">
+            <summary title="{{ item.name }}"><strong class="product-name" title="{{ item.name }}">{{ item.name }}</strong></summary>
+            <div class="ai-evidence__body">
+              <p><strong>{{ item.name }}</strong></p>
+              <dl>
+                <dt>Kind</dt><dd>{{ item.entry_kind | replace('_', ' ') | title }}</dd>
+                <dt>Source</dt><dd>{{ item.source or 'Not reported' }}{% if item.unit %} · {{ item.unit | replace('_', ' ') }}{% endif %}</dd>
+                <dt>Version</dt><dd>{{ item.version or 'Not reported' }}</dd>
+                <dt>Collection</dt><dd>{{ item.collection_status | replace('_', ' ') | title }}{% if item.lower_bound %} · Lower bound{% endif %}</dd>
+                <dt>Allowlisted detail</dt><dd>{% if item.details %}{% for label, value in item.details %}<span class="cell-subtle"><strong>{{ label }}:</strong> {{ value | humanbytes if label == 'Size' else value }}</span>{% endfor %}{% else %}No additional detail{% endif %}</dd>
+                <dt>Last used</dt><dd data-value="{{ item.last_used.value or '' }}">{% if item.last_used.value %}{{ item.last_used.value | humandate }}{% endif %}{% if item.last_used.label %} {{ item.last_used.label }}{% endif %}</dd>
+                <dt>Vulnerability findings</dt><dd>{{ item.assessment.label }}{% if item.assessment.cve_aliases %}<span class="cell-subtle">{{ item.assessment.cve_aliases | join(', ') }}</span>{% endif %}{% if item.assessment.reason %} {{ item.assessment.reason }}{% endif %}</dd>
+              </dl>
+              {% if item.history_url %}<a href="{{ item.history_url }}" data-history-drawer>Approval history</a>{% endif %}
+              {% if item.approval_lock %}<p>{{ item.approval_lock }}</p>{% endif %}
+            </div>
+          </details>
+        </td>
+        <td data-label="Type"><span class="cell-line" title="{{ item.type_label }}">{{ item.type_label }}</span></td>
+        <td data-label="Collection"><span class="pill {{ 'pill-ok' if item.collection_status in ('complete', 'current') else 'pill-muted' }}" title="{{ item.collection_status | replace('_', ' ') | title }}{{ ' · Lower bound' if item.lower_bound }}">{{ item.collection_status | replace('_', ' ') | title }}{% if item.lower_bound %} · Lower bound{% endif %}</span></td>
+        <td data-label="Vulnerability findings"><span class="pill {{ item.assessment.pill_class }}" title="{{ item.assessment.label }}">{{ item.assessment_label }}</span></td>
+        {{ review_cell(item, can_edit, csrf_token, return_to) }}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="empty filtered-empty" data-filter-empty{% if ai_filter_bar.visible_count %} hidden{% endif %}>No items match these filters and search.</p>
+  {% else %}<p class="empty">No current AI-tooling items were reported for this device. Collection gaps remain unknown rather than clean.</p>{% endif %}
+</div>
+
+{% if previous_offset is not none or next_offset is not none %}
+<nav class="pagination" aria-label="AI tooling item pages">
+  {% if previous_offset is not none %}<a class="btn btn-small" href="{{ previous_url }}">Previous</a>{% endif %}
+  {% if next_offset is not none %}<a class="btn btn-small" href="{{ next_url }}">Next</a>{% endif %}
+</nav>
+{% endif %}
+<aside class="history-drawer" id="history-drawer" role="dialog" aria-modal="false" aria-labelledby="history-drawer-title" hidden data-history-panel>
+  <div class="history-drawer__head"><h2 id="history-drawer-title">Approval history</h2><button type="button" class="btn btn-small" data-history-close>Close</button></div>
+  <div class="history-drawer__body" data-history-body></div>
+</aside>
+{% endblock %}
+{% block scripts %}<script src="{{ static_url('js/portal.js') }}"></script>{% endblock %}

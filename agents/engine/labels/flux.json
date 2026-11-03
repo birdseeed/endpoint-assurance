@@ -1,0 +1,23 @@
+{
+  "label": "flux",
+  "name": "Flux",
+  "type": "zip",
+  "app_path": "/Applications/Flux.app",
+  "expected_team_id": "VZKSA7H9J9",
+  "download": {
+    "method": "static",
+    "url": "https://justgetflux.com/mac/Flux.zip"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

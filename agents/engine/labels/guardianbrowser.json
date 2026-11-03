@@ -1,0 +1,23 @@
+{
+  "label": "guardianbrowser",
+  "name": "Guardian Browser",
+  "type": "dmg",
+  "app_path": "/Applications/Guardian Browser.app",
+  "expected_team_id": "7TCATJSU2Y",
+  "download": {
+    "method": "static",
+    "url": "https://production-archimedes-secure-browser-artifacts.s3.amazonaws.com/latest/mac-x64/guardian-browser-x64.dmg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

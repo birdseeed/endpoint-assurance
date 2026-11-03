@@ -1,0 +1,25 @@
+{
+  "label": "whimsical",
+  "name": "Whimsical",
+  "type": "dmg",
+  "app_path": "/Applications/Whimsical.app",
+  "expected_team_id": "2N6497CB83",
+  "download": {
+    "method": "static",
+    "url": "https://desktop.whimsical.com/mac/dmg/arm64"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [
+    "Whimsical"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

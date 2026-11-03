@@ -1,0 +1,82 @@
+<Window x:Class="Patched.Tray.RemovalPromptWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="App Removal Pending — Patched"
+        Width="480"
+        SizeToContent="Height"
+        MinHeight="180"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True"
+        ShowInTaskbar="True">
+
+    <!--
+        PAT-1623 removal notify/defer prompt. Deliberately plain: a titled,
+        closable window (no borderless/transparent chrome, matching the
+        ruling's window-shell intent for "Patched needs something from you"
+        without literally sharing an NSWindow-style singleton with the
+        OS-update prompt, since no such shell exists on Windows yet either —
+        see this ticket's report for why). No countdown, no deferrals-
+        remaining count, no disabled state on Defer: RemovalPromptPolicy.
+        CanAlwaysDefer is unconditionally true and nothing here reads a
+        remaining-count field to gate the button.
+    -->
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="HeaderText"
+                   Grid.Row="0"
+                   FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif"
+                   FontSize="17"
+                   FontWeight="SemiBold"
+                   Foreground="#1B1B1B"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,8"/>
+
+        <TextBlock x:Name="BodyText"
+                   Grid.Row="1"
+                   FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif"
+                   FontSize="13"
+                   Foreground="#6A6A6A"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,20"/>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Button x:Name="DeferButton"
+                    Grid.Column="0"
+                    Content="Defer"
+                    Click="DeferButton_Click"
+                    FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif"
+                    FontSize="13"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Foreground="#6A6A6A"
+                    Cursor="Hand"
+                    Padding="0"
+                    HorizontalAlignment="Left"/>
+
+            <Button x:Name="OkButton"
+                    Grid.Column="1"
+                    Content="OK"
+                    Click="OkButton_Click"
+                    FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif"
+                    FontSize="13"
+                    FontWeight="SemiBold"
+                    Background="#F5530A"
+                    Foreground="White"
+                    BorderThickness="0"
+                    Cursor="Hand"
+                    Padding="16,8"
+                    HorizontalAlignment="Right"/>
+        </Grid>
+    </Grid>
+</Window>

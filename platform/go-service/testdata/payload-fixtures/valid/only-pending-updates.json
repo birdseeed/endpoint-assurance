@@ -1,0 +1,66 @@
+{
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.3.0",
+  "tenant_id": "77777777-7777-7777-7777-777777777777",
+  "collected_at": "2026-12-01T00:00:00Z",
+  "device": {
+    "serial": "C00000000004",
+    "hw_uuid": "44444444-AAAA-BBBB-CCCC-DDDDDDDDDDDD",
+    "hostname": "pending-updates-test-host",
+    "hw_model": "Mac14,2",
+    "arch": "arm64",
+    "last_boot": "2026-12-01T00:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M2",
+    "cpu_cores": 8,
+    "ram_gb": 8,
+    "disk_total_gb": 256.0,
+    "disk_free_gb": 128.0
+  },
+  "os": {
+    "name": "macOS",
+    "version": "15.4.1",
+    "build": "24E263"
+  },
+  "compliance": {
+    "pending_updates_count": 3
+  },
+  "security_tools": [],
+  "system_extensions": [],
+  "background_items": [],
+  "icloud": {
+    "signed_in": "No"
+  },
+  "apps": [
+    {
+      "name": "Safari",
+      "version": "18.4",
+      "bundle_id": "com.apple.Safari"
+    }
+  ],
+  "pending_updates": [
+    {
+      "label": "macOS Sequoia 15.5-001",
+      "title": "macOS Sequoia 15.5",
+      "version": "15.5",
+      "action": null,
+      "recommended": true
+    },
+    {
+      "label": "Safari-18.5",
+      "title": "Safari 18.5",
+      "version": "18.5",
+      "action": "restart",
+      "recommended": true
+    },
+    {
+      "label": "XProtectPlistConfigData-1234",
+      "title": "XProtect Configuration Data",
+      "version": "1234",
+      "action": null,
+      "recommended": false
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "label": "nessusagent",
+  "name": "Nessus Agent",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "root-unique-pkg"
+  },
+  "app_path": "/Applications/Nessus Agent.app",
+  "expected_team_id": "4B8J598M7U",
+  "download": {
+    "method": "static",
+    "url": "https://www.tenable.com/downloads/api/v2/pages/nessus-agents/files/NessusAgent-latest.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

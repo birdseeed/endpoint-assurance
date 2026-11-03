@@ -1,0 +1,23 @@
+{
+  "label": "googlechromepkg",
+  "name": "Google Chrome",
+  "type": "pkg",
+  "app_path": "/Applications/Google Chrome.app",
+  "expected_team_id": "EQHXZ8M8AV",
+  "download": {
+    "method": "static",
+    "url": "https://dl.google.com/chrome/mac/stable/accept_tos%3Dhttps%253A%252F%252Fwww.google.com%252Fintl%252Fen_ph%252Fchrome%252Fterms%252F%26_and_accept_tos%3Dhttps%253A%252F%252Fpolicies.google.com%252Fterms/googlechrome.pkg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

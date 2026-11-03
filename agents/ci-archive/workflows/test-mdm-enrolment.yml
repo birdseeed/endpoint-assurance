@@ -1,0 +1,22 @@
+name: test-mdm-enrolment
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/auth.sh'
+      - 'macos/lib/test-mdm-enrolment.zsh'
+  pull_request:
+    paths:
+      - 'macos/lib/auth.sh'
+      - 'macos/lib/test-mdm-enrolment.zsh'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh (MDM enrolment collector tests exercise a real zsh script)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run MDM enrolment collector tests
+        run: zsh macos/lib/test-mdm-enrolment.zsh

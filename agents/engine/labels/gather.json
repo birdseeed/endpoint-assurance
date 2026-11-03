@@ -1,0 +1,23 @@
+{
+  "label": "gather",
+  "name": "Gather",
+  "type": "dmg",
+  "app_path": "/Applications/Gather.app",
+  "expected_team_id": "W28UKP642P",
+  "download": {
+    "method": "static",
+    "url": "https://api.v2.gather.town/api/v2/releases/latest/macos/v1"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

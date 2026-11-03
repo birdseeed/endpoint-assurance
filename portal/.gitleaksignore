@@ -1,0 +1,3 @@
+# Synthetic malformed private-key rejection fixtures; no valid keys or real key material.
+ebcb26ac9f2fe70d032bc99f74930946e459df91:tests/test_pat2389_certificates.py:private-key:248
+ebcb26ac9f2fe70d032bc99f74930946e459df91:tests/test_pat2389_certificates.py:private-key:250

@@ -1,0 +1,24 @@
+{
+  "label": "ollama",
+  "name": "Ollama",
+  "type": "zip",
+  "app_path": "/Applications/Ollama.app",
+  "expected_team_id": "3MU9H2V9Y9",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/ollama/ollama/releases/latest"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

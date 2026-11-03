@@ -1,0 +1,71 @@
+# Secrets — never commit
+*.env
+.env
+.env.*
+!.env.example
+*-secret
+*-secret.*
+*-creds
+*-creds.*
+
+# Deployment-specific configs with Tailscale IPs / hostnames baked in.
+# Source-of-truth lives in the api-vps-artefacts/*.conf form; the `.ready`
+# variant is the rendered, machine-specific copy and is not portable.
+*.ready
+
+# Build output
+go-service/bin/
+
+# Go standard ignores
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/vendor/
+go.work
+go.work.sum
+coverage.out
+coverage.html
+*.prof
+
+# Editor / OS cruft
+.DS_Store
+*.swp
+*~
+Thumbs.db
+.vscode/
+.idea/
+.cursor/
+
+# LibreOffice / Excel lockfiles
+.~lock.*#
+
+# Python (in case ad-hoc tooling lands here later)
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Local snapshots
+.backups-*/
+*.tar.gz
+
+# Claude Code prompts live in the claude repo (claude/prompts/), not here
+claude-code-*-prompt.md
+# Claude Code local working directory
+.claude/
+
+# Worker run artifacts
+worker.log
+execute.log
+prompts/
+.worker/
+
+# MkDocs build artefacts (assembled at build time, never committed)
+_docs/
+_docs_manifest.tsv
+_site/

@@ -1,0 +1,26 @@
+{
+  "label": "egnytecore",
+  "name": "Egnyte Core",
+  "type": "dmg",
+  "app_path": "/Applications/Egnyte Core.app",
+  "expected_team_id": "FELUD555VC",
+  "download": {
+    "method": "resolved",
+    "strategy": "sparkle-appcast",
+    "source": "https://egnyte-cdn.egnyte.com/desktopapp/mac/en-us/versions/default.xml"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "Egnyte"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

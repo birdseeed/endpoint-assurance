@@ -1,0 +1,169 @@
+{
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.2.0",
+  "tenant_id": "44444444-4444-4444-4444-444444444444",
+  "collected_at": "2026-12-01T00:00:00Z",
+  "device": {
+    "serial": "C00000000001",
+    "hw_uuid": "11111111-AAAA-BBBB-CCCC-DDDDDDDDDDDD",
+    "hostname": "minimal-test-host",
+    "hw_model": "Mac14,2",
+    "arch": "arm64",
+    "last_boot": "2026-12-01T00:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M2",
+    "cpu_cores": 8,
+    "ram_gb": 8,
+    "disk_total_gb": 256.0,
+    "disk_free_gb": 128.0
+  },
+  "os": {
+    "name": "macOS",
+    "version": "15.0",
+    "build": "24A335"
+  },
+  "compliance": {},
+  "security_tools": [],
+  "system_extensions": [],
+  "background_items": [],
+  "icloud": {
+    "signed_in": "Unknown"
+  },
+  "apps": [
+    {
+      "name": "Safari",
+      "version": "18.4",
+      "bundle_id": "com.apple.Safari"
+    }
+  ],
+  "ide_extensions": {
+    "collection_status": "complete",
+    "truncated": true,
+    "truncation_reason": "extension_limit",
+    "users": [
+      {
+        "user": "alice",
+        "user_id": "501",
+        "collection_status": "complete",
+        "profiles": 3
+      }
+    ],
+    "profiles": [
+      {
+        "user": "alice",
+        "user_id": "501",
+        "family": "vscode",
+        "editor": "vscode",
+        "editor_version": null,
+        "collection_status": "complete",
+        "manifest_source": "extensions_json",
+        "extension_count": 2
+      },
+      {
+        "user": "alice",
+        "user_id": "501",
+        "family": "vscode",
+        "editor": "cursor",
+        "editor_version": null,
+        "collection_status": "complete",
+        "manifest_source": "extensions_json",
+        "extension_count": 1
+      },
+      {
+        "user": "alice",
+        "user_id": "501",
+        "family": "jetbrains",
+        "editor": "PyCharm",
+        "editor_version": "2025.2",
+        "collection_status": "complete",
+        "manifest_source": "plugin_xml",
+        "extension_count": 1
+      }
+    ],
+    "issues": [],
+    "extensions": [
+      {
+        "user": "alice",
+        "user_id": "501",
+        "family": "vscode",
+        "editor": "vscode",
+        "editor_version": null,
+        "id": "github.copilot",
+        "name": "copilot",
+        "publisher": "GitHub",
+        "publisher_display_name": "GitHub",
+        "version": "1.372.0",
+        "installed_at": "2027-03-01T09:14:02Z",
+        "source": "gallery",
+        "pre_release": false,
+        "target_platform": null,
+        "disabled": null,
+        "directory": "github.copilot-1.372.0",
+        "manifest_source": "extensions_json",
+        "manifest_status": "read"
+      },
+      {
+        "user": "alice",
+        "user_id": "501",
+        "family": "vscode",
+        "editor": "vscode",
+        "editor_version": null,
+        "id": "ms-python.python",
+        "name": "python",
+        "publisher": "ms-python",
+        "publisher_display_name": "Microsoft",
+        "version": "2026.14.0",
+        "installed_at": "2027-02-20T11:00:00Z",
+        "source": "gallery",
+        "pre_release": false,
+        "target_platform": "darwin-arm64",
+        "disabled": null,
+        "directory": "ms-python.python-2026.14.0-darwin-arm64",
+        "manifest_source": "extensions_json",
+        "manifest_status": "read"
+      },
+      {
+        "user": "alice",
+        "user_id": "501",
+        "family": "vscode",
+        "editor": "cursor",
+        "editor_version": null,
+        "id": "saoudrizwan.claude-dev",
+        "name": "claude-dev",
+        "publisher": "saoudrizwan",
+        "publisher_display_name": null,
+        "version": "3.30.0",
+        "installed_at": "2027-03-10T08:00:00Z",
+        "source": "gallery",
+        "pre_release": false,
+        "target_platform": null,
+        "disabled": null,
+        "directory": "saoudrizwan.claude-dev-3.30.0",
+        "manifest_source": "extensions_json",
+        "manifest_status": "read"
+      },
+      {
+        "user": "alice",
+        "user_id": "501",
+        "family": "jetbrains",
+        "editor": "PyCharm",
+        "editor_version": "2025.2",
+        "id": "com.github.copilot",
+        "name": "GitHub Copilot",
+        "publisher": "GitHub",
+        "publisher_display_name": null,
+        "version": "1.5.60",
+        "installed_at": null,
+        "source": null,
+        "pre_release": null,
+        "target_platform": null,
+        "disabled": false,
+        "directory": "github-copilot-intellij",
+        "manifest_source": "plugin_xml_jar",
+        "manifest_status": "read"
+      }
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "label": "airtable",
+  "name": "Airtable",
+  "type": "dmg",
+  "app_path": "/Applications/Airtable.app",
+  "expected_team_id": "E22RZMX62E",
+  "download": {
+    "method": "static",
+    "url": "https://static.airtable.com/download/AirtableInstaller.dmg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

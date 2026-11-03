@@ -1,0 +1,35 @@
+{
+  "label": "adobereaderdc",
+  "name": "Adobe Acrobat Reader",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "root-unique-pkg"
+  },
+  "app_path": "/Applications/Adobe Acrobat Reader.app",
+  "expected_team_id": "JQ525L2MZD",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://ardownload2.adobe.com/pub/adobe/reader/mac/AcrobatDC/"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "Acrobat Pro DC",
+    "AdobeAcrobat",
+    "AdobeReader",
+    "Distiller"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "mirror_eula_approved": false,
+    "vendor_only": true,
+    "vendor_only_reason": "vendor-api-unavailable",
+    "reviewed_by": "pat-663",
+    "reviewed_at": "2026-07-04",
+    "notes": "PAT-663: vendor-api strategy confirmed but API endpoint is unavailable. ardownload2.adobe.com/pub/adobe/reader/mac/AcrobatDC/ returns HTTP 403 — Adobe's public FTP directory is no longer accessible without authentication. Flagged vendor_only=true; pipeline will skip without recording a failure. Re-evaluate if Adobe restores public download API."
+  }
+}

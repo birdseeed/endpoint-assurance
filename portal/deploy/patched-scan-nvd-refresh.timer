@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily NVD dataset refresh — scan.patched.im
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+RandomizedDelaySec=300
+Persistent=true
+
+[Install]
+WantedBy=timers.target

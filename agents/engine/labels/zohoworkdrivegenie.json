@@ -1,0 +1,23 @@
+{
+  "label": "zohoworkdrivegenie",
+  "name": "Zoho WorkDrive Genie",
+  "type": "dmg",
+  "app_path": "/Applications/Zoho WorkDrive Genie.app",
+  "expected_team_id": "TZ824L8Y37",
+  "download": {
+    "method": "static",
+    "url": "https://www.zoho.com/workdrive/downloads/edit-tool/Zoho_WorkDrive_Genie.dmg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

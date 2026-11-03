@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "_macros.html" import device_page_head, device_collection_issues %}
+{% block content %}
+{{ device_page_head(device, tabs, cve_tile, issues_tile) }}
+
+{#- PAT-2164: Evidence tab - evidence collection facts and chips, plus the
+    collection-issues detail (also shown on Overview, so a real collection
+    problem is visible from the landing tab too - see
+    templates/_macros.html's device_collection_issues). -#}
+<section class="card" aria-labelledby="evidence-collection-title">
+  <h2 id="evidence-collection-title">Evidence collection</h2>
+  <dl class="kv device-card__facts">
+    <dt>Observed at</dt><dd class="mono">{{ evidence.observed_at | humandate(true) if evidence.observed_at else 'Unknown' }}</dd>
+    <dt>Received at</dt><dd class="mono">{{ evidence.received_at | humandate(true) if evidence.received_at else 'Unknown' }}</dd>
+    <dt>Authority</dt><dd><span class="pill pill-{{ 'ok' if evidence.authority == 'section_scoped' else 'warn' if evidence.authority in ('presence_only', 'stale') else 'muted' }}">{{ evidence.authority | replace('_', ' ') | capitalize }}</span></dd>
+    <dt>Freshness</dt><dd><span class="pill pill-{{ 'ok' if evidence.freshness == 'fresh' else 'warn' if evidence.freshness == 'stale' else 'muted' }}">{{ evidence.freshness | capitalize }}</span></dd>
+  </dl>
+  <ul class="evidence-chips">
+    {% for section in evidence.sections %}
+    <li>
+      {%- if section.anchor -%}
+      <a class="evidence-chip" href="{{ section.anchor }}">
+      {%- else -%}
+      <span class="evidence-chip evidence-chip--static">
+      {%- endif -%}
+        <span class="evidence-chip__name" title="{{ section.name }}">{{ section.name }}</span>
+        <span class="pill pill-{{ 'ok' if section.status == 'complete' else 'warn' if section.status == 'partial' else 'muted' }}">{{ section.status | capitalize }}</span>
+      {%- if section.anchor -%}</a>{%- else -%}</span>{%- endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  <p class="toolbar-hint">Complete applies only to the named collection. It does not confirm the rest of this device or your estate. Absence can only be supported within a named complete collection.</p>
+</section>
+
+{{ device_collection_issues(degraded_health) }}
+{% endblock %}

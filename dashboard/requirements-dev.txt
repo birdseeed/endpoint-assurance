@@ -1,0 +1,9 @@
+-r requirements.txt
+# Test-only dependencies. The production deploy hook installs requirements.txt
+# alone; CI installs this file. Keep runtime deps out of here.
+pytest
+# httpx2 is starlette's TestClient HTTP backend (starlette 1.x uses the
+# pydantic-org httpx successor: `import httpx2 as httpx` in
+# starlette/testclient.py). Test-only import; pinned per the PAT-66
+# supply-chain criteria for new package sources.
+httpx2==2.12.0

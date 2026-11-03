@@ -1,0 +1,42 @@
+{
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.2.0",
+  "tenant_id": "44444444-4444-4444-4444-444444444444",
+  "collected_at": "2026-12-01T00:00:00Z",
+  "device": {
+    "serial": "C00000000001",
+    "hw_uuid": "11111111-AAAA-BBBB-CCCC-DDDDDDDDDDDD",
+    "hostname": "minimal-test-host",
+    "hw_model": "Mac14,2",
+    "arch": "arm64",
+    "last_boot": "2026-12-01T00:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M2",
+    "cpu_cores": 8,
+    "ram_gb": 8,
+    "disk_total_gb": 256.0,
+    "disk_free_gb": 128.0
+  },
+  "os": {
+    "name": "macOS",
+    "version": "15.0",
+    "build": "24A335"
+  },
+  "compliance": {},
+  "security_tools": [],
+  "system_extensions": [],
+  "background_items": [],
+  "icloud": {
+    "signed_in": "Unknown"
+  },
+  "apps": [
+    {
+      "name": "Safari",
+      "version": "18.4",
+      "bundle_id": "com.apple.Safari",
+      "usage_evidence": true
+    }
+  ]
+}

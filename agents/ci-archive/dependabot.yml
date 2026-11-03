@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [dependencies, security]
+
+  - package-ecosystem: nuget
+    directory: /windows
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [dependencies, security]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [dependencies, ci]

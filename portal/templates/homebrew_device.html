@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ device.hostname }} - Homebrew</h1>
+  <p class="meta">
+    <span class="pill {{ 'pill-ok' if device.collection_status in ('complete', 'not_present') else 'pill-bad' if device.collection_status == 'failed' else 'pill-muted' }}">{{ device.collection_status_label }}</span>
+    Last reported {{ device.reported_at | humandate(true) }}.
+    <a href="/homebrew">&larr; Back to Homebrew</a>
+  </p>
+</div>
+
+{% if device.prefixes %}
+<p class="meta">Prefixes: {% for p in device.prefixes %}{{ p.path }}{% if p.owner %} (owner {{ p.owner }}){% endif %}{{ ', ' if not loop.last }}{% endfor %}</p>
+{% endif %}
+
+<div class="card group-card">
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>Kind</th><th>Name</th><th>Version</th><th>Prefix</th><th>Tap</th><th>Install type</th><th>First seen</th></tr></thead>
+    <tbody>
+      {% for e in entries %}
+      <tr>
+        <td>{{ e.kind | capitalize }}</td>
+        <td>{{ e.name }}{% if e.linked_apps %}<span class="cell-subtle">Linked: {{ e.linked_apps | map(attribute='app_name') | join(', ') }}</span>{% endif %}</td>
+        <td>{{ e.version or '-' }}</td>
+        <td>{{ e.prefix or '-' }}</td>
+        <td>{{ e.tap }}{% if e.third_party_tap %} <span class="pill pill-warn">Third-party</span>{% endif %}</td>
+        <td>{% if e.installed_on_request is true %}<span class="pill pill-ok">On request</span>{% elif e.installed_as_dependency is true %}<span class="pill pill-muted">Dependency</span>{% else %}-{% endif %}</td>
+        <td><span class="nowrap">{{ e.first_seen_at | humandate }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if not entries %}<p class="empty">Nothing to show for this Mac{% if kind_filter %} for this filter{% endif %}.</p>{% endif %}
+</div>
+{% endblock %}

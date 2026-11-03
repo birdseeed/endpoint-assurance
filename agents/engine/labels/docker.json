@@ -1,0 +1,34 @@
+{
+  "label": "docker",
+  "name": "Docker",
+  "type": "dmg",
+  "app_path": "/Applications/Docker.app",
+  "expected_team_id": "9BNSXJN65R",
+  "download": {
+    "method": "static",
+    "url": "https://desktop.docker.com/mac/stable/arm64/Docker.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "Docker Desktop"
+  ],
+  "pinned_sha256": null,
+  "cross_hash_sources": [
+    {
+      "type": "vendor_sha256_url",
+      "url": "https://desktop.docker.com/mac/main/arm64/checksums.txt"
+    }
+  ],
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "mirror_eula_approved": true,
+    "vendor_only": true,
+    "vendor_only_reason": "notarized-unstapled",
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "PAT-662: mirror_eula_approved=true \u2014 artifact size was previously hitting the 400 MB cap; cap raised to 2 GB. Docker Desktop DMG is ~600 MB. Docker Desktop is free for small teams/personal use; redistribution of the installer for enterprise update management is permitted under Docker's Terms. PAT-719: cross_hash_sources added using Docker's static checksums.txt endpoint. PAT-719: vendor_only=true \u2014 trust-posture decision. Docker.app is genuinely notarized (spctl: accepted, source=Notarized Developer ID, Docker Inc 9BNSXJN65R) but the vendor does NOT staple the notarization ticket, so xcrun stapler validate exits 65. The pipeline's strict stapled-only gate therefore false-negatives this legitimately-notarized-but-unstapled artifact. Rather than weaken the gate with an spctl fallback (needs syspolicyd + network on the GHA runner; Gatekeeper-quirky), Docker installs come from the vendor URL only \u2014 same posture as vmwarefusion. Revisit if Docker begins stapling, or if a mirror-side spctl proof-run is greenlit."
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "label": "minecraftedu",
+  "name": "minecraft-edu",
+  "type": "dmg",
+  "app_path": "/Applications/minecraft-edu.app",
+  "expected_team_id": "UBF8T346G9",
+  "download": {
+    "method": "static",
+    "url": "https://aka.ms/meeclientmacos"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

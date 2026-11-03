@@ -1,0 +1,24 @@
+{
+  "label": "fork",
+  "name": "Fork",
+  "type": "dmg",
+  "app_path": "/Applications/Fork.app",
+  "expected_team_id": "Q6M7LEEA66",
+  "download": {
+    "method": "resolved",
+    "strategy": "sparkle-appcast",
+    "source": "https://git-fork.com/update/feed.xml"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

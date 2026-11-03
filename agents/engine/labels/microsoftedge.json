@@ -1,0 +1,25 @@
+{
+  "label": "microsoftedge",
+  "name": "Microsoft Edge",
+  "type": "pkg",
+  "app_path": "/Applications/Microsoft Edge.app",
+  "expected_team_id": "UBF8T346G9",
+  "download": {
+    "method": "static",
+    "url": "https://go.microsoft.com/fwlink/?linkid=2093504"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true.",
+    "mirror_eula_approved": false,
+    "ring_policy": "immediate"
+  }
+}

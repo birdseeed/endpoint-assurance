@@ -1,0 +1,23 @@
+{
+  "label": "steelseriesengine",
+  "name": "SteelSeries GG",
+  "type": "pkg",
+  "app_path": "/Applications/SteelSeries GG.app",
+  "expected_team_id": "6WGL6CHFH2",
+  "download": {
+    "method": "static",
+    "url": "https://steelseries.com/engine/latest/darwin"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

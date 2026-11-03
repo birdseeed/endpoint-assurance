@@ -1,0 +1,46 @@
+[Unit]
+Description=Restic backup — scan.db + uploads/ + reports/ + config to Cloudflare R2
+Documentation=file:///etc/patched-portal-backup/backup.env
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+# Restic env vars live outside the repo — never commit backup.env
+EnvironmentFile=/etc/patched-portal-backup/backup.env
+ExecStart=/opt/patched-portal-backup/bin/portal-backup.sh
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=patched-portal-backup
+# Limit blast radius if something goes wrong
+PrivateTmp=true
+
+# portal-backup.sh never calls sudo/pg_dump (unlike api-01's backup.sh), so
+# unlike the api-01 reference this can safely lock down new privileges.
+NoNewPrivileges=true
+
+# ProtectSystem=strict + explicit write exceptions:
+#   /srv/backup/health ("-": heartbeat is best-effort, must not block the
+#     backup if the monitoring dir ever goes missing)
+#   /var/lib/patched-scan/db: scan.db (journal_mode=delete). `sqlite3 .backup`
+#     opens the source DB read-write by default regardless of journal mode,
+#     even though the backup only reads app data — read-only here makes the
+#     open() itself fail, the same class of failure that broke prod-01's
+#     WAL-mode dashboard.db during PAT-991 testing.
+#     PAT-994: narrowed from the whole of /var/lib/patched-scan (uploads/,
+#     reports/, nvd.db) to the dedicated sub-directory holding only the DB.
+# ProtectHome=true not set: this unit runs as root.
+ProtectSystem=strict
+ReadWritePaths=-/srv/backup/health /var/lib/patched-scan/db
+CacheDirectory=patched-portal-backup
+Environment=RESTIC_CACHE_DIR=/var/cache/patched-portal-backup
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+CapabilityBoundingSet=CAP_DAC_OVERRIDE

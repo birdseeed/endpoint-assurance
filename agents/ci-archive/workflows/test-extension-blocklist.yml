@@ -1,0 +1,22 @@
+name: test-extension-blocklist
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/browser_extension_control.sh'
+      - 'macos/test-extension-blocklist.zsh'
+      - '.github/workflows/test-extension-blocklist.yml'
+  pull_request:
+    paths:
+      - 'macos/lib/browser_extension_control.sh'
+      - 'macos/test-extension-blocklist.zsh'
+      - '.github/workflows/test-extension-blocklist.yml'
+
+jobs:
+  test:
+    runs-on: macos-latest          # zsh, /usr/bin/python3 and defaults are stock on macOS runners
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run browser-extension blocklist enforcement tests
+        run: zsh macos/test-extension-blocklist.zsh

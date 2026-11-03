@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% from "_macros.html" import device_page_head %}
+{% block content %}
+{{ device_page_head(device, tabs, cve_tile, issues_tile) }}
+
+{#- PAT-2164: Hardware tab - the Hardware card as-is, including the macOS
+    system-volumes disclosure. Unchanged from the pre-tab page other than
+    living on its own route. -#}
+<section class="card" id="hardware" aria-labelledby="hardware-title">
+  <h2 id="hardware-title">Hardware</h2>
+  {% if not hardware.present %}
+  <p class="empty">Hardware information is not available on this device page yet.</p>
+  {% else %}
+  <p class="evidence-inline">
+    <span class="pill pill-{{ 'ok' if hardware.evidence.freshness == 'fresh' else 'warn' if hardware.evidence.freshness == 'stale' else 'muted' }}">{{ hardware.evidence.freshness | capitalize }}</span>
+    <span class="mono">Observed {{ hardware.evidence.observed_at | humandate(true) if hardware.evidence.observed_at else 'Unknown' }} (UTC)</span>
+  </p>
+  <div class="hardware-groups">
+    <div class="hardware-group hardware-group--pair">
+      <div class="hardware-block">
+        <h3>Compute</h3>
+        {% if hardware.cpu.complete or hardware.memory.complete %}
+        <dl class="kv">
+          <dt>CPU</dt>
+          <dd>{% if hardware.cpu.complete %}{{ hardware.cpu.model or 'Unknown' }}{% if hardware.cpu.cores is not none %} &middot; {{ hardware.cpu.cores }} cores{% endif %}{% else %}{{ hardware.cpu.status_label }}{% endif %}</dd>
+          <dt>Memory</dt>
+          <dd>{% if hardware.memory.complete %}{{ (hardware.memory.total_gb ~ ' GB') if hardware.memory.total_gb is not none else 'Unknown' }}{% else %}{{ hardware.memory.status_label }}{% endif %}</dd>
+        </dl>
+        {% else %}
+        <p class="empty">{{ hardware.cpu.status_label }}.</p>
+        {% endif %}
+      </div>
+
+      <div class="hardware-block">
+        <h3>Battery</h3>
+        {% if hardware.battery.complete %}
+          {% if hardware.battery.present is false %}
+          <p class="empty">No battery reported.</p>
+          {% else %}
+          <dl class="kv">
+            <dt>Condition</dt><dd><span class="pill {{ 'pill-warn' if hardware.battery.condition_warn else 'pill-ok' }}">{{ hardware.battery.condition or 'Unknown' }}</span></dd>
+            <dt>Cycle count</dt><dd class="mono">{{ hardware.battery.cycle_count if hardware.battery.cycle_count is not none else 'Unknown' }}</dd>
+            <dt>Maximum capacity</dt><dd class="mono">{{ (hardware.battery.max_capacity_pct ~ '%') if hardware.battery.max_capacity_pct is not none else 'Unknown' }}</dd>
+          </dl>
+          {% endif %}
+        {% else %}
+        <p class="empty">{{ hardware.battery.status_label }}.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="hardware-block">
+      <h3>Physical disks</h3>
+      {% if hardware.disks.rows %}
+      <div class="table-scroll">
+      <table class="data-table hardware-disks-table table-stack">
+        <thead><tr>
+          <th class="hwd-col-device">Device</th>
+          <th class="hwd-col-smart">SMART status</th>
+          <th class="hwd-col-type">Type</th>
+        </tr></thead>
+        <tbody>
+          {% for d in hardware.disks.rows %}
+          <tr>
+            <td class="mono" data-label="Device">{{ d.device or 'Unknown' }}</td>
+            <td data-label="SMART status"><span class="pill {{ 'pill-ok' if d.smart_status == 'Verified' else 'pill-muted' if d.smart_status == 'Not Supported' else 'pill-warn' if d.smart_warn else 'pill-muted' }}">{{ d.smart_status or 'Unknown' }}</span></td>
+            <td data-label="Type">{{ 'Internal' if d.internal is true else 'External' if d.internal is false else 'Unknown' }}{% if d.solid_state is true %}, SSD{% elif d.solid_state is false %}, HDD{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% else %}
+      <p class="empty">{{ hardware.disks.status_label }}.</p>
+      {% endif %}
+    </div>
+
+    <div class="hardware-block">
+      <h3>Storage volumes</h3>
+      {% if hardware.volumes.rows %}
+      <div class="table-scroll">
+      <table class="data-table hardware-volumes-table table-stack">
+        <thead><tr>
+          <th class="hwv-col-volume">Volume</th>
+          <th class="hwv-col-used">Used</th>
+          <th class="hwv-col-free">Free</th>
+          <th class="hwv-col-pct">Used %</th>
+        </tr></thead>
+        <tbody>
+          {% for v in hardware.volumes.rows %}
+          <tr>
+            <td class="mono" data-label="Volume">{{ v.mount or 'Unknown' }}</td>
+            <td class="mono" data-label="Used">{{ v.used_bytes | humanbytes if v.used_bytes is not none else 'Unknown' }}</td>
+            <td class="mono" data-label="Free">{{ v.free_bytes | humanbytes if v.free_bytes is not none else 'Unknown' }}</td>
+            <td data-label="Used %">
+              {%- if v.used_pct is not none -%}
+              <span class="volume-used{{ ' volume-used--warn' if v.warn else '' }}">
+                <span class="volume-bar"><span class="volume-bar__fill" style="width: {{ v.used_pct }}%"></span></span>
+                <span class="mono">{{ v.used_pct }}%</span>
+              </span>
+              {%- else -%}Unknown{%- endif -%}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% if hardware.volumes.system_rows %}
+      <details class="hardware-system-volumes">
+        <summary>macOS system volumes ({{ hardware.volumes.system_rows | length }})</summary>
+        <p class="meta">These share one disk with the startup volume (/), so their used space is not additional.</p>
+      <div class="table-scroll">
+      <table class="data-table hardware-volumes-table hardware-volumes-table--system table-stack">
+        <thead><tr>
+          <th class="hwv-col-volume">Volume</th>
+          <th class="hwv-col-used">Used</th>
+          <th class="hwv-col-free">Free</th>
+          <th class="hwv-col-pct">Used %</th>
+        </tr></thead>
+        <tbody>
+          {% for v in hardware.volumes.system_rows %}
+          <tr>
+            <td class="mono" data-label="Volume">{{ v.mount or 'Unknown' }}</td>
+            <td class="mono" data-label="Used">{{ v.used_bytes | humanbytes if v.used_bytes is not none else 'Unknown' }}</td>
+            <td class="mono" data-label="Free">{{ v.free_bytes | humanbytes if v.free_bytes is not none else 'Unknown' }}</td>
+            <td data-label="Used %">
+              {%- if v.used_pct is not none -%}
+              <span class="volume-used{{ ' volume-used--warn' if v.warn else '' }}">
+                <span class="volume-bar"><span class="volume-bar__fill" style="width: {{ v.used_pct }}%"></span></span>
+                <span class="mono">{{ v.used_pct }}%</span>
+              </span>
+              {%- else -%}Unknown{%- endif -%}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      </details>
+      {% endif %}
+      {% else %}
+      <p class="empty">{{ hardware.volumes.status_label }}.</p>
+      {% endif %}
+    </div>
+
+    {#- PAT-2262: BIOS/system/baseboard identity, next to the rest of this
+        tab's hardware posture. Observation only - copy states age in whole
+        years, never a verdict ("outdated"/"vulnerable"/"old BIOS" etc, see
+        tests/test_pat2262_firmware.py's banned-words assertion), matching
+        contracts/portal-api.md's own "no field says whether a firmware
+        version is current, outdated or vulnerable". -#}
+    <div class="hardware-block firmware-block" id="firmware">
+      <h3>Firmware</h3>
+      {% if not firmware.present or firmware.status == 'not_reported' %}
+        {% if (device.platform or '') | lower == 'macos' %}
+        <p class="meta">Firmware is updated with macOS on Mac, so it follows the macOS version shown above.</p>
+        {% else %}
+        <p class="meta">This device's agent doesn't report firmware details yet.</p>
+        {% endif %}
+      {% else %}
+        {% if firmware.status == 'unavailable' %}
+        <p class="meta">The agent could not read firmware details on this device.</p>
+        {% endif %}
+        {% if firmware.any_section_present %}
+        <div class="hardware-group hardware-group--triple">
+          <div class="firmware-section">
+            <h4>BIOS</h4>
+            <dl class="kv">
+              <dt>Vendor</dt><dd>{{ firmware.bios.manufacturer or 'Not read' }}</dd>
+              <dt>Version</dt><dd class="mono">{{ firmware.bios.version or 'Not read' }}</dd>
+              <dt>SMBIOS version</dt><dd class="mono">{{ firmware.bios.smbios_version or 'Not read' }}</dd>
+              <dt>Release date</dt>
+              <dd>{% if firmware.bios.release_label %}Released {{ firmware.bios.release_label }}{% if firmware.bios.age_label %}, {{ firmware.bios.age_label }}{% endif %}{% else %}Not read{% endif %}</dd>
+            </dl>
+            <p class="meta">{% if firmware.bios.reported_at %}Reported {{ firmware.bios.reported_at | humandate(true) }} (UTC){% else %}Not yet reported{% endif %}</p>
+          </div>
+          <div class="firmware-section">
+            <h4>System</h4>
+            <dl class="kv">
+              <dt>Manufacturer</dt><dd>{{ firmware.system.manufacturer or 'Not read' }}</dd>
+              <dt>Model</dt><dd class="mono">{{ firmware.system.model or 'Not read' }}</dd>
+            </dl>
+            <p class="meta">{% if firmware.system.reported_at %}Reported {{ firmware.system.reported_at | humandate(true) }} (UTC){% else %}Not yet reported{% endif %}</p>
+          </div>
+          <div class="firmware-section">
+            <h4>Baseboard</h4>
+            <dl class="kv">
+              <dt>Manufacturer</dt><dd>{{ firmware.baseboard.manufacturer or 'Not read' }}</dd>
+              <dt>Product</dt><dd class="mono">{{ firmware.baseboard.product or 'Not read' }}</dd>
+            </dl>
+            <p class="meta">{% if firmware.baseboard.reported_at %}Reported {{ firmware.baseboard.reported_at | humandate(true) }} (UTC){% else %}Not yet reported{% endif %}</p>
+          </div>
+        </div>
+        {% elif firmware.status != 'unavailable' %}
+        <p class="meta">No firmware fields have been read yet.</p>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

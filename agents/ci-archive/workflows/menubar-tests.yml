@@ -1,0 +1,41 @@
+name: menubar-tests
+
+# PAT-923: the menu-bar Swift package (PatchedUpdaterTests) had no CI job at
+# all — 13 fixture-decoding failures sat on main unnoticed because nothing
+# ran `xcodebuild test`. This makes the suite a required, green gate.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'menubar/**'
+      - '.github/workflows/menubar-tests.yml'
+  pull_request:
+    paths:
+      - 'menubar/**'
+      - '.github/workflows/menubar-tests.yml'
+
+jobs:
+  menubar-tests:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: menubar
+        run: xcodegen generate
+
+      - name: Verify release version metadata path
+        run: zsh menubar/test-release-versioning.zsh
+
+      - name: Run PatchedUpdaterTests
+        working-directory: menubar
+        run: |
+          xcodebuild -project PatchedUpdater.xcodeproj \
+                     -scheme PatchedUpdater \
+                     -destination 'platform=macOS' \
+                     test \
+                     CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO

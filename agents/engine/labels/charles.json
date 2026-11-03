@@ -1,0 +1,24 @@
+{
+  "label": "charles",
+  "name": "Charles",
+  "type": "dmg",
+  "app_path": "/Applications/Charles.app",
+  "expected_team_id": "9A5PCU4FSD",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.charlesproxy.com/download/latest-release/"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

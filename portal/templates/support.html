@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "_feedback_form.html" import feedback_form %}
+{% block content %}
+<div class="page-head">
+  <h1>Support</h1>
+  <p class="meta">We aim to respond within one business day.</p>
+</div>
+{% if support_sent %}
+<div class="feedback-success feedback-sent-notice" role="status">
+  <h2>Support request sent</h2>
+  <p>Your request and its status are listed below.</p>
+</div>
+{% endif %}
+<div class="support-layout">
+  <section class="card feedback-page" aria-label="Support form">
+    <h2>How can we help?</h2>
+    <p>Describe what happened, what you expected and anything you have tried. For findings or reports, include the relevant name or reference.</p>
+    {% if support_device_name %}<p class="support-device">Device: <strong>{{ support_device_name }}</strong></p>{% endif %}
+    {% if support_context_error %}<p class="feedback-warning" role="status">{{ support_context_error }}</p>{% endif %}
+    {% if not identity.service %}
+    {% call feedback_form(csrf_token, support_route, draft=support_draft, error=support_error, door='support', device_name=support_device_name) %}{% endcall %}
+    {% else %}<p>This account is read-only.</p>{% endif %}
+  </section>
+  <aside class="card support-alternative" aria-label="Other ways to contact Patched">
+    <h2>Prefer email?</h2>
+    <p><a href="{{ mailto }}">Email {{ support_email }}</a></p>
+    <p class="meta">Include your device name and the relevant finding or report. Do not send passwords or access tokens.</p>
+    <h2>Have an idea?</h2>
+    <p>Use <a href="/feedback">Feedback</a> for feature requests and design or usability improvements.</p>
+    <p class="meta">Support requests sent here appear below, with open and closed requests kept together. Email replies stay in your inbox.</p>
+  </aside>
+</div>
+<section aria-labelledby="support-requests-heading">
+  <div class="page-head"><h2 id="support-requests-heading">Your support requests</h2><p class="meta">Open and closed requests, including earlier problem reports and questions.</p></div>
+  {% if support_list_error %}
+  <p class="feedback-warning" role="status">{{ support_list_error }}</p>
+  {% elif support_rows %}
+    {% with feedback_rows=support_rows %}{% include "_feedback_list.html" %}{% endwith %}
+  {% else %}
+  <div class="card feedback-empty"><p>No support requests sent yet.</p></div>
+  {% endif %}
+</section>
+{% endblock %}

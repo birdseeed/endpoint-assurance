@@ -1,0 +1,32 @@
+{
+  "label": "idrive",
+  "name": "IDrive",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "relative-path-glob",
+    "patterns": [
+      "IDrive.pkg"
+    ]
+  },
+  "app_path": "/Applications/IDrive.app",
+  "expected_team_id": "JWDCNYZ922",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://static.idriveonlinebackup.com/downloads/version_mac.js"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "NONE"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

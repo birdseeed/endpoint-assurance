@@ -1,0 +1,99 @@
+name: engine-change-review
+
+on:
+  pull_request:
+    paths:
+      - 'engine/**'
+
+jobs:
+  diff-summary:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # H8: engine/.import-tag is attacker-controllable in a PR. Read it into a
+      # step output only after validating it against a strict git-ref charset,
+      # and NEVER interpolate it directly into a shell or github-script body —
+      # downstream steps consume it via env: + "$TAG" / process.env.TAG so a
+      # crafted value cannot inject commands into the runner.
+      - name: Read and validate import tag
+        id: tag
+        run: |
+          TAG=$(cat engine/.import-tag)
+          if ! printf '%s' "$TAG" | grep -Eq '^[A-Za-z0-9._/-]+$'; then
+            echo "::error::engine/.import-tag failed validation (allowed: A-Za-z0-9 . _ / -)"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Compute engine diff vs import baseline
+        id: diff
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          git fetch --tags
+          DIFF=$(git diff "$TAG"..HEAD -- engine/ 2>/dev/null || echo "(baseline tag not found in this repo — run full diff manually)")
+          FILES=$(git diff --name-only "$TAG"..HEAD -- engine/ 2>/dev/null | wc -l | tr -d ' ')
+
+          # Grep for security-sensitive patterns in changed lines
+          SENSITIVE=$(echo "$DIFF" | grep -E '^\+' | grep -iE '(expectedTeamID|curlOptions|http://|verify|signature|hash|checksum|downloadURL|HTTPS|curl\s)' | head -20 || true)
+
+          echo "files=$FILES" >> "$GITHUB_OUTPUT"
+
+          # Write to files to avoid env var size limits
+          echo "$DIFF" > /tmp/engine_diff.txt
+          echo "$SENSITIVE" > /tmp/sensitive_lines.txt
+
+      - name: Post review comment
+        uses: actions/github-script@v9
+        env:
+          # H8: pass untrusted/derived values through env and read them via
+          # process.env — never string-interpolate ${{ }} into the script body.
+          FILES: ${{ steps.diff.outputs.files }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        with:
+          # NB: every line of this script is indented under the block scalar so
+          # the YAML parser does not terminate the scalar early. The body is
+          # built by joining an array of lines (no column-0 template literal),
+          # which keeps the workflow valid YAML AND the rendered comment clean.
+          script: |
+            const fs = require('fs');
+            const files = process.env.FILES;
+            const tag = process.env.TAG;
+            const sensitive = fs.readFileSync('/tmp/sensitive_lines.txt', 'utf8').trim();
+
+            const sensitiveBlock = sensitive
+              ? '### ⚠️ Security-sensitive lines changed\n```\n' + sensitive + '\n```'
+              : '### ✅ No security-sensitive patterns detected in changed lines';
+
+            const body = [
+              '## Engine fork change review',
+              '',
+              'This PR modifies `engine/` (the Installomator hard fork). **' + files + ' file(s)** changed vs import baseline `' + tag + '`.',
+              '',
+              sensitiveBlock,
+              '',
+              '### Review checklist',
+              'Before approving, confirm:',
+              '- [ ] `expectedTeamID` enforcement is intact for all modified labels',
+              '- [ ] No `http://` download URLs introduced (must be `https://`)',
+              '- [ ] HTTPS preflight check (PAT-494) not weakened or bypassed',
+              '- [ ] SHA-256 pinning logic (PAT-495) not removed or relaxed',
+              '- [ ] Exit code contract preserved (daemon relies on specific exit codes)',
+              '- [ ] No new curl options that disable certificate verification (`-k`, `--insecure`)',
+              '- [ ] Change is intentional and documented in a commit message referencing its PAT ticket',
+              '',
+              '> Engine changes require sign-off from @andybridson per CODEOWNERS.',
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });

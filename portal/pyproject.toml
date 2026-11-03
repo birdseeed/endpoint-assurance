@@ -1,0 +1,33 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency-injection markers are intentionally called in argument
+# defaults; that is the framework idiom, not a mutable-default bug (B008).
+extend-immutable-calls = [
+    "fastapi.File",
+    "fastapi.Form",
+    "fastapi.Depends",
+    "fastapi.Query",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# The CVE engine and Intune-upload report generators are ported verbatim from
+# the dashboard (PAT-457). They keep the upstream's compact single-line style so
+# future diffs against the dashboard source stay legible; they are deliberately
+# not reformatted to the portal house style. Lint is relaxed for these three
+# files only — all newly authored scan modules are held to the full ruleset.
+"scan/scanner.py" = ["E401", "E402", "E501", "E701", "E702", "E741", "B007", "B904", "F401"]
+"scan/intune_upload.py" = ["E501", "E701", "E702", "B904", "F401"]
+"scan/intune_patch_levels.py" = ["E501"]
+# router.py is the dashboard public_router ported verbatim (paths unchanged);
+# only its long HTML/SQL lines are exempt — all other rules still apply.
+"scan/router.py" = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "scan/tests"]
+addopts = "-q"

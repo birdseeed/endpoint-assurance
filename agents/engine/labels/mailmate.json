@@ -1,0 +1,23 @@
+{
+  "label": "mailmate",
+  "name": "MailMate",
+  "type": "tbz",
+  "app_path": "/Applications/MailMate.app",
+  "expected_team_id": "VP8UL4YCJC",
+  "download": {
+    "method": "static",
+    "url": "https://updates.mailmate-app.com/archives/MailMateBeta.tbz"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

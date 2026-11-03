@@ -1,0 +1,31 @@
+{
+  "label": "googlesoftwareupdate",
+  "name": "Install Google Software Update",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "relative-path-glob",
+    "patterns": [
+      "Install Google Software Update.app/Contents/Resources/GSUInstall.pkg"
+    ]
+  },
+  "app_path": "/Applications/Install Google Software Update.app",
+  "expected_team_id": "EQHXZ8M8AV",
+  "download": {
+    "method": "static",
+    "url": "https://dl.google.com/mac/install/googlesoftwareupdate.dmg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [
+    "NONE"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

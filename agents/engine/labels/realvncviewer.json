@@ -1,0 +1,23 @@
+{
+  "label": "realvncviewer",
+  "name": "RealVNC Connect Viewer",
+  "type": "pkg",
+  "app_path": "/Applications/RealVNC Connect Viewer.app",
+  "expected_team_id": "ZNCQ8JEH7X",
+  "download": {
+    "method": "static",
+    "url": "https://downloads.realvnc.com/download/file/realvnc-connect-viewer/RealVNC-Connect-Viewer-Latest-MacOSX-universal.pkg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true. PAT-1280 (2026-08-13): the old viewer.files/VNC-Viewer-Latest-MacOSX-universal.dmg 404s -- RealVNC retired the standalone 'VNC Viewer' download and folded it into the 'RealVNC Connect' suite. Hand-verified against the live realvnc.com/en/connect/download/viewer/ macOS download button: it now serves a bare .pkg (no outer .dmg) at the URL above, installing 'RealVNC Connect Viewer.app' (bundle id com.realvnc.rvncconnect, CFBundleName 'RealVNC Connect'). Downloaded and confirmed pkgutil --check-signature: 'Developer ID Installer: RealVNC Limited (ZNCQ8JEH7X)', notarized -- same Team ID this label already expected, so this is the vendor's own rebrand/repackage, not a spoof. The '-Latest-' filename is RealVNC's own evergreen alias (confirmed byte-identical etag/content-length against the current versioned filename RealVNC-Connect-Viewer-8.5.0-MacOSX-universal.pkg), matching the rolling-URL convention the old dmg URL already used."
+  }
+}

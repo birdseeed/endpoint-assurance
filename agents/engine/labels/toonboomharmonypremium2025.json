@@ -1,0 +1,23 @@
+{
+  "label": "toonboomharmonypremium2025",
+  "name": "Harmony 25 Premium",
+  "type": "dmg",
+  "app_path": "/Applications/Harmony 25 Premium.app",
+  "expected_team_id": "U5LPYJSPQ3",
+  "download": {
+    "method": "static",
+    "url": "https://fileshare.toonboom.com/wl/?id=jyhyaYQFJ86iE6daFDh3JJv2g6OFBDza&path=${version}%2FHAR25-PRM-mac-${build}.dmg&mode=list&download=1"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

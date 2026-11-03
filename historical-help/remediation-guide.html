@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Remediation guide - Patched.im docs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="What to do about the most common CIS Level 1 findings on macOS and Windows: FileVault, firewall, automatic updates, screen lock, and more, with one paragraph and a vendor link for each." />
+  <link rel="icon" href="/favicon.ico?v=20260926-brand-v3" sizes="32x32" />
+  <link rel="icon" href="/favicon.svg?v=20260926-brand-v3" type="image/svg+xml" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=20260926-brand-v3" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=20260926-brand-v3" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20260926-brand-v3" />
+  <link rel="mask-icon" href="/mask-icon.svg?v=20260926-brand-v3" color="#2563eb" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=20260926-brand-v3" />
+</head>
+<body>
+
+  <!-- ── Nav ─────────────────────────────────────────────── -->
+  <header class="nav">
+    <div class="nav__inner">
+      <a class="nav__logo" href="https://patched.im" aria-label="Patched.im home"><img src="/patched-lockup-horizontal.svg" width="132" height="27" alt="Patched" /></a>
+      <nav class="nav__links" aria-label="Primary">
+        <a href="/getting-started.html">Getting started</a>
+        <a href="/faq.html">FAQ</a>
+        <div class="nav__dropdown">
+          <button type="button" class="nav__dropdown-trigger" aria-haspopup="true" aria-expanded="false">Guides <svg class="nav__dropdown-chevron" width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="nav__dropdown-menu" role="menu">
+            <a role="menuitem" href="/agent-updater.html">Endpoint agent</a>
+            <a role="menuitem" href="/protected.html">Configuration assurance</a>
+            <a role="menuitem" href="/read-your-report.html">Reports and evidence</a>
+            <a role="menuitem" href="/remediation-guide.html">Remediation guide</a>
+            <a role="menuitem" href="/using-your-portal.html">Customer portal</a>
+            <a role="menuitem" href="/security.html">Security</a>
+            <a role="menuitem" href="/privacy.html">Data and privacy</a>
+          </div>
+        </div>
+      </nav>
+      <div class="nav__spacer"></div>
+      <div class="nav__cta"><a class="btn btn--primary" href="https://patched.im/pricing">Become a design partner</a></div>
+      <button class="nav__burger" type="button" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+
+  <main class="doc">
+    <div class="wrap">
+      <div class="doc__inner">
+        <a class="doc__back" href="/">&larr; All guides</a>
+
+        <article class="article">
+          <header>
+            <p class="kicker">Guide 09</p>
+            <h1>Remediation guide</h1>
+            <p class="lead">
+              Every finding in your report already comes with a one-line fix. This is the
+              longer version for the dozen or so CIS Level&nbsp;1 controls that show up
+              most often across real estates: what the setting is, why it's on the
+              benchmark, and a link to the vendor's own instructions.
+            </p>
+          </header>
+
+          <div class="callout">
+            These are general instructions for an administrator with local access to the
+            device. On a managed estate, push the equivalent setting through Intune or
+            your MDM rather than visiting every machine; your report's per-device
+            appendix tells you which devices still need it.
+          </div>
+
+          <h2>macOS</h2>
+
+          <h3>FileVault disk encryption</h3>
+          <p>
+            Encrypts the startup disk so its contents are unreadable without the login
+            password or recovery key. This is the single highest-impact setting on the
+            benchmark: a lost or stolen laptop without it is a plain data breach, with it
+            it's a lost laptop. Enable in System Settings &rarr; Privacy &amp; Security
+            &rarr; FileVault. See Apple's
+            <a href="https://support.apple.com/en-gb/guide/mac-help/mh11785/mac" target="_blank" rel="noopener">FileVault guide</a>.
+          </p>
+
+          <h3>Firewall enabled</h3>
+          <p>
+            Blocks unsolicited inbound connections to the Mac. Low friction, no effect on
+            normal outbound use (browsing, email, the Patched agent itself). Enable in
+            System Settings &rarr; Network &rarr; Firewall. See Apple's
+            <a href="https://support.apple.com/en-gb/guide/mac-help/mh34041/mac" target="_blank" rel="noopener">firewall guide</a>.
+          </p>
+
+          <h3>Automatic security updates</h3>
+          <p>
+            Installs Apple's security patches (Rapid Security Responses and minor OS
+            updates) without waiting on someone to click Update. This is usually the
+            single biggest lever on your Patch Currency score, and it's a one-time
+            setting, not an ongoing task. Enable in System Settings &rarr; General &rarr;
+            Software Update &rarr; Automatic Updates. See Apple's
+            <a href="https://support.apple.com/en-gb/guide/mac-help/mchlpx1065/mac" target="_blank" rel="noopener">software update guide</a>.
+          </p>
+
+          <h3>Screen lock timeout</h3>
+          <p>
+            Requires a password after a short period of inactivity, so a device left
+            unlocked in an office or on a train isn't an open door. The benchmark expects
+            five minutes or less. Set in System Settings &rarr; Lock Screen &rarr;
+            &ldquo;Require password after screen saver begins or display is turned
+            off&rdquo;. See Apple's
+            <a href="https://support.apple.com/en-gb/guide/mac-help/mchlp2270/mac" target="_blank" rel="noopener">lock screen guide</a>.
+          </p>
+
+          <h3>Gatekeeper enforcing signed software</h3>
+          <p>
+            Stops unsigned or unnotarised applications from running without an explicit
+            override, which is most malware's easiest way onto a Mac. This should already
+            be on by default; if it's failing, something has been changed to allow
+            software from anywhere. Check in System Settings &rarr; Privacy &amp; Security
+            &rarr; Security. See Apple's
+            <a href="https://support.apple.com/en-gb/guide/mac-help/mh40616/mac" target="_blank" rel="noopener">Gatekeeper guide</a>.
+          </p>
+
+          <h3>Guest account disabled</h3>
+          <p>
+            A guest account is passwordless access to the machine by design. Almost no
+            SME estate needs it switched on. Disable in System Settings &rarr; Users
+            &amp; Groups &rarr; Guest User. See Apple's
+            <a href="https://support.apple.com/en-gb/guide/mac-help/mh15600/mac" target="_blank" rel="noopener">guest user guide</a>.
+          </p>
+
+          <h3>Remote login (SSH) disabled</h3>
+          <p>
+            Remote Login opens an SSH server on the Mac. Unless you specifically use SSH
+            to manage the device, it's an exposed service with no upside. Disable in
+            System Settings &rarr; General &rarr; Sharing &rarr; Remote Login. See Apple's
+            <a href="https://support.apple.com/en-gb/guide/mac-help/mchlp1066/mac" target="_blank" rel="noopener">sharing settings guide</a>.
+          </p>
+
+          <h3>Remote management / screen sharing disabled</h3>
+          <p>
+            Screen Sharing and Remote Management let another machine control this one.
+            Fine if it's how your IT contact supports the estate; otherwise it's another
+            exposed service worth switching off. Review in System Settings &rarr; General
+            &rarr; Sharing. See Apple's
+            <a href="https://support.apple.com/en-gb/guide/mac-help/mh11848/mac" target="_blank" rel="noopener">screen sharing guide</a>.
+          </p>
+
+          <h3>Bluetooth disabled when not required</h3>
+          <p>
+            The lowest-severity finding on this list, but the most common: leaving
+            Bluetooth on when nothing needs it slightly widens the device's radio attack
+            surface. Turn off in Control Centre or System Settings &rarr; Bluetooth when
+            you're not using a Bluetooth peripheral. See Apple's
+            <a href="https://support.apple.com/en-gb/guide/mac-help/blth1008/mac" target="_blank" rel="noopener">Bluetooth guide</a>.
+          </p>
+
+          <h3>Local administrator account count</h3>
+          <p>
+            Every account with admin rights is an account that, if compromised, can
+            change anything on the device. The benchmark expects the smallest practical
+            number of admin accounts, with everyday users on standard accounts. Review
+            and demote in System Settings &rarr; Users &amp; Groups. See Apple's
+            <a href="https://support.apple.com/en-gb/guide/mac-help/mtusr001/mac" target="_blank" rel="noopener">user accounts guide</a>.
+          </p>
+
+          <h2>Windows</h2>
+          <p>
+            Windows CIS Level&nbsp;1 coverage is rolling out alongside the Windows agent.
+            The controls most estates hit today:
+          </p>
+
+          <h3>Microsoft Defender real-time protection</h3>
+          <p>
+            Real-time protection scans files as they're accessed rather than on a
+            schedule, catching most commodity malware before it runs. It's on by default
+            on a clean install of Windows; if it's failing, another AV product may
+            have disabled it without fully replacing the coverage. Check in Windows
+            Security &rarr; Virus &amp; threat protection. See Microsoft's
+            <a href="https://support.microsoft.com/en-us/windows/turn-on-defender-antivirus-in-windows-security-2ae0363d-0ada-c064-8b56-6a39afb6a963" target="_blank" rel="noopener">Defender Antivirus guide</a>.
+          </p>
+
+          <h3>BitLocker disk encryption</h3>
+          <p>
+            The Windows equivalent of FileVault: it encrypts the system drive so a
+            lost or stolen device doesn't expose its data. Enable in Settings &rarr;
+            Privacy &amp; Security &rarr; Device encryption, or the full BitLocker
+            control panel on Pro/Enterprise editions. See Microsoft's
+            <a href="https://support.microsoft.com/en-us/windows/turn-on-device-encryption-0c453637-bc88-5f74-5105-741561aae838" target="_blank" rel="noopener">device encryption guide</a>.
+          </p>
+
+          <h3>Windows Update kept current</h3>
+          <p>
+            Pending cumulative updates are how known, already-patched vulnerabilities
+            stay open across an estate. Set to install automatically in Settings &rarr; Windows
+            Update &rarr; Advanced options. See Microsoft's
+            <a href="https://support.microsoft.com/en-us/windows/update-windows-3c5ae7fc-9fb6-9af1-1984-b5e0412c556a" target="_blank" rel="noopener">Windows Update guide</a>.
+          </p>
+
+          <p>
+            Not sure which of these apply to your estate, or want the full CIS Level&nbsp;1
+            list rather than the common dozen? Your monthly PDF lists every control that
+            applies to each device, see
+            <a href="/read-your-report.html">how to read your report</a>. Anything not
+            covered here, email <a href="mailto:hello@patched.im">hello@patched.im</a>.
+          </p>
+
+          <nav class="pager">
+            <a href="/read-your-report.html">&larr; How to read your report</a>
+            <a href="/using-your-portal.html">Using your portal &rarr;</a>
+          </nav>
+        </article>
+      </div>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__logo"><img src="/patched-lockup-horizontal-white.svg" width="132" height="27" alt="Patched" /></div>
+      <nav class="footer__links" aria-label="Footer"><a href="https://patched.im/cyber-essentials">Cyber Essentials</a><a href="https://patched.im/msp">For MSPs</a><a href="https://patched.im/pricing">Pricing</a><a href="https://patched.im/security.html">Security</a><a href="https://patched.im/about.html">About</a><a href="https://patched.im/blog">Blog</a><a href="https://docs.patched.im">Docs</a><a href="https://status.patched.im">Status</a><a href="https://patched.im/privacy.html">Privacy</a><a href="https://patched.im/cookies.html">Cookies</a><a href="mailto:hello@patched.im">Contact</a></nav>
+      <div class="footer__meta">&copy; <span data-year>2026</span> Patched.im Ltd · Isle of Man · Company No. 139269C</div>
+    </div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

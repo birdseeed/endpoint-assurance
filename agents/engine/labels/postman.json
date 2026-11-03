@@ -1,0 +1,23 @@
+{
+  "label": "postman",
+  "name": "Postman",
+  "type": "zip",
+  "app_path": "/Applications/Postman.app",
+  "expected_team_id": "H7H8Q7M5CK",
+  "download": {
+    "method": "static",
+    "url": "https://dl.pstmn.io/download/latest/osx_arm64"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

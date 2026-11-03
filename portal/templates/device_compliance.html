@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% from "_macros.html" import device_page_head, lifecycle_cell %}
+{% block content %}
+{{ device_page_head(device, tabs, cve_tile, issues_tile) }}
+
+{#- PAT-2164: Compliance tab - Compliance signals, with the CIS
+    finding-verification lifecycle (PAT-1879) joined in. -#}
+<section class="card" id="compliance-signals" aria-labelledby="compliance-signals-title">
+  <h2 id="compliance-signals-title">Compliance signals</h2>
+  {% if signals %}
+  {#- PAT-2136: table-stack is the generic phone-width pattern (see
+      portal.css) - below its breakpoint each row becomes a labelled block
+      instead of this table's fixed pixel column widths (Severity 108px +
+      Status 84px + Verification 250px = 442px) squeezing the Rule/Control
+      columns to 0px and wrapping their text one letter per line. Each
+      td's data-label supplies the on-screen caption there; the real <th>
+      text stays in the DOM (visually hidden, not removed) for assistive
+      tech. #}
+  <div class="table-scroll">
+  <table class="data-table signals-table table-stack">
+    <thead><tr><th>Rule</th><th>Control</th><th>Severity</th><th>Status</th><th>Verification</th></tr></thead>
+    <tbody>
+      {% for s in signals %}
+      <tr>
+        {#- <wbr> after each underscore lets a long snake_case rule id wrap at its
+            own word boundaries instead of mid-letter or past the card edge. #}
+        <td class="mono signals-table__rule" data-label="Rule">{% for part in (s.rule_id or '').split('_') %}{{ part }}{% if not loop.last %}_<wbr>{% endif %}{% endfor %}</td>
+        <td data-label="Control">{{ s.title }}{% if s.advisory %}<span class="advisory signals-table__advisory">{{ s.advisory }}</span>{% endif %}</td>
+        <td data-label="Severity"><span class="pill pill-{{ (s.severity or 'low') | lower }}">{{ (s.severity or '-') | capitalize }}</span></td>
+        <td data-label="Status">{% if s.undetermined is true %}{#- PAT-2496: the value could not be read, so nothing was observed to fail. Same words and neutral pill as the Devices roster and the device page use for this state; only a JSON true counts (main._signal_undetermined). -#}<span class="pill pill-muted">Not assessed</span>{% elif (s.status or '') | lower in ('pass', 'compliant', 'ok') %}<span class="pill pill-ok">{{ s.status | capitalize }}</span>{% elif (s.status or '') | lower == 'not_applicable' %}{#- PAT-2256: a control that does not apply to this device is not a failure, and the Failing checks count above does not include it. -#}<span class="pill pill-muted">Not applicable</span>{% else %}<span class="pill pill-bad">{{ (s.status or '-') | capitalize }}</span>{% endif %}</td>
+        <td data-label="Verification">{{ lifecycle_cell(s.lifecycle) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">No compliance signals have been recorded for this device yet.</p>
+  {% endif %}
+</section>
+
+{#- PAT-2263: Known vulnerable drivers - kernel/file-system drivers matched
+    by hash against Microsoft's recommended driver block rules and
+    loldrivers.io (contracts/portal-api.md "kernel_drivers (PAT-2263)").
+    Copy is evidence only throughout: never "safe", "exploited" or
+    "compromised" - see tests/test_pat2263_kernel_drivers.py's banned-words
+    assertion. A driver with no match is never rendered as clean; the
+    platform's own signer/file-attribute rules are not evaluated here and a
+    list can be stale (surfaced plainly via the Stale pill below). -#}
+<section class="card" id="kernel-drivers" aria-labelledby="kernel-drivers-title">
+  <h2 id="kernel-drivers-title">Known vulnerable drivers</h2>
+  {% if not kernel_drivers.present or kernel_drivers.status == 'not_reported' %}
+    {% if kernel_drivers.is_macos %}
+    <p class="empty">Driver checks apply to Windows devices.</p>
+    {% else %}
+    <p class="empty">This device's agent doesn't report drivers yet.</p>
+    {% endif %}
+  {% else %}
+    {% if kernel_drivers.status == 'unavailable' %}
+    <p class="empty">The agent could not read this device's drivers.</p>
+    {% endif %}
+
+    {% if kernel_drivers.enforcement %}
+    <p class="evidence-inline">Vulnerable driver blocklist: <strong>{{ kernel_drivers.enforcement.blocklist_enforced_label }}</strong></p>
+    {% endif %}
+
+    {% if kernel_drivers.lists %}
+    <ul class="driver-lists">
+      {% for l in kernel_drivers.lists %}
+      <li>
+        <span>{{ l.source_label }}</span>
+        {% if l.ever_fetched %}
+        <span class="mono">v{{ l.list_version or 'unknown' }}, fetched {{ l.fetched_at | humandate_nowrap(true) }} (UTC)</span>
+        {% else %}
+        <span class="cell-subtle">Never fetched</span>
+        {% endif %}
+        {% if l.stale %}<span class="pill pill-warn">Stale</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if kernel_drivers.matches %}
+    <div class="table-scroll">
+    <table class="data-table driver-matches-table table-stack">
+      <thead><tr>
+        <th>Driver</th><th>Source</th><th>List version</th><th>Fetched</th><th>Matching hash</th><th>Loaded</th>
+      </tr></thead>
+      <tbody>
+        {% for m in kernel_drivers.matches %}
+        <tr>
+          <td class="mono" data-label="Driver">{{ m.driver_path or m.service_name or 'Unknown' }}{% if m.category == 'malicious' %} <span class="pill pill-critical">Malicious</span>{% endif %}</td>
+          <td data-label="Source">{{ m.source_label }}</td>
+          <td class="mono" data-label="List version">{{ m.list_version or 'Unknown' }}</td>
+          <td class="mono" data-label="Fetched">{% if m.list_fetched_at %}{{ m.list_fetched_at | humandate_nowrap(true) }} UTC{% else %}Unknown{% endif %}{% if m.list_stale %} <span class="pill pill-warn">Stale</span>{% endif %}</td>
+          <td data-label="Matching hash">
+            {% if m.hash_truncated %}
+            <span class="mono">{{ m.hash_truncated }}</span>
+            <span class="visually-hidden" id="driver-hash-{{ loop.index }}">{{ m.hash_full }}</span>
+            <button type="button" class="code-block__copy" data-copy-target="driver-hash-{{ loop.index }}">Copy</button>
+            {% else %}Unknown{% endif %}
+          </td>
+          <td data-label="Loaded">{{ m.loaded_label }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% elif kernel_drivers.checked_state == 'unknown_no_list' %}
+    <p class="empty">Whether this device has vulnerable drivers is unknown: no driver list has been fetched yet.</p>
+    {% elif kernel_drivers.checked_state == 'unknown_unhashed' %}
+    <p class="empty">Whether this device has vulnerable drivers is unknown: none of this device's drivers could be hashed.</p>
+    {% elif kernel_drivers.checked_at %}
+    <p class="empty">No drivers on this device match the vulnerable driver lists checked on {{ kernel_drivers.checked_at | humandate }}.</p>
+    {% else %}
+    <p class="empty">No drivers on this device match the vulnerable driver lists checked so far.</p>
+    {% endif %}
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ static_url('js/portal.js') }}"></script>
+{#- PAT-2263: same copy-to-clipboard idiom as install.html/
+    devices_jamf_setup.html - copies a hidden full-value span's textContent,
+    never the truncated display text, so a copied hash is always complete. -#}
+<script>
+(function () {
+  document.querySelectorAll(".code-block__copy").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var target = document.getElementById(btn.getAttribute("data-copy-target"));
+      if (!target || !navigator.clipboard) return;
+      navigator.clipboard.writeText(target.textContent).then(function () {
+        var original = btn.textContent;
+        btn.textContent = "Copied";
+        btn.classList.add("is-copied");
+        setTimeout(function () {
+          btn.textContent = original;
+          btn.classList.remove("is-copied");
+        }, 1500);
+      });
+    });
+  });
+})();
+</script>
+{% endblock %}

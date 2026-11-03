@@ -1,0 +1,55 @@
+name: changelog-guard
+
+# PAT-2157: every PR that ships a customer-visible portal change adds a
+# What's new entry (data/changelog.json) in the same PR - see AGENTS.md
+# "Changelog". This makes the rule enforced rather than remembered, for any
+# tool that opens the PR (Claude Code, Codex, OpenCode or a person).
+# Customer-visible means the PR touches templates/, static/ or main.py.
+# A refactor, test-only or otherwise invisible change opts out with the
+# `no-changelog` label, which leaves a visible record of the choice.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Customer-visible change carries a What's new entry
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          NO_CHANGELOG: ${{ contains(github.event.pull_request.labels.*.name, 'no-changelog') }}
+        run: |
+          set -euo pipefail
+          # Judge only this PR, excluding changes that landed on the target branch.
+          merge_base=$(git merge-base "$BASE" "$HEAD")
+          changed=$(git diff --name-only "$merge_base" "$HEAD")
+          visible=$(printf '%s\n' "$changed" | grep -E '^(templates/|static/|main\.py$)' || true)
+          if [ -z "$visible" ]; then
+            echo "No customer-visible files changed; no What's new entry needed."
+            exit 0
+          fi
+          if printf '%s\n' "$changed" | grep -qx 'data/changelog.json'; then
+            echo "What's new entry present (data/changelog.json changed)."
+            exit 0
+          fi
+          if [ "$NO_CHANGELOG" = "true" ]; then
+            echo "::notice::no-changelog label set; skipping. Customer-visible files changed:"
+            printf '%s\n' "$visible"
+            exit 0
+          fi
+          echo "::error::This PR changes customer-visible files but adds no What's new entry."
+          echo "Add an entry to data/changelog.json (see AGENTS.md \"Changelog\"),"
+          echo "or add the no-changelog label if customers will not see the change."
+          echo "Customer-visible files changed:"
+          printf '%s\n' "$visible"
+          exit 1

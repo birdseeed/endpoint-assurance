@@ -1,0 +1,23 @@
+{
+  "label": "things",
+  "name": "Things3",
+  "type": "zip",
+  "app_path": "/Applications/Things3.app",
+  "expected_team_id": "JLMPQHK86H",
+  "download": {
+    "method": "static",
+    "url": "https://culturedcode.com/things/download/"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

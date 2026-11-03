@@ -1,0 +1,24 @@
+{
+  "label": "camtasia2026",
+  "name": "Camtasia",
+  "type": "dmg",
+  "app_path": "/Applications/Camtasia.app",
+  "expected_team_id": "7TQL462TU8",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://sparkle.cloud.techsmith.com/api/v1/AppcastManifest/?version=26.0.0&utm_source=product&utm_medium=cmac&utm_campaign=cm26&ipc_item_name=cmac&ipc_platform=macos"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

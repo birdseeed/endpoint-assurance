@@ -1,0 +1,26 @@
+name: test-screensaver
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/screensaver.sh'
+      - 'macos/lib/test-screensaver.zsh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/hardware.sh'
+      - 'macos/patched-collect.sh'
+  pull_request:
+    paths:
+      - 'macos/lib/screensaver.sh'
+      - 'macos/lib/test-screensaver.zsh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/hardware.sh'
+      - 'macos/patched-collect.sh'
+
+jobs:
+  test:
+    runs-on: macos-latest          # zsh + /usr/bin/python3 are stock on macOS runners
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run screensaver lock policy collector tests
+        run: zsh macos/lib/test-screensaver.zsh

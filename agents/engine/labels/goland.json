@@ -1,0 +1,24 @@
+{
+  "label": "goland",
+  "name": "GoLand",
+  "type": "dmg",
+  "app_path": "/Applications/GoLand.app",
+  "expected_team_id": "2ZEFAR8TH3",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://data.services.jetbrains.com/products/releases?code=GO&latest=true&type=release"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

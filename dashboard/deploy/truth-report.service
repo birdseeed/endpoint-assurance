@@ -1,0 +1,25 @@
+[Unit]
+Description=Report local systemd evidence to the dashboard operational truth page (PAT-1303)
+Documentation=file:///opt/patched-truth-report/truth-report.sh
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+# NOTE: this unit is authored and version-controlled in the DASHBOARD repo's
+# deploy/ (dashboard-pat-1303 worktree has no access to the patched.im/portal
+# repos this actually installs into), but it runs ON api-01/portal-01, not
+# on the dashboard box — hence a dedicated /opt/patched-truth-report path
+# rather than /opt/patched-dashboard. Not installed anywhere as of PAT-1303;
+# see deploy/truth-report.sh's header for what installing it requires.
+ExecStart=/opt/patched-truth-report/truth-report.sh
+StandardOutput=journal
+StandardError=journal
+# Don't hammer the endpoint on transient failure — let the timer try again
+# next cycle, same reasoning as hetzner-firewall-apply.service.
+Restart=no
+TimeoutStartSec=1min
+
+[Install]
+WantedBy=multi-user.target

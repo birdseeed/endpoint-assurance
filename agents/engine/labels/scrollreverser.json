@@ -1,0 +1,24 @@
+{
+  "label": "scrollreverser",
+  "name": "Scroll Reverser",
+  "type": "zip",
+  "app_path": "/Applications/Scroll Reverser.app",
+  "expected_team_id": "6W6K75YWQ9",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/pilotmoon/Scroll-Reverser/releases/latest"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

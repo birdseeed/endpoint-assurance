@@ -1,0 +1,23 @@
+{
+  "label": "yubikeymanagerqt",
+  "name": "YubiKey Manager GUI",
+  "type": "pkg",
+  "app_path": "/Applications/YubiKey Manager GUI.app",
+  "expected_team_id": "LQA3CS5MM7",
+  "download": {
+    "method": "static",
+    "url": "https://developers.yubico.com/yubikey-manager-qt/Releases/yubikey-manager-qt-latest-mac.pkg"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

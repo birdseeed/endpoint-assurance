@@ -1,0 +1,670 @@
+{
+  "scope": {
+    "method": "Offline manifest/advisory JSON reading and source searches/excerpts only.",
+    "requested_model": "gpt-6.1-sol",
+    "requested_effort": "medium",
+    "context_mode": "fresh none",
+    "observed_model_metadata": "unavailable",
+    "mutations_network_tests_app_execution": "none",
+    "limitations": [
+      "Static source reachability triage, not exploitation or installed dependency verification.",
+      "No vendored dependency implementation or resolved transitive import graph available for verification.",
+      "No running deployment, live configuration, proxy environment, TLS library build or platform verified.",
+      "No complete product certification."
+    ]
+  },
+  "metadata": {
+    "inventory_recorded_at": "2026-11-01T22:02:15.947469+00:00",
+    "inventory_records": 270,
+    "matching_package_version_rows": 16,
+    "distinct_matching_packages_after_pyjwt_case_normalisation": 15,
+    "unique_advisory_records": 115,
+    "alias_collapsed_groups": 77,
+    "earliest_advisory_publication": "2026-04-21T18:59:43Z",
+    "latest_advisory_modification": "2026-10-30T14:00:02.590922333Z",
+    "important_count_limit": "Alias collapse does not merge GHSA records lacking shared aliases even when descriptions suggest the same underlying issue.",
+    "authoritative_metadata_files": [
+      "dependency-inventory.json",
+      "dependency-osv-results.json",
+      "dependency-osv-advisories.json"
+    ],
+    "alias_and_url_contract": "Retain aliases, references URLs and affected ranges verbatim from dependency-osv-advisories.json keyed by the canonical IDs below. Historical prose sometimes says no fix exists; later updates and structured fixed events supersede that prose.",
+    "no_blanket_severity": "Upstream severities are conditional library assessments, not automatically product findings."
+  },
+  "remediation_snapshot_2026_11_02": {
+    "status": "Current 2026-11-02 source candidate only; native Windows closure and exact toolchain checks pending. Historical 2026-11-01 advisory inventory remains unchanged.",
+    "python_pins_from_actual_requirements_and_hash_locks": {
+      "PyJWT": "2.15.0",
+      "certifi": "2026.10.19",
+      "urllib3": "2.8.0",
+      "python-multipart": "0.0.32",
+      "anyio": "4.14.2"
+    },
+    "go_versions_from_actual_module_mvs_graph": {
+      "go_module_minimum": "1.26.9",
+      "toolchain_suggestion": "1.27.2",
+      "locally_observed_toolchain": "1.27.1 diagnostic only",
+      "golang.org/x/net": "v0.62.0",
+      "golang.org/x/image": "v0.45.0",
+      "github.com/go-chi/chi/v5": "v5.4.0",
+      "github.com/xuri/excelize/v2": "v2.11.1-0.20261003002531-6258dcebc4e2",
+      "golang.org/x/crypto": "v0.58.0",
+      "golang.org/x/text": "v0.43.0"
+    },
+    "checks": {
+      "portal_auth_tests": "37 passed",
+      "dashboard_tests": "179 passed",
+      "scan_tests": "281 passed",
+      "hashed_lock_installs_pip_checks_and_certificate_smoke": "passed",
+      "native_windows_fixtures": "15 not run",
+      "shared_checks": "2172 passed, 16 skipped (includes the 15 native Windows fixtures)",
+      "verifier_cross_build": "0 warnings/errors",
+      "independent_astra_static_review": "passed after readable-token regression repair",
+      "current_osv_refresh": "264 package/version records, 329 occurrences; 3 remaining advisory IDs; no errors or withdrawn records",
+      "current_osv_matches": {
+        "GO-2026-5932": "golang.org/x/crypto/openpgp subpackage; unmaintained/unsafe by design; no fixed version boundary",
+        "GO-2026-6601": "Go toolchain checksum bypass; Go 1.27.1 affected, fixed at 1.27.2",
+        "GO-2026-6602": "Go toolchain checksum database bypass; Go 1.27.1 affected, fixed at 1.27.2"
+      },
+      "exact_go_1_27_2_and_native_windows_validation": "not run; required before run or reuse"
+    },
+    "limitations": [
+      "Do not infer that all PyJWT advisories are fixed by the version update; retain their per-advisory conditions and mitigations.",
+      "The OpenPGP advisory has no fixed range; do not claim it is patched.",
+      "Updating module versions does not independently establish absent affected subpackages or call paths.",
+      "These package/toolchain advisory matches do not establish product bugs or call-path reachability.",
+      "This source candidate is not a security closure, public release readiness claim, or delivery claim."
+    ],
+    "personal_archive_scope": "Unsupported archival source; no native or production clearance. Historical advisory inventory preserved."
+  },
+  "packages": [
+    {
+      "name": "undici",
+      "version": "7.29.1",
+      "sources": [
+        "macos-updater/service/licensing/package-lock.json"
+      ],
+      "advisory_ids": [
+        "GHSA-2m5v-pch6-74hx",
+        "GHSA-4qv8-2p9j-2685",
+        "GHSA-4w7w-5xrc-9h26",
+        "GHSA-55wc-3pg8-jfw6",
+        "GHSA-9fm3-97px-rjf6",
+        "GHSA-f72v-6w45-q472",
+        "GHSA-qrxm-fqhp-jwvm",
+        "GHSA-xjj6-f33q-929c"
+      ],
+      "vulnerable_functions": [
+        "Agent function-valued tls option cloning",
+        "EventSource parser",
+        "compose(redirect(), cache()) shared originless Agent",
+        "decompress interceptor with throwing handler",
+        "WebSocket automatic PONG buffering",
+        "fetch mixed-case SRI algorithm",
+        "TLS 1.2 renegotiation socket error handling",
+        "fetch excessive content-encodings response handling"
+      ],
+      "evidence": [
+        "Lockfile node_modules/undici explicitly dev:true.",
+        "package.json contains only devDependencies, describes @patched/licensing-local-fixture, and declares unit/D1-local tooling commands.",
+        "No project source direct undici API call identified."
+      ],
+      "classification": "development_tooling_conditional_indirect",
+      "condition": "Some normal fetch/TLS response paths may be exercised inside tooling; specialised EventSource/WebSocket/interceptor/pinning/SRI configurations were not established. Do not classify the Cloudflare Worker runtime as using Node undici from this development lock.",
+      "minimum_known_fixed_same_major": "7.30.1",
+      "action": "Scoped development-tool dependency refresh before using copied tooling against untrusted endpoints; verify upstream Wrangler constraints rather than force an incompatible override."
+    },
+    {
+      "name": "anyio",
+      "version": "4.14.1",
+      "sources": [
+        "endpoint-assurance/portal/requirements.lock",
+        "endpoint-assurance/portal/scan/requirements.lock"
+      ],
+      "advisory_ids": [
+        "GHSA-3w57-8xmc-8v26",
+        "GHSA-5p39-cfhj-2xmp",
+        "GHSA-82r6-8w77-94w6"
+      ],
+      "aliases": [
+        "CVE-2026-63349",
+        "PYSEC-2026-4023",
+        "CVE-2026-64847",
+        "PYSEC-2026-4024",
+        "CVE-2026-63374",
+        "PYSEC-2026-4025"
+      ],
+      "vulnerable_functions": [
+        "run_process/open_process extra_groups",
+        "process-pool worker stderr",
+        "connect_tcp/TLSStream.wrap non-ASCII hostname encoding"
+      ],
+      "classification": "no_direct_vulnerable_calls_identified_indirect_unresolved",
+      "evidence": "No source calls to these AnyIO process/TLS APIs found; framework threadpool use is a different API. HTTP outbound code inspected uses requests, not an identified AnyIO TLS client.",
+      "minimum_known_fixed": "4.14.2",
+      "action": "Small scoped lock refresh before runtime; document that the reported vulnerable process and IDN paths were not established."
+    },
+    {
+      "name": "certifi",
+      "version": "2026.6.17",
+      "sources": [
+        "endpoint-assurance/portal/requirements.lock",
+        "endpoint-assurance/portal/scan/requirements.lock"
+      ],
+      "advisory_ids": [
+        "GHSA-6q48-6c7w-9gw2"
+      ],
+      "aliases": [
+        "PYSEC-2026-4320"
+      ],
+      "vulnerable_function": "CA bundle retains emSign ECC Root CA - G3",
+      "classification": "conditionally_reachable_https_trust",
+      "evidence": "portal/auth.py:_fetch_jwks, portal/upstream.py and portal/scan/shared.py use requests HTTPS to configured platform/provider endpoints. Default requests trust normally consumes certifi; actual installed trust override was not inspected.",
+      "attacker_conditions": "Compromised intermediate key plus on-path position and effective use of the affected certifi trust bundle.",
+      "minimum_known_fixed": "2026.10.18",
+      "advisory_recommended_target": "2026.10.19",
+      "target_reason": "Structured range fixes at .18; prose recommends .19 because unaffected emSign roots were restored there.",
+      "action": "High-priority scoped lock refresh before runtime; rebuild any future image using this lock. No deployed image claim."
+    },
+    {
+      "name": "cryptography",
+      "version": "49.0.0",
+      "sources": [
+        "endpoint-assurance/portal/requirements.lock",
+        "endpoint-assurance/dashboard/requirements.txt"
+      ],
+      "advisory_ids": [
+        "GHSA-g6cj-pr64-35w5"
+      ],
+      "aliases": [
+        "CVE-2026-69247",
+        "PYSEC-2026-3552"
+      ],
+      "vulnerable_functions": [
+        "pkcs7_decrypt_der",
+        "pkcs7_decrypt_pem",
+        "pkcs7_decrypt_smime"
+      ],
+      "classification": "reported_vulnerable_functions_not_used",
+      "evidence": [
+        "portal/certificates.py imports x509 and serialization and validates bounded public PEM/DER certificates.",
+        "PyJWT consumer imports RSA public keys.",
+        "No source PKCS7 EnvelopedData decrypt call identified."
+      ],
+      "conditions": "Oracle needs adaptive high-volume untrusted EnvelopedData decryption reflected to an attacker. Distinct invalid-RSA-padding behaviour additionally depends on OpenSSL/LibreSSL/BoringSSL build; actual backend unverified.",
+      "minimum_known_fixed": "50.0.0",
+      "action": "Document non-reachability; review compatibility before any separate major-version dependency change."
+    },
+    {
+      "name": "PyJWT",
+      "version": "2.13.0",
+      "manifest_names": [
+        "pyjwt",
+        "PyJWT"
+      ],
+      "sources": [
+        "endpoint-assurance/portal/requirements.lock",
+        "endpoint-assurance/dashboard/requirements.txt"
+      ],
+      "advisory_ids": [
+        "GHSA-2gx3-rcp4-g85q",
+        "GHSA-42vr-xj54-vc7v",
+        "GHSA-8wjv-2p76-3863",
+        "GHSA-9j54-fg26-wv3r",
+        "GHSA-9v7f-9g4p-ffgj",
+        "GHSA-ffc3-869f-jxw9",
+        "GHSA-gvp8-978c-rx2q",
+        "GHSA-hxm8-2xgr-2p9m",
+        "GHSA-jwrc-g2q2-pq5p",
+        "GHSA-p4g4-x82p-q773",
+        "GHSA-pxh4-856f-4h89",
+        "GHSA-r6x4-923q-g947",
+        "GHSA-w2cx-738m-mc7w",
+        "GHSA-w6j9-cwv2-h6wq",
+        "GHSA-x33g-cr3x-6449"
+      ],
+      "classification": "mixed_conditional_and_mitigated",
+      "actual_callpaths": [
+        "portal/auth.py:151 get_unverified_header before signature verification; catches PyJWTError only.",
+        "portal/auth.py:168 decode with ALGORITHMS=['RS256'], configured issuer/audience, fresh options literal.",
+        "dashboard/dashboard_access.py:verify_token caps token at 16384 bytes, parses header and payload with duplicate-key rejection, uses RS256 only, fresh options literal, catches Exception.",
+        "portal/main.py:5907 unsigned decode is of the same already middleware-verified token, catches Exception, and can only lower privilege."
+      ],
+      "per_condition_triage": [
+        {
+          "advisory": "GHSA-8wjv-2p76-3863",
+          "classification": "portal_call_reachable_exploit_transport_unresolved",
+          "evidence": "Portal header parse has the affected call and narrow exception catch. Token comes from request header or CF_Authorization cookie, not JSON body; actual proxy/server field limits and Python recursion threshold may prevent the published oversized nested-header trigger. Dashboard broadly catches failure.",
+          "impact_limit": "Advisory's confirmed impact is request-level HTTP 500/logging, not worker death or authentication bypass."
+        },
+        {
+          "advisories": [
+            "GHSA-2gx3-rcp4-g85q",
+            "GHSA-9v7f-9g4p-ffgj"
+          ],
+          "classification": "PyJWKClient_not_used",
+          "evidence": "Both consumers use custom requests JWKS loaders and RSAAlgorithm.from_jwk. Custom caching is not proof that PyJWKClient advisories apply; assess custom caching separately."
+        },
+        {
+          "advisory": "GHSA-42vr-xj54-vc7v",
+          "classification": "preverification_payload_path_not_exposed_as_described",
+          "evidence": "Portal verifying decode keeps signature verification enabled; its unsigned decode is post-verification and broadly caught. Dashboard separately parses untrusted payload but catches Exception."
+        },
+        {
+          "advisories": [
+            "GHSA-9j54-fg26-wv3r",
+            "GHSA-ffc3-869f-jxw9",
+            "GHSA-p4g4-x82p-q773",
+            "GHSA-pxh4-856f-4h89",
+            "GHSA-r6x4-923q-g947",
+            "GHSA-w2cx-738m-mc7w"
+          ],
+          "classification": "HMAC_configuration_absent",
+          "evidence": "RS256-only verification with imported RSA keys, not HS/asymmetric mixed allow-lists or empty oct JWK keys."
+        },
+        {
+          "advisory": "GHSA-gvp8-978c-rx2q",
+          "classification": "mitigated_by_fresh_options_objects",
+          "minimum_known_fixed": null,
+          "range": "introduced 2.11.0; last_affected 2.13.0; no fixed event",
+          "evidence": "No shared options object reused between unsigned and signed decode in inspected call sites. Do not invent a fixed version."
+        },
+        {
+          "advisory": "GHSA-w6j9-cwv2-h6wq",
+          "classification": "PyJWKSet_abort_path_not_used",
+          "evidence": "Portal catches Exception for each RSAAlgorithm.from_jwk entry. Dashboard broadly catches loading errors and fails closed; only configured trusted JWKS can supply such keys."
+        },
+        {
+          "advisory": "GHSA-x33g-cr3x-6449",
+          "classification": "OKP_DPoP_key_path_not_used",
+          "evidence": "RSA-only verifier; no attacker proof-header private OKP JWK import identified."
+        },
+        {
+          "advisory": "GHSA-jwrc-g2q2-pq5p",
+          "classification": "attacker_PEM_key_path_not_identified",
+          "evidence": "JWKS RSA key objects are supplied, rather than arbitrary client PEM text passed into the HMAC guard."
+        },
+        {
+          "advisory": "GHSA-hxm8-2xgr-2p9m",
+          "classification": "raw_token_revocation_composition_not_identified",
+          "evidence": "portal/main.py raw-token SHA256 is a catalogue cache key, not itself a revocation denial list. Do not infer a logout bypass from that cache."
+        }
+      ],
+      "minimum_known_fixed_for_all_records_having_fixed_events": "2.15.0",
+      "action": "Scoped upgrade to at least 2.15.0 before runtime plus retain fresh-options mitigation; separately confirm portal transport bounds and clean handling of recursive headers."
+    },
+    {
+      "name": "urllib3",
+      "version": "2.7.0",
+      "sources": [
+        "endpoint-assurance/portal/requirements.lock",
+        "endpoint-assurance/portal/scan/requirements.lock"
+      ],
+      "advisory_ids": [
+        "GHSA-8988-9cw3-xx77",
+        "GHSA-gh4c-6fx4-qh6g",
+        "GHSA-vxq7-64xx-v4gw"
+      ],
+      "aliases": [
+        "CVE-2026-97687",
+        "PYSEC-2026-4175",
+        "CVE-2026-97688",
+        "PYSEC-2026-4176",
+        "CVE-2026-97689",
+        "PYSEC-2026-4177"
+      ],
+      "classification": "conditionally_reachable_streaming",
+      "actual_callpaths": [
+        "portal/upstream.py:176 post_bytes uses requests.iter_content(65536), permits normal response decoding and caps output after each yield.",
+        "portal/upstream.py:267 stream_chunks uses iter_content; stream() requests identity and rejects non-identity encoding before yielding, mitigating the deflate-specific path for that GET route.",
+        "dashboard/dashboard_access.py:60 uses requests.iter_content(8192) for configured Cloudflare JWKS.",
+        "dashboard/main.py:8563 uses iter_content(16384) for fixed internal service-exceptions source."
+      ],
+      "conditions": [
+        "Deflate loop requires chunked compressed response, positive finite chunk size, extra bytes after completed deflate stream and decoded body exceeding chunk size.",
+        "Chunk-size-line exhaustion requires malicious chunked upstream, independent of content-decoding negotiation.",
+        "Application byte limits/deadlines run after iteration yields and therefore do not eliminate parser-internal loop/buffering.",
+        "HTTPS proxy issue needs effective HTTPS proxy mode and specified proxy/target TLS configuration combinations. No custom ProxyManager or proxy SSL context call identified; requests environment proxy configuration remains unverified."
+      ],
+      "minimum_known_fixed": "2.8.0",
+      "action": "High-priority scoped lock refresh before runtime. Treat endpoint compromise/on-path conditions explicitly; no arbitrary request-selected URL was established."
+    },
+    {
+      "name": "python-multipart",
+      "version": "0.0.27",
+      "sources": [
+        "endpoint-assurance/dashboard/requirements.txt"
+      ],
+      "unaffected_other_manifest_version": "Portal and scan locks contain 0.0.32.",
+      "advisory_ids": [
+        "GHSA-5rvq-cxj2-64vf",
+        "GHSA-6jv3-5f52-599m",
+        "GHSA-v9pg-7xvm-68hf",
+        "GHSA-vffw-93wf-4j4q"
+      ],
+      "aliases": [
+        "CVE-2026-53539",
+        "PYSEC-2026-3036",
+        "CVE-2026-53538",
+        "PYSEC-2026-3037",
+        "CVE-2026-53540",
+        "PYSEC-2026-3040",
+        "CVE-2026-53537",
+        "PYSEC-2026-3041"
+      ],
+      "vulnerable_functions": [
+        "QuerystringParser",
+        "parse_options_header",
+        "parse_form negative Content-Length"
+      ],
+      "classification": "multipart_parser_reachable_differential_impact_conditional",
+      "evidence": [
+        "dashboard/main.py:12749 /api/scan/upload uses FastAPI Form and File parameters.",
+        "Multipart extended name/filename interpretation is exposed through framework form parsing; actual smuggling impact needs an intermediary policy relying on a different parse.",
+        "Filename is passed through _safe_filename and path containment checks.",
+        "Endpoint requires files, so application/x-www-form-urlencoded parsing applicability and actual parser chunk size need framework verification before claiming the quadratic request impact.",
+        "No direct parse_form call found; negative Content-Length advisory explicitly excludes ordinary Starlette/FastAPI ASGI parsing."
+      ],
+      "minimum_known_fixed_for_all_four": "0.0.31",
+      "minimum_known_fixed_for_querystring_and_parameter_differentials": "0.0.30",
+      "action": "Scoped runtime dependency update before runtime; 0.0.31 is evidence-backed coverage, with 0.0.32 already used in sibling portal locks."
+    },
+    {
+      "name": "httpx2",
+      "version": "2.7.0",
+      "sources": [
+        "endpoint-assurance/dashboard/requirements-dev.txt"
+      ],
+      "advisory_ids": [
+        "GHSA-7mj9-2mp8-4m2p",
+        "GHSA-8xx6-hgc6-gc2m",
+        "GHSA-f2fp-rgf2-35cp",
+        "GHSA-h4x7-gw46-3wm6",
+        "GHSA-pf96-p4fj-6566"
+      ],
+      "aliases": [
+        "CVE-2026-84381",
+        "PYSEC-2026-3844",
+        "PYSEC-2026-3845",
+        "CVE-2026-84382",
+        "PYSEC-2026-3846",
+        "CVE-2026-84378",
+        "PYSEC-2026-3847",
+        "CVE-2026-84379",
+        "PYSEC-2026-3848",
+        "CVE-2026-84380",
+        "PYSEC-2026-3849"
+      ],
+      "vulnerable_functions": [
+        "SOCKS wss TLS setup",
+        "stream decompression",
+        "Client.sse",
+        "multipart file headers",
+        "Request._prepare framing headers"
+      ],
+      "classification": "test_only_no_live_attack_path_established",
+      "evidence": "requirements-dev.txt explicitly identifies HTTPX2 as Starlette TestClient backend, excluded from production requirements installation. No project direct httpx2 import, SSE or SOCKS/WebSocket consumer found.",
+      "minimum_known_fixed_covering_all": "2.12.0",
+      "action": "Scoped development dependency refresh and TestClient compatibility check before test execution; do not describe this as runtime HTTPX exposure."
+    },
+    {
+      "name": "System.Security.Cryptography.Pkcs",
+      "version": "8.0.1",
+      "sources": [
+        "endpoint-assurance/agents/windows/src/Verifier/Verifier.csproj",
+        "endpoint-assurance/agents/windows/tests/Verifier.Tests/Verifier.Tests.csproj"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-846f-f764-76mx",
+          "aliases": [
+            "CVE-2026-84008"
+          ],
+          "function": "SignedCms.CheckSignature",
+          "source": "endpoint-assurance/agents/windows/src/Verifier/AuthenticodeVerifier.cs:359",
+          "classification": "function_reachable_attack_conditional",
+          "callpath": "VerifyMsix -> CheckFileAndTrust/WinVerifyTrust -> ExtractPublisherFromMsix -> bounded AppxSignature.p7x -> SignedCms.Decode -> CheckSignature(true)",
+          "guards": [
+            "WinVerifyTrust succeeds before extraction on the normal runtime path",
+            "exactly one signature entry",
+            "4 MiB pre-buffer and streaming signature cap"
+          ],
+          "condition": "Attacker needs an MSIX passing preceding trust verification, or another direct invocation of the internal helper. The cap limits input but is not proof against quadratic work.",
+          "source_url": "https://github.com/dotnet/announcements/issues/468"
+        },
+        {
+          "id": "GHSA-2fmv-rv2c-59x7",
+          "aliases": [
+            "CVE-2026-70162"
+          ],
+          "function": "EnvelopedCms.Decode",
+          "classification": "vulnerable_function_not_found",
+          "source_url": "https://github.com/dotnet/announcements/issues/454"
+        }
+      ],
+      "minimum_known_fixed_same_major": "8.0.2",
+      "action": "High-priority minimal scoped update before verifier runtime/build; preserve trust and size guards."
+    },
+    {
+      "name": "github.com/go-chi/chi/v5",
+      "version": "v5.3.2",
+      "sources": [
+        "endpoint-assurance/platform/go-service/go.mod"
+      ],
+      "advisory_ids": [
+        "GHSA-j6qf-3m9c-vwj3"
+      ],
+      "aliases": [
+        "CVE-2026-114437"
+      ],
+      "vulnerable_function": "middleware.ClientIPFromXFF",
+      "classification": "specific_vulnerable_function_not_used",
+      "evidence": "cmd/patched-api/main.go:428 uses middleware.RealIP, not ClientIPFromXFF. No ClientIPFromXFF/GetClientIP call found.",
+      "limit": "This does not certify the separate RealIP/proxy trust configuration.",
+      "minimum_known_fixed": "v5.4.0",
+      "action": "Document advisory mismatch; review any later dependency update and proxy-trust design separately."
+    },
+    {
+      "name": "github.com/xuri/excelize/v2",
+      "version": "v2.11.0",
+      "sources": [
+        "endpoint-assurance/platform/go-service/go.mod"
+      ],
+      "advisory_ids": [
+        "GHSA-2j4c-ffch-9f23",
+        "GHSA-5h23-36rv-pm65",
+        "GHSA-8jjq-8j9w-m2v6",
+        "GHSA-8mcq-6wmr-jrjv",
+        "GHSA-c85p-xxjj-2r75",
+        "GHSA-fq3v-74gv-27gm",
+        "GHSA-fw94-4wwp-w8pw",
+        "GHSA-g27h-8qhm-6pff",
+        "GHSA-jrfj-fhj2-jjvm",
+        "GHSA-jw42-f3rr-4cc3",
+        "GHSA-mx22-3794-2vpv",
+        "GHSA-r7x5-4969-99p7",
+        "GHSA-rxcj-4pj5-74gr",
+        "GHSA-wp2g-vpjj-g53r",
+        "GHSA-x2q3-8cjh-766f"
+      ],
+      "classification": "malformed_workbook_input_paths_not_used",
+      "vulnerable_functions": [
+        "OpenFile/OpenReader/Decrypt",
+        "Rows.Columns/GetRows",
+        "GetStyle",
+        "GetSlicers",
+        "GetConditionalFormats",
+        "CalcCellValue/ANCHORARRAY/RIGHT",
+        "worksheet checkRow/checkSheetR0",
+        "flatCols on malformed col attributes",
+        "pivot field extraction"
+      ],
+      "evidence": "internal/report/xlsx.go:391 RenderXLSX starts excelize.NewFile and writes a generated workbook. No non-test OpenFile/OpenReader, row-reading, formula-calculation or affected extraction API call found.",
+      "minimum_known_fixed_covering_all_reported_2x_ranges": "v2.11.1-0.20261003002531-6258dcebc4e2",
+      "fix_limit": "This is the highest affected-range fix boundary present, not a claim that a later stable release was independently verified.",
+      "action": "Document output-only use. Require patched dependency and input-specific review before introducing imported XLSX parsing; do not blindly label generated reports vulnerable to malformed uploaded workbooks."
+    },
+    {
+      "name": "golang.org/x/image",
+      "version": "v0.39.0",
+      "sources": [
+        "endpoint-assurance/platform/go-service/go.mod"
+      ],
+      "advisory_ids": [
+        "GHSA-q675-qj96-32m9",
+        "GO-2026-4961",
+        "GO-2026-5031",
+        "GO-2026-5032",
+        "GO-2026-5061",
+        "GO-2026-5062",
+        "GO-2026-5066",
+        "GO-2026-6222"
+      ],
+      "vulnerable_functions": [
+        "tiff Decode/PackBits/tiles/strip offsets",
+        "bmp palette decode",
+        "webp Decode",
+        "vp8l decode"
+      ],
+      "classification": "affected_decoder_imports_not_identified",
+      "evidence": "Direct import identified is font/sfnt in internal/report/ce_readiness_pdf.go, distinct from affected image decoders. No non-test TIFF/WEBP/BMP/VP8L import found.",
+      "minimum_known_fixed_covering_all": "v0.45.0",
+      "action": "Document decoder non-use; indirect dynamic image registration unresolved without dependency graph."
+    },
+    {
+      "name": "golang.org/x/net",
+      "version": "v0.57.0",
+      "sources": [
+        "endpoint-assurance/platform/go-service/go.mod"
+      ],
+      "advisory_ids": [
+        "GO-2026-6603",
+        "GO-2026-6610",
+        "GO-2026-6611",
+        "GO-2026-6612",
+        "GO-2026-6617",
+        "GO-2026-6860",
+        "GO-2026-6866"
+      ],
+      "classification": "html_parse_conditionally_reachable_other_paths_unestablished",
+      "actual_callpaths": [
+        "cmd/patched-cve-sync/os_match.go:72 -> oscve.FetchAppleOfficial -> ParseAppleSecurityIndex / ParseAppleAdvisoryHTML -> html.Parse at apple.go:165,246.",
+        "Default vendor URLs are support.apple.com; operator environment can override index/GDMF endpoints.",
+        "fetch.go caps vendor response at 128 MiB and uses 30-second HTTP timeout; these do not themselves bound post-download quadratic parse CPU.",
+        "extractor/upsert.go imports publicsuffix, not a reported affected API."
+      ],
+      "per_condition": [
+        {
+          "id": "GO-2026-6860",
+          "aliases": [
+            "CVE-2026-78661"
+          ],
+          "function": "html.Parse coalescing adjacent text",
+          "classification": "reachable_if_vendor_or_configured_feed_malicious"
+        },
+        {
+          "id": "GO-2026-6866",
+          "aliases": [
+            "CVE-2026-97045"
+          ],
+          "function": "html.Render",
+          "classification": "no_render_call_identified"
+        },
+        {
+          "ids": [
+            "GO-2026-6603",
+            "GO-2026-6610",
+            "GO-2026-6611",
+            "GO-2026-6612",
+            "GO-2026-6617"
+          ],
+          "function": "x/net/http2",
+          "classification": "no_direct_import_indirect_graph_unresolved",
+          "limit": "These records also contain stdlib affected ranges. Updating x/net does not fix an affected Go toolchain's net/http."
+        }
+      ],
+      "minimum_known_fixed_html_and_all_xnet_records": "v0.62.0",
+      "minimum_known_fixed_http2_only": "v0.60.0",
+      "separate_toolchain_note": "go.mod declares go 1.26.6. The matched advisory records include stdlib fixed branches 1.26.9/1.27.2; actual build toolchain unknown. Parent should separately triage stdlib rather than counting it as fixed by x/net.",
+      "action": "Prioritise scoped x/net refresh before vendor-sync runtime; separately document/verify the build Go version."
+    },
+    {
+      "name": "golang.org/x/crypto",
+      "version": "v0.54.0",
+      "sources": [
+        "endpoint-assurance/platform/go-service/go.mod"
+      ],
+      "advisory_ids": [
+        "GO-2026-5932",
+        "GO-2026-6303",
+        "GO-2026-6354",
+        "GO-2026-6355"
+      ],
+      "vulnerable_functions": [
+        "openpgp packages",
+        "ssh.NewServerConn authentication callbacks",
+        "ssh channel state handling"
+      ],
+      "classification": "affected_subpackages_not_imported_in_project_source",
+      "evidence": "Listed indirect; no non-test project x/crypto SSH/openpgp import identified. Other subpackages such as pgx password-related crypto would not automatically invoke SSH/openpgp.",
+      "minimum_known_fixed_ssh_records": "v0.56.0",
+      "minimum_known_fixed_openpgp_record": null,
+      "openpgp_action": "Unmaintained/unsafe-by-design advisory has no fixed range; prohibit introducing that subpackage, replace it if discovered in the actual graph.",
+      "action": "Document specific subpackage non-use and verify indirect graph before claiming runtime reachability."
+    },
+    {
+      "name": "golang.org/x/text",
+      "version": "v0.40.0",
+      "sources": [
+        "endpoint-assurance/platform/go-service/go.mod",
+        "endpoint-assurance/platform/api-vps-artefacts/alerting/selector-liveness/go.mod"
+      ],
+      "advisory_ids": [
+        "GO-2026-6629"
+      ],
+      "aliases": [
+        "CVE-2026-56851"
+      ],
+      "vulnerable_functions": [
+        "secure/precis Nickname profile transformation with short destination buffer"
+      ],
+      "classification": "specific_profile_use_not_identified_indirect_unresolved",
+      "evidence": "No direct non-test project secure/precis import/call identified. An indirect PRECIS consumer must use the affected Nickname profile/buffer path; package membership alone is insufficient.",
+      "minimum_known_fixed": "v0.41.0",
+      "action": "Document profile-specific condition; refresh indirectly with compatible dependency changes before runtime."
+    }
+  ],
+  "source_review_coverage": {
+    "full_source_files_reviewed": [
+      "macos-updater/service/licensing/package.json",
+      "endpoint-assurance/platform/go-service/go.mod",
+      "endpoint-assurance/dashboard/requirements-dev.txt"
+    ],
+    "source_excerpts_or_search_matches_reviewed": [
+      "macos-updater/service/licensing/package-lock.json",
+      "endpoint-assurance/portal/auth.py",
+      "endpoint-assurance/portal/main.py",
+      "endpoint-assurance/portal/upstream.py",
+      "endpoint-assurance/portal/certificates.py",
+      "endpoint-assurance/portal/scan/router.py",
+      "endpoint-assurance/portal/scan/shared.py",
+      "endpoint-assurance/portal/requirements.txt",
+      "endpoint-assurance/portal/requirements-test.txt",
+      "endpoint-assurance/dashboard/main.py",
+      "endpoint-assurance/dashboard/dashboard_access.py",
+      "endpoint-assurance/dashboard/requirements.txt",
+      "endpoint-assurance/dashboard/shared.py",
+      "endpoint-assurance/agents/windows/src/Verifier/AuthenticodeVerifier.cs",
+      "endpoint-assurance/agents/windows/tests/Verifier.Tests/AuthenticodeVerifierMsixTests.cs",
+      "endpoint-assurance/platform/go-service/internal/report/xlsx.go",
+      "endpoint-assurance/platform/go-service/internal/report/ce_readiness_pdf.go",
+      "endpoint-assurance/platform/go-service/internal/oscve/apple.go",
+      "endpoint-assurance/platform/go-service/internal/oscve/fetch.go",
+      "endpoint-assurance/platform/go-service/internal/extractor/upsert.go",
+      "endpoint-assurance/platform/go-service/cmd/patched-api/main.go",
+      "endpoint-assurance/platform/go-service/cmd/patched-cve-sync/os_match.go"
+    ],
+    "search_extent": "Both copied projects searched for relevant imports/functions, distinguishing test paths from non-test source. A no-match is limited to these source copies and searched source extensions.",
+    "advisory_review_limit": "All IDs/ranges were enumerated, but several long advisory prose outputs were truncated; do not represent this leaf as full line-by-line review of all 115 advisory bodies. Parent should retain raw JSON and verify final selected findings against complete records."
+  }
+}

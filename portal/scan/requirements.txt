@@ -1,0 +1,9 @@
+# Runtime dependencies for the standalone public scan service
+# (scan.patched.im, PAT-457). Pinned + hash-locked in scan/requirements.lock
+# (PAT-1893); this file lists the direct runtime deps only.
+fastapi
+uvicorn[standard]
+python-multipart
+jinja2
+requests
+python-docx

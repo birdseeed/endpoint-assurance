@@ -1,0 +1,219 @@
+name: api-build
+
+# Builds and tests patched-api + patched-extractor + patched-cve-sync, and
+# uploads them as a 14-day artifact. It NEVER ships anything to a box.
+#
+# PAT-1970: this job used to live inside deploy-api-01.yml and ran on every
+# push to main. Because the sibling `deploy` job was gated on
+# workflow_dispatch, a push built, tested, skipped the deploy and still
+# reported the whole run green under the name `deploy-api-01` — a workflow
+# named as a promise to deploy reporting success when it deliberately did not
+# deploy. On 2026-09-21 that nearly got recorded as a completed production
+# deploy of a security fix while the binary on the box was untouched.
+#
+# The gate itself is correct and is unchanged: shipping to api-01 is still a
+# deliberate `gh workflow run deploy-api-01.yml`. What changed is the name and
+# the trigger, so the Actions run list tells the truth at a glance:
+#   push to main            -> `api-build`     (green means built, never shipped)
+#   gh workflow run deploy  -> `deploy-api-01` (only ever appears for a deploy)
+#
+# deploy-api-01.yml calls this workflow via `workflow_call` so the build is
+# defined once. A called workflow runs inside the caller's run, so the
+# `api-01-binaries` artifact uploaded here is downloadable by the caller's
+# `deploy` job exactly as it was when both jobs lived in one file.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'go-service/**'
+      - 'deploy/api-01/**'
+      - '.github/workflows/api-build.yml'
+      - '.github/workflows/deploy-api-01.yml'
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    # Pinned: the drift journal needs postgresql-client-16 from this release's archive.
+    runs-on: ubuntu-24.04
+    # PAT-2062: a throwaway PostgreSQL 16 (prod's major) to build the schema
+    # fingerprint journal from exactly the migrations this artifact ships.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: patched
+          POSTGRES_PASSWORD: patched_test
+          POSTGRES_DB: patched_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go-service/go.mod
+          cache-dependency-path: go-service/go.sum
+
+      - name: Verify migration and command deployment contracts
+        run: python3 deploy/api-01/check_binary_inventory.py
+
+      - name: Build patched-api
+        run: |
+          cd go-service
+          # PAT-992: inject the deployed commit SHA + build time so /admin/ops/version
+          # reports the truth instead of the "dev" default. Without this the box cannot
+          # prove which commit it is running — the exact gap this ticket exists to close.
+          # SHA comes from the checkout (github.sha == the dispatched commit on main).
+          BUILD_SHA="$(git rev-parse HEAD)"
+          BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          mkdir -p dist
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+            -ldflags "-X main.buildSHA=${BUILD_SHA} -X main.buildTime=${BUILD_TIME}" \
+            -o dist/patched-api ./cmd/patched-api
+
+      - name: Build patched-extractor
+        run: |
+          cd go-service
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/patched-extractor ./cmd/patched-extractor
+
+      - name: Build patched-cve-sync
+        run: |
+          cd go-service
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/patched-cve-sync ./cmd/patched-cve-sync
+
+      - name: Build the schema drift journal and stage the check
+        # PAT-2062: deploy.sh runs deploy/api-01/schema-drift-check.sh on the
+        # box before migrations. The journal must come from this commit's
+        # migrations, so it is built here, proven clean against the database
+        # it was built on, and shipped with the check files in the artifact.
+        env:
+          PGHOST: localhost
+          PGUSER: patched
+          PGPASSWORD: patched_test
+          SCHEMA_DRIFT_BUILD_DSN: postgres://patched:patched_test@localhost:5432/patched_test_drift_journal?sslmode=disable
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-16
+          export PATH="/usr/lib/postgresql/16/bin:$PATH"
+          createdb patched_test_drift_journal
+          mkdir -p go-service/dist
+          python3 deploy/api-01/schema_drift.py build-journal \
+            --migrations go-service/migrations --out go-service/dist/SCHEMA_FINGERPRINT_JOURNAL
+          cp deploy/api-01/schema_drift.py deploy/api-01/schema_fingerprint.sql \
+            deploy/api-01/schema-drift-check.sh deploy/api-01/schema-drift-allowlist.txt \
+            go-service/dist/
+          DATABASE_URL="$SCHEMA_DRIFT_BUILD_DSN" bash go-service/dist/schema-drift-check.sh \
+            --journal go-service/dist/SCHEMA_FINGERPRINT_JOURNAL \
+            --allowlist go-service/dist/schema-drift-allowlist.txt
+
+      - name: Create commit-bound binary manifest
+        run: |
+          cd go-service
+          CHECKOUT_SHA="$(git rev-parse HEAD)"
+          test "$CHECKOUT_SHA" = "$GITHUB_SHA"
+          {
+            printf 'GITHUB_SHA=%s\n' "$GITHUB_SHA"
+            mapfile -t FORWARD_MIGRATIONS < <(find migrations -maxdepth 1 -type f -name '*.sql' ! -name '*_rollback.sql' -print | sort)
+            for migration in "${FORWARD_MIGRATIONS[@]}"; do
+              name="$(basename "$migration")"
+              [[ "$name" =~ ^[0-9]{4}_[a-z0-9_]+\.sql$ ]] || { echo "invalid forward migration filename: $name" >&2; exit 1; }
+            done
+            [[ "${#FORWARD_MIGRATIONS[@]}" -gt 0 ]] || { echo "no forward migrations found" >&2; exit 1; }
+            MIGRATION_HEAD="${FORWARD_MIGRATIONS[${#FORWARD_MIGRATIONS[@]}-1]}"
+            printf 'MIGRATION_HEAD=%s\n' "$(basename "$MIGRATION_HEAD" .sql)"
+            sha256sum \
+              dist/patched-api \
+              dist/patched-extractor \
+              dist/patched-cve-sync \
+              | sed 's#  dist/#  #'
+            while IFS= read -r migration; do
+              version="$(basename "$migration" .sql)"
+              number="$((10#${version%%_*}))"
+              [ "$number" -ge 56 ] || continue
+              sha256sum "$migration" | sed "s#  migrations/#  migration:#"
+            done < <(printf '%s\n' "${FORWARD_MIGRATIONS[@]}")
+            # PAT-2062: deploy.sh verifies each before running the drift check.
+            (cd dist && sha256sum \
+              SCHEMA_FINGERPRINT_JOURNAL \
+              schema_drift.py \
+              schema_fingerprint.sql \
+              schema-drift-check.sh \
+              schema-drift-allowlist.txt) | sed 's#  #  schema-drift:#'
+          } > dist/BINARY_MANIFEST
+          sed -n '3,5p' dist/BINARY_MANIFEST | (cd dist && sha256sum --check)
+          sed -n 's#  migration:#  migrations/#p' dist/BINARY_MANIFEST | sha256sum --check
+          test "$(grep -c '  schema-drift:' dist/BINARY_MANIFEST)" -eq 5
+          sed -n 's#  schema-drift:#  #p' dist/BINARY_MANIFEST | (cd dist && sha256sum --check)
+
+      - name: Go test gate
+        run: |
+          cd go-service
+          CGO_ENABLED=0 go test -short ./...
+
+      - name: Lint the box-side deploy script
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          shellcheck deploy/api-01/deploy.sh deploy/api-01/schema-drift-check.sh deploy/api-01/emergency-api-only.sh deploy/api-01/bootstrap-cve-sync.sh deploy/api-01/deploy-prometheus-rules.sh deploy/api-01/verify-systemd-hardening-floor.sh deploy/api-01/install-maintenance-systemd-units.sh deploy/api-01/install-cve-sync-systemd-units.sh deploy/api-01/deploy-ownership-guard.sh deploy/api-01/service-account-hygiene.sh deploy/api-01/test_root_production_integration.sh
+
+      - name: Verify production binary deployment inventory
+        # The drift tests, including deploy.sh running the real check against
+        # a scratch database, use the postgres service; a missing DSN fails.
+        env:
+          SCHEMA_DRIFT_TEST_DSN: postgres://patched:patched_test@localhost:5432/patched_test?sslmode=disable
+          SCHEMA_DRIFT_DB_TESTS_REQUIRED: "1"
+        run: |
+          python3 deploy/api-01/check_binary_inventory.py
+          python3 -m unittest discover -s deploy/api-01 -p 'test_*.py'
+          # Branch-controlled root-path code is confined to an ephemeral,
+          # networkless container with a read-only checkout, never host sudo.
+          docker run --rm --network none \
+            --cap-drop ALL \
+            --security-opt no-new-privileges \
+            -e PATCHED_ROOT_HARNESS_CONTAINER=1 \
+            -v "$GITHUB_WORKSPACE:/workspace:ro" ubuntu:24.04 \
+            /bin/bash /workspace/deploy/api-01/test_root_production_integration.sh
+
+      - name: Upload built binaries
+        uses: actions/upload-artifact@v7
+        with:
+          name: api-01-binaries
+          path: |
+            go-service/dist/patched-api
+            go-service/dist/patched-extractor
+            go-service/dist/patched-cve-sync
+            go-service/dist/BINARY_MANIFEST
+            go-service/dist/SCHEMA_FINGERPRINT_JOURNAL
+            go-service/dist/schema_drift.py
+            go-service/dist/schema_fingerprint.sql
+            go-service/dist/schema-drift-check.sh
+            go-service/dist/schema-drift-allowlist.txt
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: State plainly that nothing was shipped
+        # Only on the push path. When deploy-api-01.yml calls this workflow the
+        # caller's own run-name already says whether it is shipping, and a
+        # second contradictory notice inside a real deploy run would be worse
+        # than none. github.event_name is the CALLER's event under
+        # workflow_call, so this is `push` only for a genuine push build.
+        if: github.event_name == 'push'
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ## Built, not deployed
+
+          This is `api-build`. It compiled the three binaries, ran the gates and
+          uploaded a 14-day artifact. Nothing was sent to `patched-api-01`.
+
+          Shipping is a separate, deliberate run:
+
+              gh workflow run deploy-api-01.yml -R Patched-LTD/patched.im
+          SUMMARY

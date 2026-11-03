@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patched.im/schemas/update-status.schema.json",
+  "title": "Patched Updater — endpoint update status",
+  "description": "Contract between the privileged update daemon (writer) and the menu bar app (reader). Written atomically to /Library/Application Support/Patched/update-status.json, world-readable (mode 644).",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "overall_state", "apps"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "hw_uuid": { "type": "string" },
+        "computer_name": { "type": "string" }
+      }
+    },
+    "last_run": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "started_at": { "type": "string", "format": "date-time" },
+        "finished_at": { "type": "string", "format": "date-time" },
+        "trigger": { "type": "string", "enum": ["scheduled", "manual", "first-run"] },
+        "installomator_tag": { "type": "string" }
+      }
+    },
+    "next_scheduled_run": { "type": ["string", "null"], "format": "date-time" },
+    "overall_state": {
+      "type": "string",
+      "enum": ["up_to_date", "updates_available", "updating", "error", "unknown"]
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "up_to_date": { "type": "integer", "minimum": 0 },
+        "updates_available": { "type": "integer", "minimum": 0 },
+        "errors": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "apps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["label", "name", "state"],
+        "additionalProperties": false,
+        "properties": {
+          "label": { "type": "string", "description": "Installomator label, e.g. googlechrome" },
+          "name": { "type": "string" },
+          "installed_version": { "type": ["string", "null"] },
+          "available_version": { "type": ["string", "null"] },
+          "state": {
+            "type": "string",
+            "enum": ["up_to_date", "update_available", "updating", "installed", "verification_failed", "error", "not_installed", "unknown"]
+          },
+          "last_action": {
+            "type": ["string", "null"],
+            "enum": ["installed", "already_current", "update_available", "not_installed", "verification_failed", "error", "version_blocked", "authority_refused", null],
+            "description": "PAT-508: version_blocked records that an install was refused because the version is in blocked_versions. PAT-1481: authority_refused records a terminal refusal by the signed execution-authority gate."
+          },
+          "last_action_at": { "type": ["string", "null"], "format": "date-time" },
+          "failure_reason": {
+            "type": ["string", "null"],
+            "enum": ["missing_expected_signer", "signature_untrusted", "signer_mismatch", "blocked_version", "blocked_version_resolution_failed", "sha256_mismatch", "execution_authority_refused", null],
+            "description": "Populated when a deploy/install action fails or is refused. Platform-neutral: an agent maps a verification or authority refusal onto one of these reasons. missing_expected_signer / signature_untrusted / signer_mismatch cover signing failures. blocked_version = the candidate version is in blocked_versions; blocked_version_resolution_failed = an active block could not be evaluated safely before installation. sha256_mismatch = a pinned catalogue hash did not match the downloaded artifact. execution_authority_refused = the signed, fresh, unsuspended endpoint config did not explicitly authorise execution."
+          },
+          "verified_signer": {
+            "type": ["string", "null"],
+            "description": "Signer identity confirmed at last successful verification — Apple Team ID on macOS, Authenticode publisher on Windows. null when verification was not performed or failed."
+          },
+          "message": {
+            "type": ["string", "null"],
+            "description": "Safe operator-facing detail for an error or refusal. A consumed deploy request whose label did not resolve to an allowlist result is emitted as state=error, last_action=error with a specific message; empty success is never valid."
+          },
+          "also_managed_by": {
+            "type": ["string", "null"],
+            "enum": ["homebrew", "winget", "chocolatey", null],
+            "description": "PAT-277. Package manager that also claims ownership of this app on this endpoint. Platform-neutral: macOS emits 'homebrew', Windows will emit 'winget'/'chocolatey'. null when no other manager detected."
+          },
+          "manager_drift": {
+            "type": "boolean",
+            "description": "PAT-277. True when also_managed_by is non-null and the daemon's installed_version differs from the other manager's recorded version — the other manager's metadata has drifted after our engine updated the app."
+          }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "last_action": { "const": "authority_refused" } }, "required": ["last_action"] },
+            "then": {
+              "required": ["failure_reason", "verified_signer", "message"],
+              "properties": {
+                "state": { "const": "error" },
+                "failure_reason": { "const": "execution_authority_refused" },
+                "verified_signer": { "const": null },
+                "message": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "coexistence": {
+      "description": "PAT-277. Package manager coexistence summary. Present when the daemon has run with coexistence detection enabled.",
+      "type": "object",
+      "required": ["managers_present", "also_managed_count"],
+      "additionalProperties": false,
+      "properties": {
+        "managers_present": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["homebrew", "winget", "chocolatey"] },
+          "description": "Package managers detected on this endpoint."
+        },
+        "also_managed_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of allowlisted apps also claimed by another package manager."
+        }
+      }
+    },
+    "compliance_findings": {
+      "description": "PAT-300/481. Configuration/CIS advisory findings. Absent until the daemon has run with compliance detection enabled. Guard on null/absent in all consumers.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": ["disk_encryption_off", "removable_storage_unencrypted"],
+            "description": "Machine-readable finding id."
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "volumes": {
+            "description": "PAT-481. For removable_storage_unencrypted: one entry per plaintext removable volume observed at collect time. Snapshot only — volumes mounted after the run are not reflected.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["mount_point", "filesystem", "encryption_state", "provenance_source"],
+              "additionalProperties": false,
+              "properties": {
+                "mount_point":       { "type": "string", "description": "Mount point (macOS: /Volumes/DRIVE) or drive letter (Windows: E:)." },
+                "filesystem":        { "type": "string", "description": "Filesystem type as reported by the OS: msdos, exfat, hfs, apfs (macOS); FAT32, exFAT, NTFS (Windows)." },
+                "encryption_state":  { "type": "string", "enum": ["plaintext", "apfs_unencrypted", "unknown"], "description": "plaintext = no encryption layer detected; apfs_unencrypted = APFS container without FileVault; unknown = state could not be determined." },
+                "provenance_source": { "type": "string", "description": "Tool or API used to read the state, e.g. diskutil or Win32_EncryptableVolume." }
+              }
+            }
+          }
+        }
+      }
+    },
+    "os_update": {
+      "description": "PAT-273. OS-level update awareness. Absent until the daemon has run a SOFA-aware build. Guard on null in all consumers. Platform-neutral: Windows fills the same shape from WUA.",
+      "type": "object",
+      "required": ["installed_os", "state", "severity", "security_relevant", "actively_exploited", "deferrals_remaining", "checked_at"],
+      "additionalProperties": false,
+      "properties": {
+        "installed_os":       { "type": "string", "description": "Installed macOS version, e.g. 14.5" },
+        "latest_os":          { "type": ["string", "null"], "description": "Latest release for this hardware/major from SOFA; null when SOFA unavailable" },
+        "target_os":          { "type": ["string", "null"], "description": "Minimum acceptable version — from policy or SOFA/WUA latest; null when neither is known (PAT-2123: never falls back to installed_os)" },
+        "state": {
+          "type": "string",
+          "enum": ["up_to_date", "update_recommended", "update_required", "deadline_passed", "unsupported_hardware", "unknown"]
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["none", "low", "medium", "high", "critical"],
+          "description": "none=current; low=behind non-security; medium=behind security; high=deadline close or exploited; critical=deadline passed or exploited+past grace"
+        },
+        "security_relevant":  { "type": "boolean", "description": "Target release fixes ≥1 CVE" },
+        "actively_exploited": { "type": "boolean", "description": "SOFA: target fixes a CVE with known active exploitation" },
+        "deadline":           { "type": ["string", "null"], "format": "date-time" },
+        "deferrals_remaining":{ "type": "integer", "minimum": 0 },
+        "release_age_days":   { "type": ["integer", "null"], "minimum": 0, "description": "Days since the target release shipped (null when release date unavailable)" },
+        "checked_at":         { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

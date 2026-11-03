@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-12-10T10:00:00Z",
+  "device": {
+    "hw_uuid": "5F9A2B1C-3D4E-5F6A-7B8C-9D0E1F2A3B4C",
+    "computer_name": "Dev Mac"
+  },
+  "last_run": {
+    "started_at": "2026-12-10T09:58:00Z",
+    "finished_at": "2026-12-10T09:59:40Z",
+    "trigger": "scheduled",
+    "installomator_tag": "patched-v20261210"
+  },
+  "next_scheduled_run": "2026-12-11T03:00:00Z",
+  "overall_state": "updates_available",
+  "counts": {
+    "total": 4,
+    "up_to_date": 2,
+    "updates_available": 1,
+    "errors": 1
+  },
+  "apps": [
+    {
+      "label": "googlechrome",
+      "name": "Google Chrome",
+      "installed_version": "125.0.6422.60",
+      "available_version": "126.0.6478.127",
+      "state": "update_available",
+      "last_action": "already_current",
+      "last_action_at": "2026-12-10T09:58:30Z",
+      "verified_signer": "EQHXZ8M8AV",
+      "failure_reason": null,
+      "message": null
+    },
+    {
+      "label": "slack",
+      "name": "Slack",
+      "installed_version": "4.38.121",
+      "available_version": "4.38.125",
+      "state": "up_to_date",
+      "last_action": "already_current",
+      "last_action_at": "2026-12-10T09:58:50Z",
+      "verified_signer": "BQR82RBBHL",
+      "failure_reason": null,
+      "message": null
+    },
+    {
+      "label": "zoom",
+      "name": "Zoom",
+      "installed_version": null,
+      "available_version": null,
+      "state": "verification_failed",
+      "last_action": "verification_failed",
+      "last_action_at": "2026-12-10T09:59:10Z",
+      "verified_signer": null,
+      "failure_reason": "signer_mismatch",
+      "message": "Expected BJ4HAAB9B3; got DIFFERENTTEAMID"
+    },
+    {
+      "label": "1password7",
+      "name": "1Password 7",
+      "installed_version": null,
+      "available_version": null,
+      "state": "not_installed",
+      "last_action": null,
+      "last_action_at": null,
+      "verified_signer": null,
+      "failure_reason": null,
+      "message": null
+    }
+  ],
+  "os_update": {
+    "installed_os": "14.5",
+    "latest_os": "14.6.1",
+    "target_os": "14.6.1",
+    "state": "update_required",
+    "severity": "medium",
+    "security_relevant": true,
+    "actively_exploited": false,
+    "deadline": "2026-12-25T00:00:00Z",
+    "deferrals_remaining": 4,
+    "release_age_days": 18,
+    "checked_at": "2026-12-10T10:00:00Z"
+  }
+}

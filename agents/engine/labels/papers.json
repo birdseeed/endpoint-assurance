@@ -1,0 +1,23 @@
+{
+  "label": "papers",
+  "name": "Papers",
+  "type": "dmg",
+  "app_path": "/Applications/Papers.app",
+  "expected_team_id": "FY6R4ETYH7",
+  "download": {
+    "method": "static",
+    "url": "https://download.readcube.com/app/Papers_Setup-arm64.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "label": "cmake",
+  "name": "CMake",
+  "type": "dmg",
+  "app_path": "/Applications/CMake.app",
+  "expected_team_id": "W38PE5Y733",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/Kitware/CMake/releases/latest"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

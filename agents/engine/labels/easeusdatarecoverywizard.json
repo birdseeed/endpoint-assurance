@@ -1,0 +1,24 @@
+{
+  "label": "easeusdatarecoverywizard",
+  "name": "EaseUS Data Recovery Wizard",
+  "type": "dmg",
+  "app_path": "/Applications/EaseUS Data Recovery Wizard.app",
+  "expected_team_id": "DLLVW95FSM",
+  "download": {
+    "method": "resolved",
+    "strategy": "http-redirect",
+    "source": "https://down.easeus.com/product/mac_drw_free_setup"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "label": "googlejapaneseinput",
+  "name": "GoogleJapaneseInput",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "relative-path-glob",
+    "patterns": [
+      "GoogleJapaneseInput.pkg"
+    ]
+  },
+  "app_path": "/Applications/GoogleJapaneseInput.app",
+  "expected_team_id": "EQHXZ8M8AV",
+  "download": {
+    "method": "static",
+    "url": "https://dl.google.com/japanese-ime/latest/GoogleJapaneseInput.dmg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [
+    "NONE"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

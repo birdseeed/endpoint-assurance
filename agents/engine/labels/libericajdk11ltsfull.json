@@ -1,0 +1,24 @@
+{
+  "label": "libericajdk11ltsfull",
+  "name": "Liberica JDK 11 LTS Full",
+  "type": "pkg",
+  "app_path": "/Applications/Liberica JDK 11 LTS Full.app",
+  "expected_team_id": "8LBATW8FZA",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://api.bell-sw.com/v1/liberica/releases?version="
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

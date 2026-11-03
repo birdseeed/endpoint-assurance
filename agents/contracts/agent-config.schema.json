@@ -1,0 +1,425 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patched.im/schemas/agent-config.schema.json",
+  "title": "Patched Agent Config — per-tenant configuration",
+  "description": "The verified inner config JSON delivered by GET /v1/agent-config (PAT-281/282). Ed25519-signed by the platform; verified client-side before any field is trusted. Outer envelope fields (signed_payload, key_id, signature) are consumed by verify-agent-config.py / Ed25519Verifier and stripped; only this inner document is cached at agent-config.json.",
+  "type": "object",
+  "required": ["tenant_id", "config_version"],
+  "additionalProperties": true,
+  "$defs": {
+    "scopedRingPromotionsForPlatform": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["approval", "version"],
+            "properties": {
+              "approval": { "const": "nobody" },
+              "version": { "type": "string", "minLength": 1 }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["approval", "approved_ring", "version"],
+            "properties": {
+              "approval": { "const": "up_to_ring" },
+              "approved_ring": { "type": "integer", "minimum": 0, "maximum": 3 },
+              "version": { "type": "string", "minLength": 1 }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "properties": {
+    "device_id": { "type": ["string", "null"], "format": "uuid" },
+    "device_channel_overrides": {
+      "type": ["object", "null"],
+      "propertyNames": { "format": "uuid" },
+      "additionalProperties": { "const": "beta" },
+      "description": "Only the canonical server device UUID's own entry applies; absent inherits tenant channel. Retain pinned_version."
+    },
+    "update_channel_source": {
+      "type": ["string", "null"], "enum": ["tenant", "device_override", null],
+      "description": "Signed provenance of an already-projected device-scoped channel. Missing means unknown, never infer from channel."
+    },
+    "app_control": {
+      "description": "PAT-601. Application Control enforcement policy. Always present in the signed payload (never null). Agents must verify the Ed25519 signature before acting on any field. When enabled=false (default), agents skip all AC enforcement regardless of the list contents.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["app_allowlist", "approved_admins", "enabled"],
+      "properties": {
+        "app_allowlist": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Bundle IDs (macOS, e.g. 'com.apple.Safari') or process names (Windows, e.g. 'chrome.exe') permitted to run. Empty array = allowlist enforcement disabled (all apps permitted)."
+        },
+        "approved_admins": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Usernames permitted in the local admin group. macOS: short username (e.g. 'alice'). Windows: 'DOMAIN\\user' or bare local name. Agents remove any member not on this list when enabled=true and the list is non-empty."
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Master switch. When false, agents skip all AC enforcement (admin-list and app-allowlist checks). Safe default for tenants without Application Control provisioned."
+        }
+      }
+    },
+    "app_control_authority": {
+      "type": ["string", "null"],
+      "enum": ["report", "block", "enforce", null],
+      "default": "report",
+      "description": "PAT-1481 retained Application Control authority, separate from the projected package tier. report is advisory-only; block permits browser-extension blocklist reconciliation; enforce additionally permits admin demotion and browser-extension removal. Missing, null, malformed, duplicate-key-ambiguous, or unknown values MUST resolve to report/no actuation in agents. This field MUST NOT authorise legacy package install, update, uninstall, removal, mandatory-install, rollout, catalogue work, or the ADR-0011 macOS executor."
+    },
+    "decommission": {
+      "description": "PAT-1108. Tenant-wide agent-decommission directive. Always present in the signed payload (defaults to mode=\"none\" when the platform has never set a directive for this tenant). This is the ONLY irreversible directive in the contract: once an agent removes itself there is no channel left to correct a mistake. Agents MUST verify the Ed25519 signature before acting on any field here, exactly as for every other directive. mode=\"none\" is the sole inert value. Agents MUST treat a config that omits this object entirely — including any parse failure, any signature-verification failure, a tenant_id mismatch, or a config_version regression — identically to mode=\"none\": do nothing, and do not remove the agent. Unknown or unrecognised mode values MUST also be treated as \"none\". reason is recorded and surfaced to operators but MUST NEVER be evaluated as part of removal control flow — it is a human-facing label, not an input to the decision.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "expires_at", "purge", "reason"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["none", "expiry", "immediate"],
+          "default": "none",
+          "description": "\"none\" (default; safe/inert — absent config, an unrecognised mode, or any verification failure MUST be treated as \"none\") | \"expiry\" (the agent may remove itself once expires_at has passed) | \"immediate\" (the agent may remove itself on the next successful verification of this directive)."
+        },
+        "expires_at": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "RFC3339 UTC timestamp after which the agent may remove itself. REQUIRED (non-null) when mode=\"expiry\"; ignored when mode is \"none\" or \"immediate\". An unparseable, missing, or obviously-wrong-clock value when mode=\"expiry\" MUST be treated as a fault: the agent must NOT remove itself and must record the fault rather than guess a date."
+        },
+        "purge": {
+          "type": "boolean",
+          "default": false,
+          "description": "When true, the agent also removes locally cached data/artefacts as part of decommission, not only its own uploader/daemon. Default false — the minimum-scope removal."
+        },
+        "reason": {
+          "type": ["string", "null"],
+          "description": "Free-text, operator-supplied context, recorded and surfaced for audit/operator visibility only. NEVER trusted for control flow — agents and the platform MUST NOT branch on its contents."
+        }
+      },
+      "if": {
+        "properties": { "mode": { "const": "expiry" } },
+        "required": ["mode"]
+      },
+      "then": {
+        "properties": { "expires_at": { "type": "string" } },
+        "required": ["expires_at"]
+      }
+    },
+    "tenant_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Tenant UUID — verified against the local tenant-id credential before the config is accepted."
+    },
+    "config_version": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Monotonically increasing version; anti-rollback gate rejects any new version < last-accepted."
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC timestamp when the platform signed this config."
+    },
+    "tier": {
+      "type": "string",
+      "enum": ["assurance", "managed"],
+      "default": "assurance",
+      "description": "Agent capability tier. 'assurance' = scan-only (no installs, no actuation) — the observe-only default. 'managed' = fully-managed — the sole actuating tier, granting patch-deploy plus the additional enforcement actions (e.g. admin-demotion, extension-removal) gated on this value. Agents default to 'assurance' until the platform explicitly grants 'managed'. PAT-1807 collapses the former three-value vocabulary ('report_deploy'/'patch'/'managed') down to these two, completing the PAT-1599/PAT-1505 migration on the JSON Schema contract and the macOS agent."
+    },
+    "scan_cadence": {
+      "type": "string",
+      "enum": ["daily", "hourly"],
+      "default": "daily",
+      "description": "How often the scheduled update run fires."
+    },
+    "catalog_scope": {
+      "type": "string",
+      "default": "all",
+      "description": "Which label subset the agent processes. 'all' = full allowlist."
+    },
+    "proxy": {
+      "description": "PAT-278. Proxy configuration for agent outbound traffic.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["direct", "system", "manual"],
+          "default": "system"
+        },
+        "url": {
+          "type": ["string", "null"],
+          "description": "Proxy URL (required when mode=manual). May contain credentials — never log this field."
+        },
+        "no_proxy": {
+          "type": ["string", "null"],
+          "description": "Comma-separated list of hosts/CIDRs to bypass."
+        }
+      }
+    },
+    "os_update_policy": {
+      "description": "PAT-273. Nudge-style macOS/Windows OS-update enforcement parameters.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "target_os": {
+          "type": ["string", "null"],
+          "description": "Minimum acceptable OS version. null = use SOFA latest."
+        },
+        "minimum_age_days": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 7,
+          "description": "How many days after release before the agent recommends the update."
+        },
+        "grace_days": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 14,
+          "description": "Days from release date before the update becomes required."
+        },
+        "deferral_budget": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 5,
+          "description": "Maximum number of user deferrals before the update becomes blocking."
+        },
+        "blocking_window_days": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 3,
+          "description": "Days before deadline at which state escalates from update_required to blocking."
+        },
+        "exploited_overrides_age": {
+          "type": "boolean",
+          "default": true,
+          "description": "When true, an actively-exploited CVE halves the grace period."
+        },
+        "deadline": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Absolute enforcement deadline (overrides grace_days computation)."
+        }
+      }
+    },
+    "interruption_policy": {
+      "description": "PAT-1624. Bounds on the agent's never-interrupt gate. The gate itself is UNCONDITIONAL and applies at every tier, assurance included: it is a restraint, not a capability, and agents MUST evaluate camera, microphone, presenting and Focus state before raising any user-facing prompt regardless of what this block says or whether it is present at all. Only the four numbers below are tunable, and only at tier='managed'. An agent MUST ignore this block entirely at any other tier and run the shipped defaults, so an assurance tenant cannot be configured into receiving windows over its calls. An absent block, an absent field, a null, or a value outside its stated range leaves the corresponding default in place rather than failing the config. These bounds gate PRESENTATION, not the deadline: the os_update_policy deadline keeps running underneath, and a device that cannot be prompted for the whole blocking window reaches the deadline with the user never having seen the prompt. That is deliberate: the operator is told and decides. Suppression MUST NOT consume, extend or reset os_update_policy.deferral_budget.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "suppression_window_hours": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 168,
+          "default": 8,
+          "description": "How many active hours of unbroken suppression the agent keeps trying to present a window for before it falls back to a notification. This, not the attempt count, is the policy: 8 hours is one working day of never finding a safe moment. Counters accrue only while a user session is active and unlocked, and reset on any successful presentation."
+        },
+        "max_suppressed_attempts": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 1000,
+          "default": null,
+          "description": "Optional hard ceiling on consecutive suppressed attempts. Normally null, in which case the cap is DERIVED from suppression_window_hours and the agent's live retry interval. At the shipped 2-hour retry and an 8-hour window that derives to exactly 4, and changing the retry interval later therefore cannot silently change the policy. An explicit value only ever tightens the derived cap (the smaller of the two wins), because tightening means more silence and silence is the safe direction."
+        },
+        "notification_fallback_interval_hours": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 168,
+          "default": 24,
+          "description": "Minimum gap between the fallback notifications that replace the window once suppression_window_hours has elapsed. The OS already delivers notifications correctly during a call and under Focus: quietly, rather than over the screen share. More than once a day is nagging, and nagging trains dismissal."
+        },
+        "operator_signal_after_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365,
+          "default": 3,
+          "description": "Distinct active days of unbroken suppression before the agent signals the operator that it has a user it cannot reach. Defaults to 3 to match os_update_policy.blocking_window_days, so an admin hears about it while there is still time to act rather than after the deadline has gone. One busy day is a normal calendar and needs no human. Days on which no user session was active and unlocked do not count: that is absence, not suppression."
+        }
+      }
+    },
+    "per_app_patch": {
+      "description": "PAT-364/383/381. Per-tenant app-update policy — estate-wide on/off default plus optional per-app overrides. null = all managed apps enabled (fail-open). A bare bool is accepted as a shorthand for fleet_default_enabled.",
+      "oneOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fleet_default_enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Whether managed updates are on by default for all apps. false = opt-in only (overrides must enable individual apps)."
+            },
+            "overrides": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["platform", "identifier"],
+                "additionalProperties": false,
+                "properties": {
+                  "platform": {
+                    "type": "string",
+                    "enum": ["macos", "windows"],
+                    "description": "Only overrides matching the agent's platform are consulted."
+                  },
+                  "identifier": {
+                    "type": "string",
+                    "description": "Installomator label (macOS), winget id (Windows), or macOS bundle ID — case-insensitive match."
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether updates are enabled for this app. Only explicit false disables (fail-open default)."
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "log_request": {
+      "description": "PAT-287. On-demand log collection directive. When present, the agent collects the specified component logs in the [since, until) window, redacts them, and uploads the gzipped JSON-lines bundle to POST /v1/agent-logs. Idempotent: the agent records the fulfilled request_id and skips re-upload if the same request_id appears in a later config. device_id is required and must be a real UUID matching this agent's own platform device id — see the top-level 'device_id' property, not any OS-level hardware identifier such as IOPlatformUUID (PAT-1026). There is no tenant-wide log-collection mode: the server rejects an empty/non-UUID device_id outright, and an agent that receives one anyway treats it as a no-op rather than collecting estate-wide (PAT-1033).",
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "request_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Idempotency key. The agent records it after a successful upload and skips re-upload for the same request_id."
+        },
+        "device_id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Target device's platform device id (devices.id / tenant_credentials.device_id) — the same identifier space as the top-level 'device_id' property, NOT any OS-level hardware identifier such as IOPlatformUUID (PAT-1026). Required: must be a real UUID targeting exactly one device. The server rejects an empty/non-UUID device_id outright (validateAgentConfigReq), so a signed config can never carry an empty one; there is no tenant-wide log-collection mode. An agent that ever receives an empty/absent device_id anyway (e.g. via a path that bypasses that validator) treats it as a no-op, not as a directive to collect for every device (PAT-1033). The pattern constraint here (PAT-1033) makes that same requirement schema-enforced, not just doc-asserted — unlike the top-level 'device_id' property below, which legitimately allows an empty string for tenant-wide credentials and must NOT get this pattern."
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["updater", "collector", "upload", "daemon", "collect", "update"]
+          },
+          "description": "Which agent components to collect logs from. New structured names (PAT-652): 'daemon'/'collect'/'update' = /Library/Logs/Patched/{daemon,collect,update}.jsonl (fall back to the legacy plain-text files when absent). Legacy names: 'updater' = /var/log/patched-update.log; 'collector' = /var/log/patched-collect.log; 'upload' = /var/log/patched-upload.log. Empty = all components."
+        },
+        "since": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Inclusive lower bound (UTC) for log collection. Run-blocks starting at or after this timestamp are included."
+        },
+        "until": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Exclusive upper bound (UTC) for log collection. Run-blocks starting at or after this timestamp are excluded."
+        },
+        "max_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum gzip-compressed bundle size in bytes. Oldest lines are dropped to fit. 0 or absent = no limit."
+        }
+      },
+      "required": ["request_id"]
+    },
+    "device_id": {
+      "type": "string",
+      "default": "",
+      "description": "PAT-1026. The receiving device's own platform device id — the same identifier space as devices.id / tenant_credentials.device_id, NOT any OS-level hardware identifier such as macOS IOPlatformUUID. Injected per-request from the authenticated credential the server already resolved (same pattern as 'ring' below): a device-scoped credential yields its own device id; a tenant-wide credential yields the empty string, since no single device id is correct for it. Agents use this as their own resolved identity when evaluating any device-scoped directive, e.g. log_request.device_id."
+    },
+    "ring": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3,
+      "default": 3,
+      "description": "PAT-506. This device's deployment ring: 0=internal, 1=canary, 2=early-adopter, 3=GA. Absent or 3 = most permissive (no gate). Assigned by the platform at onboarding."
+    },
+    "ring_promotions": {
+      "type": ["object", "null"],
+      "description": "PAT-506 legacy label-only projection. New agents use ring_promotions_scoped whenever present. This projection is intentionally conservative across platforms for older agents.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["approved_ring"],
+        "properties": {
+          "version": {
+            "type": ["string", "null"],
+            "description": "The version that has been approved up to approved_ring. Informational only; the gate uses approved_ring, not this version string."
+          },
+          "approved_ring": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3,
+            "description": "Highest ring (0–3) this version has been approved for. A device with ring > approved_ring will not install this version."
+          }
+        }
+      }
+    },
+    "ring_promotions_scoped": {
+      "type": ["object", "null"],
+      "description": "PAT-1134. Authoritative platform-aware rollout decisions. When this object is present, current agents use only their platform section and do not fall back to the legacy label-only projection. A present per-platform null is an explicit deny-all for that platform, including ring 0.",
+      "additionalProperties": false,
+      "properties": {
+        "macos": {
+          "oneOf": [
+            { "$ref": "#/$defs/scopedRingPromotionsForPlatform" },
+            { "type": "null", "description": "Explicit deny-all rollout policy for macOS." }
+          ]
+        },
+        "windows": {
+          "oneOf": [
+            { "$ref": "#/$defs/scopedRingPromotionsForPlatform" },
+            { "type": "null", "description": "Explicit deny-all rollout policy for Windows." }
+          ]
+        }
+      }
+    },
+    "legacy_app_execution_enabled": {
+      "type": ["boolean", "null"],
+      "default": false,
+      "description": "PAT-1481 defence-in-depth containment for quarantined legacy application installation, update, uninstall, mandatory-install and rollout execution. Null is accepted as an explicit deny so a signed policy can safely revoke this optional grant without rejecting the whole config; only the exact JSON boolean true permits those legacy execution paths, and only after their existing tier, provenance, catalogue, ring, queue and operation-specific gates pass. Absent, null, malformed or false values MUST deny legacy application execution. This field MUST NOT gate OS-update policy, inventory or assurance collection, app-control advisory reporting, browser-extension controls, approved-admin assurance, decommission, agent self-update, evidence/status/provenance reporting or configuration fetch."
+    },
+    "blocking_process_policy": {
+      "description": "PAT-296. Per-tenant policy controlling agent behaviour when a blocking process (app that must close to update) is running. When absent, safe defaults apply: notify_only, 2 deferrals, 300s timeout. The agent MUST NEVER silently force-quit a running app — action_on_timeout='notify_only' is the minimum-safe default.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "message": {
+          "type": ["string", "null"],
+          "description": "User-facing copy shown when an app needs to close to update. Tenant-brandable. null = agent uses its built-in default message.",
+          "maxLength": 500
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 86400,
+          "default": 300,
+          "description": "How long (in seconds) the agent waits for the blocking process to exit before applying action_on_timeout. Minimum 30s to avoid thrashing."
+        },
+        "max_deferrals": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 2,
+          "description": "Maximum number of times the user may defer the close-to-update prompt per app per update cycle. 0 = no deferrals allowed (still respects action_on_timeout). Deferral count resets on successful update."
+        },
+        "defer_window_seconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 86400,
+          "default": 3600,
+          "description": "How long (in seconds) a single deferral postpones the update prompt. The agent skips the app on the current run and retries after this window elapses."
+        },
+        "action_on_timeout": {
+          "type": "string",
+          "enum": ["notify_only", "prompt_then_quit", "skip_run"],
+          "default": "notify_only",
+          "description": "What the agent does when timeout_seconds elapses and the blocking process is still running. 'notify_only' = surface a notification and skip this app (SAFE DEFAULT — never force-quits); 'prompt_then_quit' = show a final prompt then quit the blocking app if the user confirms; 'skip_run' = skip the update silently and retry next scheduled run. The agent MUST treat an unrecognised value as 'notify_only'."
+        }
+      }
+    }
+  }
+}

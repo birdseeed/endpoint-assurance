@@ -1,0 +1,195 @@
+name: release-endpoint
+
+# Build the endpoint bundle on push of an endpoint-v* tag and attach
+# install.sh + uninstall.sh + the bundle as a GitHub Release tarball.
+# The release tarball has an HMAC-SHA256 authenticity signature. v2
+# (signed/notarised .pkg) is tracked in PAT-50.
+#
+# PAT-507 / PAT-1092: the build-release job below references a GitHub
+# Environment named "release-gate", but that environment currently has zero
+# protection rules configured, so it does not pause publishing for
+# approval. Private repos need GitHub Enterprise for the "required
+# reviewers" protection rule, and this repo is on a Team plan - a billing
+# limitation, not a config oversight. Today, every tag push publishes with
+# no automated approval pause. This is a deliberate, accepted interim state
+# pending an Enterprise upgrade (Andy's cost decision) or estate-wide gate
+# restoration under PAT-941, not a bug. See docs/agent-release-runbook.md.
+
+on:
+  push:
+    tags:
+      - 'endpoint-v*'
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    environment: release-gate   # PAT-1092: no protection rules configured (Team-plan billing limit) - does not pause for approval
+    permissions:
+      contents: write   # needed to create the GitHub Release
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Python dependencies
+        run: pip install jsonschema --quiet
+
+      - name: Build bundle
+        run: bash tools/build-bundle.sh
+
+      - name: Verify manifest integrity
+        run: |
+          cd dist/patched-updater
+          fail=0
+          while IFS= read -r line; do
+            [[ -z "$line" || "$line" == '#'* ]] && continue
+            want="${line%% *}"
+            rel="${line##* }"
+            got=$(shasum -a 256 "$rel" | awk '{print $1}')
+            if [[ "$got" != "$want" ]]; then
+              echo "FAIL: manifest mismatch for $rel (expected $want, got $got)"
+              fail=1
+            fi
+          done < manifest.sha256
+          [[ $fail -eq 0 ]] && echo "Manifest integrity verified."
+          exit $fail
+
+      - name: Assemble release tarball and compute SHA-256
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          RELEASE_DIR="dist/patched-updater-${TAG}"
+          mkdir -p "$RELEASE_DIR"
+          cp dist/install.sh       "$RELEASE_DIR/"
+          cp dist/uninstall.sh     "$RELEASE_DIR/"
+          cp -r dist/patched-updater "$RELEASE_DIR/"
+
+          TARBALL="dist/patched-updater-${TAG}.tar.gz"
+          tar -czf "$TARBALL" -C dist "patched-updater-${TAG}"
+
+          SHA=$(shasum -a 256 "$TARBALL" | awk '{print $1}')
+          echo "$SHA  patched-updater-${TAG}.tar.gz" > dist/SHA256SUMS
+
+          echo "TARBALL=$TARBALL" >> "$GITHUB_ENV"
+          echo "SHA256=$SHA"      >> "$GITHUB_ENV"
+          echo "TAG=$TAG"         >> "$GITHUB_ENV"
+
+          echo "Release tarball: SHA-256 $SHA"
+
+      - name: Sign artifact with HMAC-SHA256
+        id: sign
+        env:
+          ARTIFACT_SIGNING_KEY: ${{ secrets.ARTIFACT_SIGNING_KEY }}
+        run: |
+          if [ -z "$ARTIFACT_SIGNING_KEY" ]; then
+            echo "WARN: ARTIFACT_SIGNING_KEY not set - skipping HMAC signing"
+            echo "artifact_hmac=" >> "$GITHUB_OUTPUT"
+          else
+            HMAC=$(python3 - "$TARBALL" <<'PY'
+          import hashlib
+          import hmac
+          import os
+          import sys
+
+          mac = hmac.new(os.environ["ARTIFACT_SIGNING_KEY"].encode(), digestmod=hashlib.sha256)
+          with open(sys.argv[1], "rb") as artifact:
+              for chunk in iter(lambda: artifact.read(1 << 20), b""):
+                  mac.update(chunk)
+          print(mac.hexdigest())
+          PY
+            )
+            echo "$HMAC" > "$TARBALL.hmac"
+            echo "artifact_hmac=$HMAC" >> "$GITHUB_OUTPUT"
+            echo "HMAC-SHA256: $HMAC"
+          fi
+
+      # The canonical repository must never publish an endpoint release
+      # without the ARTIFACT_SIGNING_KEY-backed authenticity signature. Forks
+      # legitimately do not receive repository secrets and may skip signing.
+      - name: Assert artifact was signed when expected
+        env:
+          SIGNING_EXPECTED: ${{ github.repository == 'Patched-LTD/updater' }}
+          SIGN_HMAC: ${{ steps.sign.outputs.artifact_hmac }}
+        run: |
+          HAS_HMAC=false
+          [ -n "$SIGN_HMAC" ] && HAS_HMAC=true
+          echo "Signing gate: expected=$SIGNING_EXPECTED signed=$HAS_HMAC"
+          if [ "$SIGNING_EXPECTED" = "true" ] && [ "$HAS_HMAC" != "true" ]; then
+            echo "::error::ARTIFACT_SIGNING_KEY was expected but no HMAC was produced. The secret is likely unset, scoped away, or misconfigured - refusing to publish an unsigned release."
+            exit 1
+          fi
+
+      # Include the HMAC only when the signing step created it. This preserves
+      # fork builds without secrets while the preceding assertion fails closed
+      # for any unsigned release from Patched-LTD/updater.
+      - name: Prepare release assets
+        id: assets
+        run: |
+          {
+            echo 'files<<EOF'
+            echo "$TARBALL"
+            echo "dist/SHA256SUMS"
+            [ -f "$TARBALL.hmac" ] && echo "$TARBALL.hmac"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+        with:
+          name: "Patched Updater endpoint ${{ env.TAG }}"
+          body: |
+            Endpoint bundle with an HMAC-SHA256 release signature.
+
+            Patched CI verifies the HMAC-SHA256 signature before and after publication using its internal release-signing key.
+            `SHA256SUMS` is a secondary transport-integrity check, not an authenticity signature.
+
+            Check the downloaded tarball for transport corruption:
+            ```sh
+            shasum -a 256 -c SHA256SUMS
+            ```
+
+            A matching checksum alone does not establish artifact authenticity.
+
+            **Install (as root):**
+            ```sh
+            tar -xzf patched-updater-${{ env.TAG }}.tar.gz
+            cd patched-updater-${{ env.TAG }}
+            sudo bash install.sh
+            ```
+
+            See `endpoint/README.md` and `docs/agent-release-runbook.md` for the full verification and deployment procedure.
+
+            v2 (signed/notarised `.pkg`) is tracked in PAT-50.
+          files: |
+            ${{ steps.assets.outputs.files }}
+          draft: false
+          prerelease: false
+
+      # Verify the release assets fetched from GitHub, rather than only the
+      # local files supplied to the release action. Forks without signing
+      # secrets have no .hmac asset, while the canonical-repository gate above
+      # makes a missing HMAC fatal before this point.
+      - name: Verify published release signature
+        if: steps.sign.outputs.artifact_hmac != ''
+        env:
+          ARTIFACT_SIGNING_KEY: ${{ secrets.ARTIFACT_SIGNING_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          max_attempts=4
+          attempt=1
+          while true; do
+            echo "Published release verification attempt $attempt/$max_attempts"
+            if python3 tools/verify-agent-release.py \
+              --release "$TAG" \
+              --file "$TARBALL"; then
+              exit 0
+            fi
+
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "::error::Published release verification failed after $max_attempts attempts. Refusing to treat the release as verified."
+              exit 1
+            fi
+
+            delay=$((attempt * 5))
+            echo "Release assets may still be propagating; retrying in ${delay}s."
+            sleep "$delay"
+            attempt=$((attempt + 1))
+          done

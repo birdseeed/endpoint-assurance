@@ -1,0 +1,41 @@
+{
+  "description": [
+    "PAT-1773: does a cached agent-config.json belong to the enrolled tenant?",
+    "Each case is a cached config (config: the file's text, config_hex: its bytes, or null for no file)",
+    "and a tenant-id credential (tenant_id_file: the file's text, or null for no file).",
+    "expected is the first word agent_config_tenant.py cached-state prints. Only 'applies' lets a",
+    "reader use the config. endpoint/test-agent-config-tenant.py runs the module and the legacy",
+    "execution gate over these cases; macos/test-agent-config-gate.zsh runs the collector's upload",
+    "gate over them, so the two implementations cannot drift."
+  ],
+  "cases": [
+    {"id": "match", "config": "{\"tenant_id\":\"tenant-a\",\"config_version\":4}", "tenant_id_file": "tenant-a\n", "expected": "applies"},
+    {"id": "match-credential-without-newline", "config": "{\"tenant_id\":\"tenant-a\"}", "tenant_id_file": "tenant-a", "expected": "applies"},
+    {"id": "match-credential-with-surrounding-whitespace", "config": "{\"tenant_id\":\"tenant-a\"}", "tenant_id_file": "  tenant-a \r\n", "expected": "applies"},
+    {"id": "match-credential-second-line-ignored", "config": "{\"tenant_id\":\"tenant-a\"}", "tenant_id_file": "tenant-a\ntenant-b\n", "expected": "applies"},
+    {"id": "match-uuid", "config": "{\"config_version\":1,\"tenant_id\":\"6f1c2b9e-3a4d-4e5f-8a9b-0c1d2e3f4a5b\",\"tier\":\"managed\"}", "tenant_id_file": "6f1c2b9e-3a4d-4e5f-8a9b-0c1d2e3f4a5b\n", "expected": "applies"},
+    {"id": "mismatch", "config": "{\"tenant_id\":\"tenant-old\",\"config_version\":40}", "tenant_id_file": "tenant-new\n", "expected": "other_tenant"},
+    {"id": "mismatch-case-only", "config": "{\"tenant_id\":\"TENANT-A\"}", "tenant_id_file": "tenant-a\n", "expected": "other_tenant"},
+    {"id": "mismatch-config-tenant-padded", "config": "{\"tenant_id\":\" tenant-a\"}", "tenant_id_file": "tenant-a\n", "expected": "other_tenant"},
+    {"id": "missing-tenant-id", "config": "{\"config_version\":4,\"legacy_app_execution_enabled\":true}", "tenant_id_file": "tenant-a\n", "expected": "no_tenant"},
+    {"id": "tenant-id-case-variant-key-only", "config": "{\"Tenant_Id\":\"tenant-a\"}", "tenant_id_file": "tenant-a\n", "expected": "no_tenant"},
+    {"id": "empty-tenant-id", "config": "{\"tenant_id\":\"\"}", "tenant_id_file": "tenant-a\n", "expected": "invalid_tenant"},
+    {"id": "whitespace-tenant-id", "config": "{\"tenant_id\":\"   \"}", "tenant_id_file": "tenant-a\n", "expected": "invalid_tenant"},
+    {"id": "null-tenant-id", "config": "{\"tenant_id\":null}", "tenant_id_file": "tenant-a\n", "expected": "invalid_tenant"},
+    {"id": "numeric-tenant-id", "config": "{\"tenant_id\":7}", "tenant_id_file": "7\n", "expected": "invalid_tenant"},
+    {"id": "list-tenant-id", "config": "{\"tenant_id\":[\"tenant-a\"]}", "tenant_id_file": "tenant-a\n", "expected": "invalid_tenant"},
+    {"id": "malformed-json", "config": "{\"tenant_id\":\"tenant-a\"", "tenant_id_file": "tenant-a\n", "expected": "malformed"},
+    {"id": "empty-config-file", "config": "", "tenant_id_file": "tenant-a\n", "expected": "malformed"},
+    {"id": "config-not-an-object", "config": "[\"tenant-a\"]", "tenant_id_file": "tenant-a\n", "expected": "malformed"},
+    {"id": "config-json-string", "config": "\"tenant-a\"", "tenant_id_file": "tenant-a\n", "expected": "malformed"},
+    {"id": "duplicate-tenant-id", "config": "{\"tenant_id\":\"tenant-old\",\"tenant_id\":\"tenant-a\"}", "tenant_id_file": "tenant-a\n", "expected": "malformed"},
+    {"id": "case-colliding-tenant-id", "config": "{\"TENANT_ID\":\"tenant-old\",\"tenant_id\":\"tenant-a\"}", "tenant_id_file": "tenant-a\n", "expected": "malformed"},
+    {"id": "config-not-utf8", "config_hex": "7b2274656e616e745f6964223a22ff227d", "tenant_id_file": "tenant-a\n", "expected": "malformed"},
+    {"id": "missing-enrolled-tenant-id", "config": "{\"tenant_id\":\"tenant-a\"}", "tenant_id_file": null, "expected": "no_enrolled_tenant"},
+    {"id": "empty-enrolled-tenant-id", "config": "{\"tenant_id\":\"tenant-a\"}", "tenant_id_file": "", "expected": "no_enrolled_tenant"},
+    {"id": "whitespace-enrolled-tenant-id", "config": "{\"tenant_id\":\"tenant-a\"}", "tenant_id_file": " \t\n", "expected": "no_enrolled_tenant"},
+    {"id": "enrolled-tenant-on-second-line-only", "config": "{\"tenant_id\":\"tenant-a\"}", "tenant_id_file": "\ntenant-a\n", "expected": "no_enrolled_tenant"},
+    {"id": "missing-enrolled-tenant-and-malformed-config", "config": "not json", "tenant_id_file": null, "expected": "no_enrolled_tenant"},
+    {"id": "no-cached-config", "config": null, "tenant_id_file": "tenant-a\n", "expected": "absent"}
+  ]
+}

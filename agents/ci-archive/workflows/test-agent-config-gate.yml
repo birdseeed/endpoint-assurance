@@ -1,0 +1,187 @@
+name: test-agent-config-gate
+
+# PAT-1035: macos/patched-upload.sh no longer fetches or writes
+# agent-config.json; it only reads the file endpoint/patched-fetch-config.sh
+# verifies and writes, gated on that file's presence and heartbeat freshness.
+# This workflow runs the gate behaviour tests and the regression guard that
+# fails if the unverified fetch is ever reintroduced. This job does not build
+# macos/dist/patched-upload.sh (that artifact ships under PAT-1027, which
+# bundles the uploader by inlining lib/*.sh rather than copying it verbatim),
+# so the no-fetch guard's bundle assertions are skipped here and only the
+# source file is checked; see macos/test-agent-config-no-fetch.zsh.
+#
+# Also runs the finding-2 hash-binding gate tests
+# (endpoint/test-agent-config-hash-gate.zsh, covering
+# _agent_config_hash_matches / _agent_config_sha256 in
+# endpoint/patched-fetch-config.sh), the round-5 commit-sequence and
+# 304-decision-path tests (endpoint/test-agent-config-commit.zsh, covering
+# _agent_config_commit_verified and _agent_config_handle_304 in the same
+# file), and the finding-3 install-mode tests (endpoint/install.sh's
+# *.sh/*.py -> 755 mapping), from the same PAT-1035 review pass and small
+# and fast enough to belong in this job rather than a workflow of its own.
+#
+# PAT-1760: also runs endpoint/test-fetch-empty-credentials.zsh, which drives
+# patched-fetch-config.sh and patched-fetch-posture.sh against a loopback server and proves a missing,
+# empty or whitespace-only bearer-token or hmac-secret sends no request.
+#
+# PAT-1763: also runs four endpoint tests that passed locally but no workflow
+# ran (enrolment credential write and floor reset, the decommission gate, the
+# suspended-device reachability probe, and the PAT-1206 device-id header
+# word-split guard), plus endpoint/test-agent-config-floor.py, which drives
+# every caller of the shared anti-rollback floor parser over the same fixtures.
+#
+# PAT-1773: also runs endpoint/test-agent-config-tenant.py, which drives the
+# shared cached-config tenant check (endpoint/agent_config_tenant.py) and the
+# legacy execution gate over endpoint/fixtures/agent-config-tenant.json.
+# macos/test-agent-config-gate.zsh runs the collector's copy of the same rule
+# over the same fixtures, so the fixture file also triggers this workflow.
+# endpoint/test-agent-config-tenant-scope.zsh checks the endpoint scripts that
+# read the cached config (patched-update.sh, patched-log-upload.sh and the
+# quarantined patched-install.sh and patched-uninstall.sh) all go through the
+# same scope.
+#
+# PAT-1765: also runs endpoint/test-enrol-blank-credentials.zsh, which proves an
+# empty or whitespace bearer-token or hmac-secret next to an enrolment token
+# makes patched-fetch-config.sh call patched-enroll.sh and makes
+# patched-enroll.sh POST /v1/enrol, instead of being read as enrolled.
+# endpoint/test-fetch-credential-guards.zsh checks the three fetchers skip a
+# missing or blank credential with one JSON-lines record and the same exit
+# codes, and that patched-fetch-posture.sh checks tenant-id.
+#
+# PAT-1779: also runs endpoint/test-enrol-unusable-200.zsh, which proves a 200
+# from /v1/enrol whose body cannot be used (unparseable, or a missing or blank
+# tenant_id, bearer_token, hmac_secret or device_id) suspends the device, stores
+# nothing and never resends the consumed token.
+# endpoint/test-enroll-rejected-token.zsh (PAT-1203: a 410 moves the token
+# aside and a fresh token is picked up) now runs here too, with scratch state.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/patched-upload.sh'
+      - 'macos/build-bundle.sh'
+      - 'macos/test-agent-config-gate.zsh'
+      - 'macos/test-agent-config-no-fetch.zsh'
+      - 'macos/test-posture-cache-one-writer.zsh'
+      - 'endpoint/patched-fetch-config.sh'
+      - 'endpoint/patched-fetch-posture.sh'
+      - 'endpoint/test-fetch-empty-credentials.zsh'
+      - 'endpoint/test-enrol-blank-credentials.zsh'
+      - 'endpoint/test-fetch-credential-guards.zsh'
+      - 'endpoint/test-enrol-unusable-200.zsh'
+      - 'endpoint/test-enroll-rejected-token.zsh'
+      - 'endpoint/patched-enroll.sh'
+      - 'endpoint/verify-agent-config.py'
+      - 'endpoint/agent_config_floor.py'
+      - 'endpoint/fixtures/agent-config-floor.json'
+      - 'endpoint/test-agent-config-floor.py'
+      - 'endpoint/agent_config_tenant.py'
+      - 'endpoint/fixtures/agent-config-tenant.json'
+      - 'endpoint/test-agent-config-tenant.py'
+      - 'endpoint/patched-legacy-app-execution-gate.py'
+      - 'endpoint/test-agent-config-tenant-scope.zsh'
+      - 'endpoint/patched-update.sh'
+      - 'endpoint/patched-log-upload.sh'
+      - 'endpoint/patched-install.sh'
+      - 'endpoint/patched-uninstall.sh'
+      - 'endpoint/test-enroll-credential-write.zsh'
+      - 'endpoint/test-decommission-gate.zsh'
+      - 'endpoint/test-agent-config-suspended-reachability.zsh'
+      - 'endpoint/test-device-id-header-wordsplit.zsh'
+      - 'tools/build-bundle.sh'
+      - 'endpoint/verify-posture.py'
+      - 'endpoint/validate-posture.py'
+      - 'endpoint/test-posture-cache-commit.zsh'
+      - 'endpoint/test-agent-config-hash-gate.zsh'
+      - 'endpoint/test-agent-config-commit.zsh'
+      - 'endpoint/install.sh'
+      - 'endpoint/test-install-mode.zsh'
+      - '.github/workflows/test-agent-config-gate.yml'
+  pull_request:
+    paths:
+      - 'macos/patched-upload.sh'
+      - 'macos/build-bundle.sh'
+      - 'macos/test-agent-config-gate.zsh'
+      - 'macos/test-agent-config-no-fetch.zsh'
+      - 'macos/test-posture-cache-one-writer.zsh'
+      - 'endpoint/patched-fetch-config.sh'
+      - 'endpoint/patched-fetch-posture.sh'
+      - 'endpoint/test-fetch-empty-credentials.zsh'
+      - 'endpoint/test-enrol-blank-credentials.zsh'
+      - 'endpoint/test-fetch-credential-guards.zsh'
+      - 'endpoint/test-enrol-unusable-200.zsh'
+      - 'endpoint/test-enroll-rejected-token.zsh'
+      - 'endpoint/patched-enroll.sh'
+      - 'endpoint/verify-agent-config.py'
+      - 'endpoint/agent_config_floor.py'
+      - 'endpoint/fixtures/agent-config-floor.json'
+      - 'endpoint/test-agent-config-floor.py'
+      - 'endpoint/agent_config_tenant.py'
+      - 'endpoint/fixtures/agent-config-tenant.json'
+      - 'endpoint/test-agent-config-tenant.py'
+      - 'endpoint/patched-legacy-app-execution-gate.py'
+      - 'endpoint/test-agent-config-tenant-scope.zsh'
+      - 'endpoint/patched-update.sh'
+      - 'endpoint/patched-log-upload.sh'
+      - 'endpoint/patched-install.sh'
+      - 'endpoint/patched-uninstall.sh'
+      - 'endpoint/test-enroll-credential-write.zsh'
+      - 'endpoint/test-decommission-gate.zsh'
+      - 'endpoint/test-agent-config-suspended-reachability.zsh'
+      - 'endpoint/test-device-id-header-wordsplit.zsh'
+      - 'tools/build-bundle.sh'
+      - 'endpoint/verify-posture.py'
+      - 'endpoint/validate-posture.py'
+      - 'endpoint/test-posture-cache-commit.zsh'
+      - 'endpoint/test-agent-config-hash-gate.zsh'
+      - 'endpoint/test-agent-config-commit.zsh'
+      - 'endpoint/install.sh'
+      - 'endpoint/test-install-mode.zsh'
+      - '.github/workflows/test-agent-config-gate.yml'
+
+jobs:
+  test:
+    runs-on: macos-latest          # zsh and /usr/bin/python3 are stock on macOS runners
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run agent-config enforcement gate tests
+        run: zsh macos/test-agent-config-gate.zsh
+      - name: Run agent-config no-fetch regression guard (source only until PAT-1027 ships the bundle)
+        run: zsh macos/test-agent-config-no-fetch.zsh
+      - name: Run posture single-writer regression guard
+        run: zsh macos/test-posture-cache-one-writer.zsh
+      - name: Run posture signature-verifier tests
+        run: python3 endpoint/test-verify-posture.py
+      - name: Run posture cache commit mode test
+        run: zsh endpoint/test-posture-cache-commit.zsh
+      - name: Run agent-config hash-binding gate tests (finding 2)
+        run: zsh endpoint/test-agent-config-hash-gate.zsh
+      - name: Run agent-config commit-sequence and 304-decision tests (round 5)
+        run: zsh endpoint/test-agent-config-commit.zsh
+      - name: Run install.sh mode-selection tests (finding 3)
+        run: zsh endpoint/test-install-mode.zsh
+      - name: Run empty-credential request guard tests (PAT-1760)
+        run: zsh endpoint/test-fetch-empty-credentials.zsh
+      - name: Run blank-credential enrolment tests (PAT-1765)
+        run: zsh endpoint/test-enrol-blank-credentials.zsh
+      - name: Run fetcher credential guard logging and exit-code tests (PAT-1765)
+        run: zsh endpoint/test-fetch-credential-guards.zsh
+      - name: Run unusable enrolment 200 tests (PAT-1779)
+        run: zsh endpoint/test-enrol-unusable-200.zsh
+      - name: Run rejected enrolment token tests (PAT-1203)
+        run: zsh endpoint/test-enroll-rejected-token.zsh
+      - name: Run enrolment credential-write and floor reset tests (PAT-1026, PAT-1756)
+        run: zsh endpoint/test-enroll-credential-write.zsh
+      - name: Run decommission point-of-action gate tests (PAT-1109)
+        run: zsh endpoint/test-decommission-gate.zsh
+      - name: Run suspended-device reachability probe tests (PAT-1042)
+        run: zsh endpoint/test-agent-config-suspended-reachability.zsh
+      - name: Run device-id header word-split guard (PAT-1206)
+        run: zsh endpoint/test-device-id-header-wordsplit.zsh
+      - name: Run shared anti-rollback floor parser tests over every caller (PAT-1763)
+        run: /usr/bin/python3 endpoint/test-agent-config-floor.py
+      - name: Run cached agent-config tenant check tests (PAT-1773)
+        run: /usr/bin/python3 endpoint/test-agent-config-tenant.py
+      - name: Run cached agent-config tenant scope tests for the endpoint readers (PAT-1773)
+        run: zsh endpoint/test-agent-config-tenant-scope.zsh

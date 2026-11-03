@@ -1,0 +1,27 @@
+{
+  "label": "duet",
+  "name": "duet",
+  "type": "dmg",
+  "app_path": "/Applications/duet.app",
+  "expected_team_id": "J6L96W8A86",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://updater.duetdownload.com/dd/sparkle.xml?lang=en-US&appName=Duet"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "duet",
+    "duet Networking"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

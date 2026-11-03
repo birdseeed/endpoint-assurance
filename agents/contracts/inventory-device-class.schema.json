@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://patched.im/contracts/inventory-device-class.schema.json",
+  "$comment": "PAT-1959. AGENT-SIDE CONTRACT for three additive, optional fields of the POST /v1/inventory payload. It describes only these fields and is not the authority for the rest of the payload: that remains go-service/payload.schema.json + PAYLOAD_SCHEMA.md in Patched-LTD/patched.im, and this file is to be folded into it and re-vendored once the server side of PAT-1959 lands. Every agent, on every platform, is held to the semantics written here.",
+  "title": "Patched.im Inventory Device Class",
+  "description": "What class of machine a device is, so a server is never assessed as a laptop. Additive and optional: schema_version stays 3, and agent_version carries the version signal (Windows agent 0.15.0 and later). An older agent omits all three keys, which reads exactly the same as device_class 'unknown'.",
+  "type": "object",
+  "properties": {
+    "device_class": {
+      "type": "string",
+      "description": "The class of machine. Platform-neutral by construction: a flat device attribute with a closed vocabulary, not a Windows object. macOS omits it today and can fill the same key with the same four words if it gains a way to tell a server from a laptop. Absence and 'unknown' mean the same thing to the server: score the device the way it was scored before device class existed.",
+      "enum": ["workstation", "server", "domain_controller", "unknown"]
+    },
+    "installation_type": {
+      "type": "string",
+      "description": "The operating system installation type as the platform itself reports it. Windows reads HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\InstallationType. Omitted entirely when the read was absent or failed, or when the value is not one the platform documents; an undocumented string is never mapped onto a documented one, and an absent reading never becomes 'Client'.",
+      "examples": ["Client", "Server", "Server Core"]
+    },
+    "os_caption": {
+      "type": "string",
+      "description": "The operating system's own product caption, for an operator to read alongside the class. Free text and localised, so it is evidence rather than a source of class: it is never parsed into device_class, any more than a build number is. Windows Server 2019 and Windows 10 1809 LTSC are both build 17763, which is why neither the caption nor the build can separate them. Omitted when the read was absent or failed, when the value is empty, when it is longer than 256 characters, or when it carries control characters. Dropped whole rather than truncated, because a truncated caption still reads as a real reading.",
+      "maxLength": 256,
+      "examples": [
+        "Microsoft Windows 11 Pro",
+        "Microsoft Windows Server 2022 Standard"
+      ]
+    }
+  },
+  "$defs": {
+    "absence-requires-authority": {
+      "$comment": "Not a validated shape, recorded here because it is the part of this contract a schema cannot enforce. A missing, unreadable or unrecognised source value produces 'unknown', or omits the optional string. It never produces a guess and never an inferred default. The server treats 'unknown' as 'score it the old way', so a confident wrong class does not surface as a gap an operator can see, it surfaces as a wrong assessment nobody questions. An honest gap is the cheaper failure, and it is the only one this contract permits. An agent that cannot read a source says so; it does not fill the field in."
+    }
+  }
+}

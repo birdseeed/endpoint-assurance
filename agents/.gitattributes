@@ -1,0 +1,24 @@
+# Bytes that are cryptographically signed must never be EOL-converted.
+#
+# PAT-976 follow-up (2026-07-28): windows-agent-v0.11.0 failed its release
+# gate with PATCHED_ALLOWLIST_TAMPER_DETECTED. The signature was valid — it
+# verified locally against origin/main — but the Windows runner checks out
+# with core.autocrlf enabled, so LF became CRLF and the signed bytes changed.
+#
+# This was not merely a CI problem. The MSI packages windows-allowlist.json
+# from that same Windows checkout, so the file installed into
+# %ProgramData%\Patched\ would have been CRLF while its .sig covers LF, and
+# AllowlistLoader.VerifySignature would have rejected it on every real
+# endpoint. PAT-976's outstanding evidence was "an MSI install on a real
+# Windows endpoint" — that install would have failed.
+#
+# -text disables all EOL conversion in both directions, on every platform.
+#
+# PAT-2304 (2026-09-30): the Windows allowlist and its .sig were deleted, so
+# their two -text lines went with them. The rule still applies below.
+
+# Anything whose exact bytes carry a signature.
+verifier/catalogue/*.signed.json    -text
+
+# Release tooling executed by Git for Windows must retain Unix line endings.
+windows/installer/resolve-release-version.sh text eol=lf

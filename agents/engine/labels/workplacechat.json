@@ -1,0 +1,24 @@
+{
+  "label": "workplacechat",
+  "name": "Workplace Chat",
+  "type": "dmg",
+  "app_path": "/Applications/Workplace Chat.app",
+  "expected_team_id": "V9WTTPBFK9",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.workplace.com/resources/tech/it-configuration/download-workplace-chat"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "PAT-882: download.source was a regex-fragment auto-conversion artifact (https://[^\", captured from the fragment's grep pattern). Replaced with the real vendor downloads page the fragment scrapes (engine/fragments/labels/workplacechat.sh). Team ID and URL still require human review before setting allowlisted=true."
+  }
+}

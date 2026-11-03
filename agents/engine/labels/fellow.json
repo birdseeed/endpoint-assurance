@@ -1,0 +1,23 @@
+{
+  "label": "fellow",
+  "name": "Fellow",
+  "type": "dmg",
+  "app_path": "/Applications/Fellow.app",
+  "expected_team_id": "2NF46HY8D8",
+  "download": {
+    "method": "static",
+    "url": "https://fellow.app/desktop/download/darwin/latest/"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

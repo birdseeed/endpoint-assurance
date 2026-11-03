@@ -1,0 +1,23 @@
+{
+  "label": "brosix",
+  "name": "Brosix",
+  "type": "pkg",
+  "app_path": "/Applications/Brosix.app",
+  "expected_team_id": "TA6P23NW8H",
+  "download": {
+    "method": "static",
+    "url": "https://www.brosix.com/downloads/builds/official/Brosix.pkg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

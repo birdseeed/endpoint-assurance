@@ -1,0 +1,25 @@
+{
+  "label": "foxitpdfeditor",
+  "name": "Foxit PDF Editor",
+  "type": "pkg",
+  "app_path": "/Applications/Foxit PDF Editor.app",
+  "expected_team_id": "8GN47HTP75",
+  "download": {
+    "method": "static",
+    "url": "https://www.foxit.com/downloads/latest.html?product=Foxit-PDF-Editor-Suite-Pro-Teams-Mac"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "Foxit PDF Editor"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

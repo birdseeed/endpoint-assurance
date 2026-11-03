@@ -1,0 +1,24 @@
+{
+  "label": "polleverywhere",
+  "name": "Poll Everywhere",
+  "type": "dmg",
+  "app_path": "/Applications/Poll Everywhere.app",
+  "expected_team_id": "W48F3X5M8W",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.polleverywhere.com/app/releases/mac"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

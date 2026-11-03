@@ -1,0 +1,30 @@
+name: test-extension-removal
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/browser_extension_removal.sh'
+      - 'macos/test-extension-removal.zsh'
+      - 'macos/lib/test-browser-extension-removal.zsh'
+      - 'contracts/extension-removal-scopes.json'
+      - '.github/workflows/test-extension-removal.yml'
+  pull_request:
+    paths:
+      - 'macos/lib/browser_extension_removal.sh'
+      - 'macos/test-extension-removal.zsh'
+      - 'macos/lib/test-browser-extension-removal.zsh'
+      - 'contracts/extension-removal-scopes.json'
+      - '.github/workflows/test-extension-removal.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh (browser-extension removal tests exercise real zsh scripts)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run browser-extension removal tests
+        run: zsh macos/test-extension-removal.zsh
+      - name: Run browser-extension removal unit tests (PAT-1037 audit-persistence)
+        run: zsh macos/lib/test-browser-extension-removal.zsh

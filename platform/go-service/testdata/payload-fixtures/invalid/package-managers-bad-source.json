@@ -1,0 +1,169 @@
+{
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.2.0",
+  "tenant_id": "44444444-4444-4444-4444-444444444444",
+  "collected_at": "2026-12-01T00:00:00Z",
+  "device": {
+    "serial": "C00000000001",
+    "hw_uuid": "11111111-AAAA-BBBB-CCCC-DDDDDDDDDDDD",
+    "hostname": "minimal-test-host",
+    "hw_model": "Mac14,2",
+    "arch": "arm64",
+    "last_boot": "2026-12-01T00:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M2",
+    "cpu_cores": 8,
+    "ram_gb": 8,
+    "disk_total_gb": 256.0,
+    "disk_free_gb": 128.0
+  },
+  "os": {
+    "name": "macOS",
+    "version": "15.0",
+    "build": "24A335"
+  },
+  "compliance": {},
+  "security_tools": [],
+  "system_extensions": [],
+  "background_items": [],
+  "icloud": {
+    "signed_in": "Unknown"
+  },
+  "apps": [
+    {
+      "name": "Safari",
+      "version": "18.4",
+      "bundle_id": "com.apple.Safari"
+    }
+  ],
+  "package_managers": {
+    "collection_status": "complete",
+    "truncated": false,
+    "truncation_reason": null,
+    "sources": {
+      "npm_global": {
+        "collection_status": "complete",
+        "truncated": false,
+        "package_count": 2,
+        "location_count": 2
+      },
+      "pip_user": {
+        "collection_status": "complete",
+        "truncated": false,
+        "package_count": 1,
+        "location_count": 1
+      },
+      "pipx": {
+        "collection_status": "not_present",
+        "truncated": false,
+        "package_count": 0,
+        "location_count": 0
+      }
+    },
+    "users": [
+      {
+        "user": "alice",
+        "user_id": "501",
+        "collection_status": "complete",
+        "sources": {
+          "npm_global": "complete",
+          "pip_user": "complete",
+          "pipx": "not_present"
+        }
+      }
+    ],
+    "locations": [
+      {
+        "source": "npm_global",
+        "manager": "homebrew",
+        "scope": "system",
+        "user": null,
+        "user_id": null,
+        "path": "/opt/homebrew",
+        "runtime_version": null,
+        "interpreters": [],
+        "collection_status": "complete",
+        "package_count": 1
+      },
+      {
+        "source": "npm_global",
+        "manager": "nvm",
+        "scope": "user",
+        "user": "alice",
+        "user_id": "501",
+        "path": "/Users/alice/.nvm/versions/node/v22.19.0",
+        "runtime_version": "22.19.0",
+        "interpreters": [],
+        "collection_status": "complete",
+        "package_count": 1
+      },
+      {
+        "source": "pip_user",
+        "manager": "library_python",
+        "scope": "user",
+        "user": "alice",
+        "user_id": "501",
+        "path": "/Users/alice/Library/Python/3.13/lib/python/site-packages",
+        "runtime_version": "3.13",
+        "interpreters": [
+          "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13"
+        ],
+        "collection_status": "complete",
+        "package_count": 1
+      }
+    ],
+    "issues": [],
+    "packages": [
+      {
+        "source": "cargo",
+        "manager": "homebrew",
+        "scope": "system",
+        "user": null,
+        "user_id": null,
+        "name": "@anthropic-ai/claude-code",
+        "version": "2.0.14",
+        "prefix": "/opt/homebrew",
+        "runtime_version": null,
+        "interpreter": null,
+        "directory": "@anthropic-ai/claude-code",
+        "metadata_status": "read",
+        "pipx_app": null,
+        "pipx_main": null
+      },
+      {
+        "source": "npm_global",
+        "manager": "nvm",
+        "scope": "user",
+        "user": "alice",
+        "user_id": "501",
+        "name": "@openai/codex",
+        "version": "0.40.0",
+        "prefix": "/Users/alice/.nvm/versions/node/v22.19.0",
+        "runtime_version": "22.19.0",
+        "interpreter": null,
+        "directory": "@openai/codex",
+        "metadata_status": "read",
+        "pipx_app": null,
+        "pipx_main": null
+      },
+      {
+        "source": "pip_user",
+        "manager": "library_python",
+        "scope": "user",
+        "user": "alice",
+        "user_id": "501",
+        "name": "OpenAI",
+        "version": "1.108.0",
+        "prefix": "/Users/alice/Library/Python/3.13/lib/python/site-packages",
+        "runtime_version": "3.13",
+        "interpreter": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13",
+        "directory": "openai-1.108.0.dist-info",
+        "metadata_status": "read",
+        "pipx_app": null,
+        "pipx_main": null
+      }
+    ]
+  }
+}

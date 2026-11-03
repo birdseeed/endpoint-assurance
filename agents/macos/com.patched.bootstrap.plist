@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.patched.bootstrap</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Library/Patched/patched-bootstrap.sh</string>
+    </array>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>3</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/var/log/patched-bootstrap.log</string>
+    <key>StandardErrorPath</key>
+    <string>/var/log/patched-bootstrap.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- SECURITY (PAT-881, H10): this daemon runs as root. /usr/local/bin is
+             writable by an admin user once Homebrew is installed, so including it
+             here would let a local user shadow curl/tar/etc. and gain root the
+             next time this fires. Only SIP-protected system dirs are listed. -->
+        <key>PATH</key>
+        <string>/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+</dict>
+</plist>

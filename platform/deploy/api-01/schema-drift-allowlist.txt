@@ -1,0 +1,27 @@
+# PAT-2053: differences between example-api-host and the migrations that are
+# accepted on purpose. Read by schema_drift.py check.
+#
+# Format, one per line:
+#   + <fingerprint line>   present on the live DB, not in the migrations
+#   - <fingerprint line>   in the migrations, missing from the live DB
+# Matching is exact, character for character. The one wildcard: an entry that
+# ends in "|*" matches every line starting with the text before the "*", such
+# as every column of one table. Nothing else is special, so "text[]" is literal.
+# Put the reason and ticket on the comment line above each entry. Keep this
+# short: every entry is drift someone chose to live with. An entry that stops
+# matching is reported as a note, not a failure, so remove it once confirmed.
+
+# Pre-merge draft of 0025 left a created_at column on app_cpe_mappings. NOT NULL
+# with DEFAULT now(), so inserts that omit it still work; nothing reads it.
+# Dropping a column is destructive, so it stays (PAT-2053).
++ column|app_cpe_mappings|created_at|timestamp with time zone|not null|now()
+
+# Hand-built schema_migrations on prod carries a nullable description column
+# the migrations never created. Harmless to inserts; bookkeeping only (PAT-2053).
++ column|schema_migrations|description|text|null|
+
+# Hand-made backup of tenant_allowlists taken during PAT-728 (2026-07-06). No
+# code references it. Dropping it is Andy's call; until then it is accepted
+# (PAT-2053).
++ relation|tenant_allowlists_bak_pat728_20260706|r
++ column|tenant_allowlists_bak_pat728_20260706|*

@@ -1,0 +1,24 @@
+name: test-sectools
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/sectools.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/test-sectools.zsh'
+  pull_request:
+    paths:
+      - 'macos/lib/sectools.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/test-sectools.zsh'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh (security tools collector tests exercise a real zsh script)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run security tools collector tests
+        run: zsh macos/lib/test-sectools.zsh

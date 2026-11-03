@@ -1,0 +1,24 @@
+{
+  "label": "vuescanuni",
+  "name": "VueScan",
+  "type": "dmg",
+  "app_path": "/Applications/VueScan.app",
+  "expected_team_id": "5D5BXT9KP5",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.hamrick.com/vuescan/vuescan.htm"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

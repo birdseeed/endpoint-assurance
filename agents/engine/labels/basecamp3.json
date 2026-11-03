@@ -1,0 +1,24 @@
+{
+  "label": "basecamp3",
+  "name": "Basecamp 3",
+  "type": "zip",
+  "app_path": "/Applications/Basecamp 3.app",
+  "expected_team_id": "2WNYUYRS7G",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://basecamp.com/desktop/mac_arm64/updates.json"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

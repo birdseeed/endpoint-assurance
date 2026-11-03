@@ -1,0 +1,23 @@
+{
+  "label": "mobikinassistantforandroid",
+  "name": "MobiKin Assistant for Android",
+  "type": "dmg",
+  "app_path": "/Applications/MobiKin Assistant for Android.app",
+  "expected_team_id": "YNL42PA5C4",
+  "download": {
+    "method": "static",
+    "url": "https://www.mobikin.com/downloads/mobikin-android-assistant.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

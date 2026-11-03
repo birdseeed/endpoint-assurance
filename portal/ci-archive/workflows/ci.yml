@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Portal app deps + the standalone scan service deps (PAT-457): the
+          # single pytest run covers tests/ and scan/tests/. requirements.txt
+          # / scan/requirements.txt are runtime-only (PAT-1893); test-only
+          # deps (pytest, httpx) live in the matching requirements-test.txt.
+          pip install -r requirements.txt -r requirements-test.txt \
+            -r scan/requirements.txt -r scan/requirements-test.txt ruff
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Tests (pytest)
+        run: pytest
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-test.txt -r requirements-e2e.txt
+
+      - name: Install Chromium
+        run: python -m playwright install --with-deps chromium
+
+      - name: Browser-driven E2E tests (PAT-1021)
+        run: python -m pytest e2e/ -v
+
+  walk:
+    # PAT-2126: deterministic route x theme x width crawl of the portal
+    # against the stub platform - NOT a correctness gate. The walk step is
+    # continue-on-error so findings never fail the job or block a merge; they
+    # surface as an artefact a human reviews. See AGENTS.md's Walker section.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-test.txt -r requirements-e2e.txt
+
+      - name: Install Chromium
+        run: python -m playwright install --with-deps chromium
+
+      - name: Walk the portal (PAT-2126)
+        continue-on-error: true
+        run: python e2e/walk/walk.py
+
+      - name: Upload walk report + screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: walk-report
+          path: e2e/walk/out/
+          if-no-files-found: warn

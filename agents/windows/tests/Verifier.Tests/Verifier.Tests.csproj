@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Windows-only tests: Authenticode verification requires WinTrust -->
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Patched.Verifier.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <!-- SignedCms/CmsSigner to build in-memory PKCS#7 fixtures for the MSIX
+         AppxSignature.p7x tests (PAT-849) — same reason Verifier.csproj needs it. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="8.0.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Verifier\Verifier.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Shared.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,44 @@
+name: GitHub-Non-Author-Review (scan)
+
+# H4 — UNTRUSTED trigger stub for the GitHub-Non-Author-Review gate (split from the trusted gate).
+#
+# Triggered by `pull_request`, so both this workflow YAML and any PR content are
+# attacker-influenced for same-repo branch PRs. This job therefore does NO real
+# work and holds NO credential beyond the ambient, read-only default token:
+#   - no PR-head checkout;
+#   - no diff fetch;
+#   - no Codex / model credential of any kind, no App key.
+# Its only purpose is to exist as a `pull_request` workflow so that
+# github-non-author-review-gate.yml's `workflow_run` trigger fires. The trusted gate workflow
+# independently re-fetches the diff via the GitHub API and performs the actual
+# Codex review from a job that never executes attacker-influenced code and
+# never checks out PR-head content.
+#
+# PAT-755 hardening: previously this job ran the Codex review itself and held
+# CODEX_AUTH_JSON/GH_TOKEN in the same process that was fed attacker-controlled
+# PR diff content — a prompt-injection payload in a malicious PR diff could
+# have gotten the model to exfiltrate those credentials in its own output (no
+# sandbox escape needed: --sandbox read-only stops writes, not the model
+# choosing to echo a secret in its answer). Moving the review into the trusted
+# workflow_run job (github-non-author-review-gate.yml) removes that exposure: this untrusted
+# context never sees CODEX_AUTH_JSON at all.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-non-author-review-scan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: No-op (trigger only — see header)
+        run: |
+          echo "pull_request #${{ github.event.pull_request.number }} @ ${{ github.event.pull_request.head.sha }}"
+          echo "Codex review + gate decision run in the trusted github-non-author-review-gate.yml workflow_run job."

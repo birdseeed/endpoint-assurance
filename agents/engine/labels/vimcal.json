@@ -1,0 +1,23 @@
+{
+  "label": "vimcal",
+  "name": "Vimcal",
+  "type": "dmg",
+  "app_path": "/Applications/Vimcal.app",
+  "expected_team_id": "7F7GXK9J99",
+  "download": {
+    "method": "static",
+    "url": "https://vimcal-m1.s3.us-west-1.amazonaws.com/$fileDownloadName"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "label": "macfuse",
+  "name": "FUSE for macOS",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "relative-path-glob",
+    "patterns": [
+      "Install macFUSE.pkg"
+    ]
+  },
+  "app_path": "/Applications/FUSE for macOS.app",
+  "expected_team_id": "3T5GSNBU6W",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/osxfuse/osxfuse/releases/latest"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

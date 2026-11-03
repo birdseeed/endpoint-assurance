@@ -1,0 +1,24 @@
+{
+  "label": "umbrellaroamingclient",
+  "name": "Umbrella Roaming Client",
+  "type": "pkginzip",
+  "app_path": "/Applications/Umbrella Roaming Client.app",
+  "expected_team_id": "7P7HQ8H646",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://disthost.umbrella.com/roaming/upgrade/mac/production/manifest.json"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

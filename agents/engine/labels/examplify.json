@@ -1,0 +1,26 @@
+{
+  "label": "examplify",
+  "name": "Examplify",
+  "type": "pkgindmg",
+  "app_path": "/Applications/Examplify.app",
+  "expected_team_id": "5P9D4ESR3W",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://support.examsoft.com/hc/en-us/articles/11146797283469-Examplify-Direct-Download-Links-for-Windows-and-Mac-Installers"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "Examplify"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "label": "globusconnectpersonal",
+  "name": "Globus Connect Personal",
+  "type": "dmg",
+  "app_path": "/Applications/Globus Connect Personal.app",
+  "expected_team_id": "WYQ7U7YUC9",
+  "download": {
+    "method": "static",
+    "url": "https://downloads.globus.org/globus-connect-personal/mac/stable/globusconnectpersonal-latest.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

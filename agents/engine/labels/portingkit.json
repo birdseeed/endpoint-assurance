@@ -1,0 +1,23 @@
+{
+  "label": "portingkit",
+  "name": "Porting Kit",
+  "type": "dmg",
+  "app_path": "/Applications/Porting Kit.app",
+  "expected_team_id": "45WEPZ3433",
+  "download": {
+    "method": "static",
+    "url": "https://www.portingkit.com/pub/portingkit/download_latest.php?format=dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

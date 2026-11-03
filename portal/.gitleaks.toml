@@ -1,0 +1,14 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+  description = "Synthetic MDM enrolment token fixture (tests/conftest.py ENROLMENT_TOKEN, PAT-453 flow) trips generic-api-key on entropy. Scoped to the literal enr-tok-abc123xyz789 value, not the whole file, so an unrelated real secret landing in the tests tree is still caught."
+  paths = ['''tests/.*\.py$''']
+  regexes = ['''enr-tok-abc123xyz789''']
+  condition = "AND"
+
+[[allowlists]]
+  description = "CIS benchmark rule identifiers in test fixtures (e.g. rule_key cis_macos_2_5_2_2_firewall, PAT-1927) trip generic-api-key because the field name ends in 'key'. Scoped to tests and to the cis_<platform>_ identifier shape, so an unrelated real secret in the tests tree is still caught."
+  paths = ['''tests/.*\.py$''']
+  regexes = ['''cis_(macos|windows|linux)_[0-9a-z_]+''']
+  condition = "AND"

@@ -1,0 +1,25 @@
+{
+  "label": "hype",
+  "name": "Hype4",
+  "type": "dmg",
+  "app_path": "/Applications/Hype4.app",
+  "expected_team_id": "8J356DM772",
+  "download": {
+    "method": "static",
+    "url": "https://static.tumult.com/hype/download/Hype.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "NONE"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

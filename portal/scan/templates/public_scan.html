@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Free CVE Assessment | Patched.im</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="icon" type="image/svg+xml" href="{{ static_url('favicon.svg') }}">
+<link rel="stylesheet" href="{{ static_url('css/public-brand.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/site.css') }}">
+{% if turnstile_site_key %}
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+{% endif %}
+</head>
+<body>
+<div class="pub-page">
+
+{% include "_site_nav.html" %}
+
+  <main class="scan-main">
+    <section class="scan-wrap">
+      <p class="eyebrow"><span class="eyebrow__dot"></span>Free CVE assessment</p>
+      <h1 class="scan-head">See your exposure in minutes,&nbsp;free.</h1>
+      <p class="scan-lede">Upload an export from your existing Intune tenant and we cross-reference it against the National Vulnerability Database and CIS benchmarks. You get a branded report by email: no agent, no access to your environment, no sales call.</p>
+
+      <form method="post" action="/public/scan" enctype="multipart/form-data">
+
+        <div class="pub-field">
+          <label class="pub-label" for="company">Your organisation</label>
+          <input class="pub-input" type="text" id="company" name="company" required maxlength="120" placeholder="e.g. Acme Ltd">
+        </div>
+
+        <div class="pub-field">
+          <label class="pub-label" for="email">Work email</label>
+          <input class="pub-input" type="email" id="email" name="email" required maxlength="254" placeholder="you@yourcompany.com">
+          <div class="pub-hint">We email a 6-digit verification code to confirm the address, then email your report when ready.</div>
+        </div>
+
+        <div class="pub-field">
+          <label class="pub-label" for="devices_file">Intune devices export (CSV, required)</label>
+          <input class="pub-file" type="file" id="devices_file" name="devices_file" accept=".csv,text/csv" required>
+          <div class="pub-hint">Intune admin centre → <b>Devices → All devices → Export</b>.</div>
+        </div>
+
+        <div class="pub-field">
+          <label class="pub-label" for="apps_file">Detected apps export (JSON, optional)</label>
+          <input class="pub-file" type="file" id="apps_file" name="apps_file" accept=".json,application/json">
+          <div class="pub-hint">Adds per-device application CVE detection. Requires the <a href="https://learn.microsoft.com/en-us/intune/app-management/deployment/enhanced-app-inventory" target="_blank" rel="noopener">Intune inventory collector policy</a>.</div>
+        </div>
+
+        <div class="pub-checkrow">
+          <input type="checkbox" id="authorised" name="authorised" value="yes" required>
+          <label class="pub-label" for="authorised">
+            I confirm I am authorised to share this device inventory with Patched.im for the purpose of a one-off CVE assessment.
+          </label>
+        </div>
+
+        {% if turnstile_site_key %}
+        <div class="pub-field">
+          <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}"></div>
+        </div>
+        {% endif %}
+
+        <button class="pub-btn" type="submit">Continue - send verification code</button>
+      </form>
+
+      <div class="pub-privacy-blurb">
+        <strong>What happens to my data?</strong><br>
+        The uploaded export and generated report are stored on Patched.im infrastructure
+        (Hetzner, EU). The report is also emailed to you as an attachment through Patched's
+        Microsoft 365 mailbox, hosted in the UK. Uploads are deleted immediately after the
+        report is generated. The stored copy is auto-deleted after
+        <strong>{{ retention_days }} days</strong>, or sooner if you click the "delete now"
+        link in the report email. Patched.im does not share
+        your data with third parties beyond the NVD lookup (which uses CPE strings only, no
+        device or user identifiers). <a href="/public/privacy">Read the full privacy notice</a>.
+      </div>
+      <div class="pub-links">
+        <a href="/public/intune-upload">Already have an Intune export? Upload it directly</a>
+        &middot;
+        <a href="/public/privacy">Privacy policy</a>
+      </div>
+    </section>
+  </main>
+
+{% include "_site_footer.html" %}
+
+</div>
+<script>document.querySelectorAll('[data-year]').forEach(function(e){e.textContent=new Date().getFullYear();});</script>
+</body>
+</html>

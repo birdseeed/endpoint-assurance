@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="crumb"><a href="/reports">Reports</a> / <a href="{{ report_url }}">Remote access tools</a> / Devices</p>
+<div class="page-head">
+  <div class="page-head__title">
+    <h1>Remote access tools &middot; devices</h1>
+    <a class="btn btn-small" href="{{ pdf_url }}">Download PDF</a> <a class="btn btn-small" href="{{ csv_url }}">Download CSV</a>
+  </div>
+  <p class="meta">{% if product_key %}Devices with this product installed, one row per device and user.{% else %}Every remote access installation, one row per device and user.{% endif %}</p>
+</div>
+
+{% if not basis.complete %}
+<div class="notice">Coverage is partial. {{ basis.statement }}</div>
+{% endif %}
+
+<div class="card card-table">
+  {% if rows %}
+  <div class="table-scroll">
+  <table class="data-table table-stack" id="ra-devices-table">
+    <colgroup>
+      <col><col><col class="col-secondary"><col><col><col><col class="col-secondary"><col>
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Device</th><th>Product</th><th class="col-secondary">Platform</th><th>Approval state</th>
+        <th>User</th><th>Machine-wide</th><th class="col-secondary">Category</th><th>Last seen</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td data-label="Device">
+          {% if r.device_id %}<a class="cell-anywrap" href="/devices/{{ r.device_id }}">{{ r.hostname }}</a>{% else %}{{ r.hostname }}{% endif %}
+          {% if r.device_stale %}<span class="cell-subtle">Stale</span>{% endif %}
+        </td>
+        <td data-label="Product">{{ r.name }}<span class="cell-subtle">{{ r.kind_label }}</span></td>
+        <td class="col-secondary" data-label="Platform">{{ r.platform | platform_display if r.platform else '-' }}</td>
+        <td data-label="Approval state"><span class="pill {{ r.pill_class }}">{{ r.approval_state_label }}</span></td>
+        <td data-label="User">{% if r.user %}{{ r.user }}{% elif r.machine_wide %}Machine-wide{% else %}-{% endif %}</td>
+        <td data-label="Machine-wide">{{ 'Yes' if r.machine_wide else 'No' }}</td>
+        <td class="col-secondary" data-label="Category">{{ r.category_label }}</td>
+        <td class="mono" data-label="Last seen">{% if r.last_seen %}<span class="nowrap">{{ r.last_seen | humandate }}</span>{% else %}-{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">No devices match this filter.</p>
+  {% endif %}
+</div>
+
+{% if total_pages > 1 %}
+<nav class="pager" aria-label="Device pages">
+  {% if page > 1 %}
+  <a class="btn btn-small" href="{{ prev_url }}">&larr; Previous</a>
+  {% else %}
+  <span class="btn btn-small btn-disabled" aria-disabled="true">&larr; Previous</span>
+  {% endif %}
+  <span class="pager-status">Page {{ page }} of {{ total_pages }}</span>
+  {% if page < total_pages %}
+  <a class="btn btn-small" href="{{ next_url }}">Next &rarr;</a>
+  {% else %}
+  <span class="btn btn-small btn-disabled" aria-disabled="true">Next &rarr;</span>
+  {% endif %}
+</nav>
+{% endif %}
+{% endblock %}

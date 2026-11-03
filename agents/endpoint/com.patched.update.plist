@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.patched.update — privileged update daemon.
+
+  Runs patched-update.sh as root. Triggered two ways:
+    - StartCalendarInterval : the admin-scheduled daily run.
+    - WatchPaths            : fires when the menu bar app drops a trigger file
+                              into the (mode 1733) triggers directory.
+  Install to /Library/LaunchDaemons/ (root:wheel, mode 644), then:
+    sudo launchctl bootstrap system /Library/LaunchDaemons/com.patched.update.plist
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.patched.update</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/patched-updater/patched-update.sh</string>
+    </array>
+
+    <!-- Admin-scheduled run: every day at 03:00 local time. -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>3</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!-- Self-service: run when a trigger file appears in the triggers dir. -->
+    <key>WatchPaths</key>
+    <array>
+        <string>/Library/Application Support/Patched/triggers</string>
+    </array>
+
+    <key>StandardOutPath</key>
+    <string>/var/log/patched-update.out</string>
+    <key>StandardErrorPath</key>
+    <string>/var/log/patched-update.err</string>
+
+    <!-- Don't compete with the user's foreground work. -->
+    <key>LowPriorityIO</key>
+    <true/>
+    <key>Nice</key>
+    <integer>10</integer>
+</dict>
+</plist>

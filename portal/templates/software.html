@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% from "_macros.html" import software_type_tag, protected_badge, review_cell, approval_select, approval_select_head, group_card_head, filter_bar %}
+{% block content %}
+<div class="page-head">
+  <h1>Software</h1>
+  {#- PAT-2255 defect 1: one count, the one the Overview reads (main.py's
+      _software_headline over _awaiting_decision), stated plainly. Why a
+      figure is partial, or where it came from, is one muted line. #}
+  <p class="meta software-headline">
+    {%- if not headline.available %}The number of products waiting on an approval decision is not available right now.
+    {%- elif headline.count %}<strong>{{ headline.count }}</strong> product{{ '' if headline.count == 1 else 's' }} waiting on an approval decision across your estate.
+    {%- else %}No products are waiting on an approval decision.{% endif -%}
+  </p>
+  {% if headline.note %}<p class="meta meta--note">{{ headline.note }}</p>{% endif %}
+  {% if can_edit %}<p class="meta"><a class="btn btn-small" href="/software/add">Add approved software</a></p>{% endif %}
+  {% if headline.from_card %}<p class="meta meta--note">This figure also counts <a href="/homebrew">Homebrew</a> packages and <a href="/ai-tooling">AI Tooling</a> items, which are reviewed on their own pages. Applications and browser extensions are reviewed here.</p>{% endif %}
+</div>
+
+{% if review_queue %}
+<section class="review-queue" aria-labelledby="review-queue-title" id="review-queue">
+  <h2 id="review-queue-title">Reviewing {{ review_queue.count }} new product{{ '' if review_queue.count == 1 else 's' }}</h2>
+  <p class="meta">{% if review_queue.since %}First seen since your last review on {{ review_queue.since | humandate }}.{% else %}No review has been recorded yet, so every product counts as new.{% endif %} Each one leaves this list once you decide it. <a href="{{ review_queue.leave_url }}">Leave the review</a></p>
+  {% if review_queue.unmatched %}<p class="meta meta--note">{{ review_queue.unmatched }} of them could not be matched to a row in this list, usually because {{ 'it is' if review_queue.unmatched == 1 else 'they are' }} known by name only. <a href="/reports/new-software">See the New software report</a>.</p>{% endif %}
+  {% if review_queue.truncated %}<p class="meta meta--note">More products are new than one read can hold, so this review shows the newest of them.</p>{% endif %}
+</section>
+{% elif new_review %}
+<div class="notice review-queue-banner" role="status">
+  <p><strong>{% if new_review.no_review %}{{ new_review.count }} product{{ '' if new_review.count == 1 else 's' }} not yet reviewed.{% else %}{{ new_review.count }} new since your last review.{% endif %}</strong> <a href="{{ new_review.href }}" data-review-queue-link>Review them</a> or see the <a href="/reports/new-software">New software report</a>.</p>
+</div>
+{% endif %}
+
+{% if approval_result %}
+<div class="notice approval-result{% if not approval_result.error %} notice-ok{% endif %}" id="approval-result" role="status" tabindex="-1" data-approval-result>
+  {% if approval_result.error %}
+  <p><strong>{{ approval_result.error }}</strong></p>
+  {% if approval_result.error_lines %}<ul class="approval-result__lines">{% for line in approval_result.error_lines %}<li>{{ line }}</li>{% endfor %}</ul>{% endif %}
+  {% elif approval_result.notice %}
+  <p><strong>{{ approval_result.notice }}</strong></p>
+  {% else %}
+  <p><strong>{% if approval_result.changed is not none %}{{ approval_result.changed }} of {{ approval_result.requested }} product{{ '' if approval_result.requested == 1 else 's' }} changed to {{ approval_result.state_label }}.{% else %}Marked {{ approval_result.requested }} product{{ '' if approval_result.requested == 1 else 's' }} {{ approval_result.state_label }}.{% endif %}</strong>{% if approval_result.changed is not none and approval_result.changed < approval_result.requested %} The rest were already {{ approval_result.state_label }}.{% endif %}{% if approval_result.resolved_alerts %} {{ approval_result.resolved_alerts }} open Unapproved alert{{ '' if approval_result.resolved_alerts == 1 else 's' }} resolved.{% endif %}</p>
+  {% if approval_result.protected %}
+  <p class="approval-result__warning"><strong>Protected product marked Unapproved.</strong> Check this was intended: {{ approval_result.protected | join(', ') }}.</p>
+  {% endif %}
+  {% endif %}
+  <button type="button" class="approval-result__close" data-approval-result-close aria-label="Dismiss this notice" hidden>Dismiss</button>
+</div>
+{% endif %}
+
+{% if inventory_error %}
+<aside class="notice software-inventory-unavailable" aria-label="Software evidence unavailable">
+  <p><strong>Dated software evidence is temporarily unavailable.</strong> Governance decisions below remain available and unaffected, but products Patched knows only from device inventory may be missing from this list until it is back.</p>
+</aside>
+{% endif %}
+
+{% for note in filter_notices %}
+<aside class="notice" aria-label="Filter not applied"><p>{{ note }}</p></aside>
+{% endfor %}
+
+{% if ext_estate_too_large %}
+<div class="card group-card gap-card">
+  {{ group_card_head('Browser extension data withheld', none, 'Your extension telemetry is too large to summarise safely right now. This is not the same as having no extensions.', 'warn') }}
+</div>
+{% endif %}
+{% if app_estate_too_large %}
+<div class="card group-card gap-card">
+  {{ group_card_head('Undecided application data withheld', none, 'Your installed-application telemetry is too large to group safely right now. Approved, mandatory and not-wanted applications are unaffected.', 'warn') }}
+</div>
+{% endif %}
+
+<section class="approval-tools" aria-label="Filter and mark software">
+{#- PAT-2163: the filter bar (with its chips) sits as the last thing before
+   the bulk-action bar and the table - nothing else renders in between, so
+   the phone height budget (e2e/test_pat2163_software_filter_bar.py) is
+   exactly that span. PAT-2255: every filter is read from the URL
+   (main.py's _software_filter_state) and the rows it excludes are already
+   hidden in this HTML. #}
+{% call filter_bar('/software', 'type', software_filter_bar.type_options, 'Type',
+   'approval', software_filter_bar.approval_options, 'Approval',
+   'publisher', software_filter_bar.publisher_options, 'Publisher',
+   'Publisher comes from the macOS signing identity where one was reported.',
+   'software-search', '.software-table', 'Search products',
+   software_filter_bar.chips, software_filter_bar.clear_url,
+   hidden_row_filters=software_filter_bar.hidden_row_filters,
+   hidden_fields=software_filter_bar.hidden_fields,
+   active_filters=software_filter_bar.active_filters,
+   search_value=software_filter_bar.search) %}
+<label class="filter-dropdown__field">
+  <span class="threshold-label">On at least</span>
+  <input class="search" type="number" min="0" step="1" inputmode="numeric" value="{{ filter_min_devices if filter_min_devices else '' }}" placeholder="0" data-filter-min-devices>
+  <span class="filter-dropdown__unit">devices</span>
+</label>
+{#- PAT-2326: usage is the platform's own verdict per product (main.py's
+    _software_usage_view). A checkbox group in this panel, not a second
+    details dropdown: static/js/portal.js applies it on change like the
+    Homebrew selects beside it, and without JavaScript the panel's Apply
+    submits it as repeated usage= params. #}
+{%- set usage_visible = software_filter_bar.usage_options | rejectattr('hide') | list %}
+{%- if usage_visible %}
+<fieldset class="filter-dropdown__group" data-row-filter="usage" data-query-param="usage" data-default-value=""
+          data-initial="{{ software_filter_bar.usage_options | selectattr('selected') | map(attribute='value') | join(',') }}">
+  <legend class="threshold-label">Usage</legend>
+  {%- for option in usage_visible %}
+  <label class="filter-dropdown__option">
+    <input type="checkbox" name="usage" value="{{ option.value }}"{% if option.selected %} checked{% endif %}>
+    <span>{{ option.label }} ({{ option.count }})</span>
+  </label>
+  {%- endfor %}
+</fieldset>
+{%- endif %}
+{% endcall %}
+
+{% if can_edit %}
+<form id="approval-form" class="bulk-bar" method="post" action="/software/approvals" data-bulk-bar>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="return_to" value="{{ return_to }}" data-approval-return>
+  <input type="hidden" name="return_anchor" value="" data-approval-anchor>
+  <span class="bulk-bar__count" data-bulk-count aria-live="polite">Select products to mark several at once.</span>
+  <label class="bulk-bar__reason">
+    <span class="visually-hidden">Reason (optional)</span>
+    <input class="search" type="text" name="reason" maxlength="1000" placeholder="Reason (optional)" autocomplete="off">
+  </label>
+  <span class="bulk-bar__actions">
+    <button type="submit" class="btn btn-small" name="state" value="approved" data-bulk-submit>Approve</button>
+    <button type="submit" class="btn btn-small" name="state" value="unapproved" data-bulk-submit>Unapprove</button>
+    <button type="submit" class="btn btn-small" name="state" value="ignored" data-bulk-submit>Ignore</button>
+    <button type="button" class="btn btn-small bulk-bar__clear" data-bulk-clear hidden>Clear</button>
+  </span>
+</form>
+{% elif role_unavailable %}
+<p class="toolbar-hint">Approval controls are unavailable right now because your account role could not be checked. Decisions and their history are still shown.</p>
+{% else %}
+<p class="toolbar-hint">Your account can view approval decisions and their history. An administrator on your account can change them.</p>
+{% endif %}
+</section>
+
+{% if urgency_note %}<p class="meta meta--note software-urgency-note">{{ urgency_note }}</p>{% endif %}
+{% if usage_note %}<p class="meta meta--note software-usage-note">{{ usage_note }}</p>{% endif %}
+
+{% if declared_error %}
+<aside class="notice" aria-label="Approved software not yet seen unavailable"><p><strong>Software you approved before it was seen could not be loaded just now.</strong> Refresh the page in a minute to check.</p></aside>
+{% endif %}
+{% if declared_rows %}
+<div class="card software-table-card declared-software">
+  <h2>Approved before it was seen</h2>
+  <p class="meta">{{ declared_total }} approved {{ 'entry' if declared_total == 1 else 'entries' }} no endpoint has reported yet. {{ declaration_meaning }}</p>
+  <div class="table-scroll" role="region" aria-label="Approved software not yet observed" tabindex="0">
+    <table class="data-table declared-table table-stack">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Platform</th>
+          <th>Status</th>
+          <th>Identity</th>
+          <th>Installs</th>
+          <th>Minimum version</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in declared_rows %}
+        <tr class="declared-row">
+          <td class="cell-product" data-label="Product">
+            <span class="product-line"><a class="product-name" href="{{ d.url }}" title="{{ d.name }}">{{ d.name }}</a>
+              {%- if d.publisher %}<span class="product-publisher" title="{{ d.publisher }}">{{ d.publisher }}</span>{% endif -%}
+            </span>
+          </td>
+          <td data-label="Platform">{{ d.platform_label }}</td>
+          <td data-label="Status"><span class="pill pill-muted">Declared</span> <span class="pill pill-muted">{{ d.observation_label }}</span></td>
+          <td data-label="Identity">{{ d.identity_label }}</td>
+          <td data-label="Installs" data-value="{{ d.observed_count }}">{{ d.observed_count }}</td>
+          <td data-label="Minimum version">{{ d.min_version or 'Any version' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if declared_total > declared_rows | length %}<p class="meta meta--note">Showing {{ declared_rows | length }} of {{ declared_total }}.</p>{% endif %}
+</div>
+{% endif %}
+
+{#- PAT-2335: compact rows with installed version evidence labelled below
+    the product name so at least 15 rows fit a
+    1280x800 screen; below the phone breakpoint the table stacks into
+    labelled blocks (.table-stack, rubric L12). The product name opens the
+    product detail: history plus the Identifiers the list no longer shows
+    (defects 3 and 4). #}
+<div class="card software-table-card">
+  <div class="table-scroll" role="region" aria-label="Software table" tabindex="0">
+    <table class="data-table software-table table-stack">
+      <colgroup>
+        {% if can_edit %}<col class="software-col-select">{% endif %}
+        <col class="software-col-product"><col class="software-col-type col-secondary"><col class="software-col-platform col-secondary">
+        <col class="software-col-installs"><col class="software-col-evidence col-tertiary"><col class="software-col-cve"><col class="software-col-signing"><col class="software-col-actions">
+      </colgroup>
+      <thead>
+        <tr>
+          {{ approval_select_head(can_edit) }}
+          <th data-sort="text" title="Select a product's name to see its approval history and identifiers. A green badge shows when a product exactly matches your protected-software list; no badge means not known to be protected, never confirmed unprotected. Extensions are never checked for protection.">Product</th>
+          <th data-sort="text" class="col-secondary">Type</th>
+          <th class="col-secondary">Platform</th>
+          <th data-sort="num">Installs</th>
+          <th class="col-tertiary" title="The most recent installation evidence Patched holds for this product. Hover a date for when it was last used.">Evidence</th>
+          <th title="Assessed: a CPE mapping matched the installed version. Checking: mapped, not matched yet. Not yet assessed: Patched has not yet identified this product's vulnerability source.">CVE assessment</th>
+          <th title="The macOS code signing Patched observed for this application. Unknown means no signing evidence was reported, never unsigned. Extensions carry no signing.">Signing</th>
+          <th>Approval</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in all_rows %}
+        <tr id="{{ p.row_id }}" class="software-row{% if p.hidden_filter %} row-hide-filter{% endif %}{% if p.hidden_search %} row-hide-search{% endif %}" data-filter-kind="{{ p.kind }}" data-filter-decision="{{ p.group }}"{% if p.filter_queue is defined %} data-filter-queue="{{ p.filter_queue }}"{% endif %}{% if p.filter_new is defined %} data-filter-new="{{ p.filter_new }}"{% endif %}{% if p.filter_urgency is defined %} data-filter-urgency="{{ p.filter_urgency }}"{% endif %} data-filter-usage="{{ p.usage_key }}" data-approval-row data-approval-state="{{ p.approval_state or 'unknown' }}" data-publisher="{{ p.publisher }}" data-devices="{{ p.installs }}" data-search="{{ p.search_text }}">
+          {{ approval_select(p, can_edit) }}
+          <td class="cell-product" data-label="Product">
+            <span class="product-line">
+              {%- if p.detail_url %}<a class="product-name" href="{{ p.detail_url }}" data-history-drawer title="{{ p.name_title }}">{{ p.name }}</a>
+              {%- else %}<span class="product-name" title="{{ p.name_title }}">{{ p.name }}</span>{% endif -%}
+              {%- if p.publisher %}<span class="product-publisher" title="{{ p.publisher }}">{{ p.publisher }}</span>{% endif -%}
+              {{ protected_badge(p) }}
+            </span>
+            <span class="installed-versions" title="{{ p.installed_versions_title }}">
+              <span class="installed-versions__label">Installed:</span>
+              <span class="installed-versions__value" title="{{ p.installed_versions_title }}">{{ p.versions_text or 'Not reported' }}</span>
+              {% if p.unknown_version_installation_count %}<span class="installed-versions__unknown">{{ p.unknown_version_installation_count }} unknown</span>{% endif %}
+            </span>
+          </td>
+          <td class="col-secondary" data-label="Type">{{ software_type_tag(p.kind) }}</td>
+          <td class="col-secondary" data-label="Platform">{{ p.platform_label }}</td>
+          <td data-label="Installs" data-value="{{ p.installs }}"><span class="cell-line" title="{{ p.installs_title }}">{{ p.installs_text }}</span></td>
+          <td class="col-tertiary cell-evidence" data-label="Evidence">
+            {%- if p.evidence_at %}<span class="cell-evidence__main" title="{% if p.last_used_at %}Last used {{ p.last_used_at | humandate(true) }} UTC{% else %}No use recorded{% endif %}">{{ p.evidence_at | humandate(true) }}</span>
+            {%- else %}<span class="cell-evidence__main">Not yet in software evidence</span>{% endif -%}
+            {%- if p.usage_text %}
+            <span class="cell-subtle cell-usage cell-usage--{{ p.usage_tone }}" title="{{ p.usage_text }}">{{ p.usage_prefix }}{% if p.usage_date %}{{ p.usage_date | humandate_nowrap }}{% endif %}</span>
+            {%- endif -%}
+          </td>
+          <td class="cell-cve" data-label="CVE assessment">
+            <span class="pill {{ p.cve_assessment.pill_class }}" title="{% if p.cve_assessment.explanation %}{{ p.cve_assessment.explanation }}{% elif p.cve_assessment.state == 'assessed' and p.cve_assessment.last_matched_at %}Last matched {{ p.cve_assessment.last_matched_at | humandate(true) }} UTC{% else %}{{ p.cve_assessment.display_label }}{% endif %}">{{ p.cve_assessment.display_label }}</span>
+          </td>
+          <td class="cell-signing" data-label="Signing">
+            {%- if p.signing_short %}<span class="signing signing--{{ p.signing_state }}" title="{{ p.signing_title }}">{{ p.signing_short }}</span>
+            {%- else %}<span class="signing signing--none" title="{{ p.signing_title }}">-<span class="visually-hidden">Not applicable</span></span>{% endif -%}
+          </td>
+          {{ review_cell(p, can_edit, csrf_token, return_to) }}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if not all_rows %}<p class="empty">No products match this search.</p>
+  {% else %}<p class="empty" data-filter-empty{% if visible_count %} hidden{% endif %}>No products match these filters.</p>{% endif %}
+</div>
+
+{% if inventory and (inventory.previous_url or inventory.next_url) %}
+<nav class="inventory-pagination" aria-label="Software evidence pages">
+  <span class="meta">Dated evidence shown for {{ inventory.offset + 1 if inventory.products else 0 }} to {{ inventory.offset + (inventory.products | length) }} of {{ inventory.total }} products.</span>
+  <span>{% if inventory.previous_url %}<a class="btn btn-small" href="{{ inventory.previous_url }}">Previous</a>{% endif %}{% if inventory.next_url %}<a class="btn btn-small" href="{{ inventory.next_url }}">Next</a>{% endif %}</span>
+</nav>
+{% endif %}
+
+{#- PAT-2255: a partial list says why, with the platform's own total only
+    when it is a real count - never "at least". #}
+{% if ext_truncated and not ext_estate_too_large %}
+<p class="meta meta--note">This list is partial: it holds the first {{ ext_shown }} {% if ext_total is not none %}of {{ ext_total }} {% endif %}browser extensions, unapproved and undecided ones first.{% if ext_total is none %} The platform did not report how many there are in all.{% endif %}</p>
+{% endif %}
+{% if app_truncated and not app_estate_too_large %}
+<p class="meta meta--note">This list is partial: it holds the first {{ app_shown }} {% if app_total is not none %}of {{ app_total }} {% endif %}applications Patched governs. Undecided ones are capped first; approved, unapproved and mandatory policy rows are never cut.{% if app_total is none %} The platform did not report how many there are in all.{% endif %}</p>
+{% endif %}
+
+<p class="toolbar-hint">Every approval change is recorded with who made it and when, and kept in each product's history. Marking a product Unapproved does not remove, block or uninstall it.</p>
+
+<aside class="history-drawer" id="history-drawer" role="dialog" aria-modal="false" aria-labelledby="history-drawer-title" hidden data-history-panel>
+  <div class="history-drawer__head">
+    <h2 id="history-drawer-title">Product detail</h2>
+    <button type="button" class="btn btn-small" data-history-close>Close</button>
+  </div>
+  <div class="history-drawer__body" data-history-body></div>
+</aside>
+{% endblock %}
+{% block scripts %}<script src="{{ static_url('js/portal.js') }}"></script>{% endblock %}

@@ -1,0 +1,209 @@
+name: windows-agent-msi
+description: >-
+  The one definition of how the Windows agent MSI is built (PAT-1777). Used by
+  windows-agent-release.yml (tag push and workflow_dispatch) and by
+  windows-msi-build.yml (pull requests and main) so the PR check compiles the
+  installer exactly the way a release does.
+
+# Why a composite action with two phases, not a reusable workflow:
+#
+# The release build job interleaves supply-chain controls with the build. The
+# artifact trust key gate runs before anything is published, and HMAC and
+# Ed25519 signing plus their "Assert ... was signed when expected" gates run
+# after it. A reusable workflow would have to own the whole job, which moves
+# those controls, their secrets and the job outputs the publish job reads into
+# a second file. Two phases of one composite action let the release workflow
+# keep every control where it was. (PAT-2304, 2026-09-30: the legacy allowlist
+# signature check that used to run between the two phases is retired.)
+#
+# This action must never need a secret. Composite actions cannot read the
+# secrets context, and nothing here takes a credential as an input, so the PR
+# path (permissions: contents: read) has nothing to leak. Signing stays in the
+# release workflow.
+#
+# A local action is loaded from the caller's own checkout, so a pull request
+# that edits this file is built with its edited copy, and a release is built
+# with the copy at its tag.
+
+inputs:
+  phase:
+    description: >-
+      'prepare' sets up .NET and Python, publishes the headless Service and installs
+      the Python dependencies. 'package' runs the credential guard, builds the
+      MSI and asserts its File table. Any other value fails.
+    required: true
+  version:
+    description: Installable X.Y.Z or X.Y.Z.N identity, N=1..99 (resolve-release-version.sh `version`).
+    required: true
+  file_version:
+    description: Epoched X.Y.Z.0 file version (resolve-release-version.sh `file_version`).
+    required: true
+  informational_version:
+    description: Installable identity plus +<40-hex commit SHA> (resolve-release-version.sh `informational_version`).
+    required: true
+  msi_product_version:
+    description: Epoched X.Y.Z MSI ProductVersion (resolve-release-version.sh `msi_product_version`).
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # The version values below are interpolated into dotnet command lines, the
+    # same way the release job has always passed them. Callers produce them with
+    # resolve-release-version.sh, which already validates them; this re-check
+    # keeps the interpolation safe even if a future caller does not.
+    - name: Validate windows-agent-msi inputs
+      shell: bash
+      env:
+        PHASE: ${{ inputs.phase }}
+        VERSION: ${{ inputs.version }}
+        FILE_VERSION: ${{ inputs.file_version }}
+        INFORMATIONAL_VERSION: ${{ inputs.informational_version }}
+        MSI_PRODUCT_VERSION: ${{ inputs.msi_product_version }}
+      run: |
+        case "$PHASE" in
+          prepare|package) ;;
+          *)
+            echo "::error::windows-agent-msi: unknown phase '$PHASE' (expected prepare or package)"
+            exit 1
+            ;;
+        esac
+        fail() { echo "::error::windows-agent-msi: invalid $1"; exit 1; }
+        # Beta tags resolve to numeric X.Y.Z.N identities; only N=1..99 is supported.
+        [[ "$VERSION" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,5}(\.[1-9][0-9]?)?$ ]] || fail version
+        [[ "$MSI_PRODUCT_VERSION" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,5}$ ]] || fail msi_product_version
+        [[ "$FILE_VERSION" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,5}\.0$ ]] || fail file_version
+        [[ "$INFORMATIONAL_VERSION" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,5}(\.[1-9][0-9]?)?\+[0-9A-Fa-f]{40}$ ]] || fail informational_version
+        [[ "${INFORMATIONAL_VERSION%+*}" == "$VERSION" ]] || fail informational_version
+        echo "windows-agent-msi: phase=$PHASE version=$VERSION msi_product_version=$MSI_PRODUCT_VERSION"
+
+    # ---- phase: prepare ----------------------------------------------------
+
+    - name: Setup .NET (8 + 10)
+      if: success() && inputs.phase == 'prepare'
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: |
+          8.0.x
+          10.0.x
+
+    - name: Publish Service
+      if: success() && inputs.phase == 'prepare'
+      shell: pwsh
+      run: dotnet publish windows/src/Service/Service.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:Version=${{ inputs.version }} -p:AssemblyVersion=${{ inputs.file_version }} -p:FileVersion=${{ inputs.file_version }} -p:InformationalVersion=${{ inputs.informational_version }} -p:IncludeSourceRevisionInInformationalVersion=false --nologo
+
+    # PAT-599: CredentialsCA DLL custom action removed; no separate build step needed.
+    # PAT-1755 replaced the RegistryValue provisioning write this comment used to
+    # describe with a deferred EXE custom action (see Product.wxs) because a
+    # RegistryValue write logs the token in clear text in a verbose install log; the
+    # EXE action keeps PAT-599's ARM64-safe property. PAT-1793 deleted the CredentialsCA
+    # source now that PAT-599 has proven stable in production.
+
+    - name: Setup Python
+      if: success() && inputs.phase == 'prepare'
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install Python dependencies
+      if: success() && inputs.phase == 'prepare'
+      shell: bash
+      run: pip install -r requirements.txt
+
+    # ---- phase: package ----------------------------------------------------
+
+    # PAT-1755: refuse to package an MSI whose credential properties would be
+    # written to verbose install logs. Same guard windows-build runs on PRs,
+    # repeated here because a tag build does not require that check to pass.
+    - name: Guard MSI credential properties stay out of install logs
+      if: success() && inputs.phase == 'package'
+      shell: bash
+      run: python3 windows/installer/test_hidden_credentials.py
+
+    # PAT-2399: refuse to package an MSI whose install directory or service
+    # executable would fall back to the ACL Program Files hands down.
+    - name: Guard MSI sets an explicit install-directory ACL
+      if: success() && inputs.phase == 'package'
+      shell: bash
+      run: python3 windows/installer/test_install_directory_acl.py
+
+    # Execute the actual payload assertion against service-only and rejected
+    # fixtures on Windows too, before trusting it against the built MSI.
+    - name: Test headless payload guard
+      if: success() && inputs.phase == 'package'
+      shell: pwsh
+      run: python -m unittest ci.test_windows_msi_build_workflow.HeadlessPayloadTests -v
+
+    # PAT-1777: this is the step a WiX schema or validation error (for example
+    # WIX0012, a RegistrySearch property that is not all upper case) fails. Run
+    # on pull requests by windows-msi-build.yml, so it fails there first.
+    - name: Build MSI
+      if: success() && inputs.phase == 'package'
+      shell: pwsh
+      run: dotnet build windows/installer/Patched.wixproj -c Release -p:ProductVersion=${{ inputs.msi_product_version }} --nologo
+
+    # PAT-1096: a successful WiX build alone does not prove its File table has
+    # every executable the installed agent needs. Query the just-built MSI with
+    # Windows Installer's built-in COM API so a missing payload fails before it
+    # can be checksummed, signed, or released. This needs no downloaded tooling.
+    - name: Assert headless assurance MSI payload
+      if: success() && inputs.phase == 'package'
+      shell: pwsh
+      run: |
+        $msi = Get-ChildItem -Recurse -Filter "PatchedAgent.msi" windows/installer/bin |
+               Select-Object -First 1
+        if (-not $msi) { Write-Error "PatchedAgent.msi not found under windows/installer/bin"; exit 1 }
+
+        $installer = New-Object -ComObject WindowsInstaller.Installer
+        $database = $installer.OpenDatabase($msi.FullName, 0)
+        $view = $database.OpenView('SELECT `FileName` FROM `File`')
+        $view.Execute()
+        $fileNames = @()
+        while ($record = $view.Fetch()) {
+          # Windows Installer permits short|long FileName entries. Compare
+          # the long name, while accepting either database representation.
+          $fileNames += $record.StringData(1).Split('|')[-1]
+        }
+
+        $expected = @("Patched.Service.exe")
+        $missing = @($expected | Where-Object { $_ -notin $fileNames })
+        if ($missing.Count -gt 0) {
+          throw "MSI File table is missing required endpoint executable(s): $($missing -join ', ')"
+        }
+        $unexpected = @($fileNames | Where-Object { $_ -notin $expected })
+        if ($unexpected.Count -gt 0) {
+          throw "Assurance MSI File table contains unexpected payload(s): $($unexpected -join ', ')"
+        }
+        Write-Host "MSI File table contains: $($expected -join ', ')"
+
+    # PAT-2399: the source guard above reads Product.wxs; this reads what WiX
+    # actually compiled. The explicit ACL must be in the MsiLockPermissionsEx
+    # table of the built MSI, on the install directory and on the service
+    # executable, and nowhere else. A missing table makes OpenView throw, which
+    # fails the step. It still does not prove what Windows Installer does with
+    # the table on a device: see windows/installer/README-install.md.
+    - name: Assert install-directory ACL in the built MSI
+      if: success() && inputs.phase == 'package'
+      shell: pwsh
+      run: |
+        $msi = Get-ChildItem -Recurse -Filter "PatchedAgent.msi" windows/installer/bin |
+               Select-Object -First 1
+        if (-not $msi) { Write-Error "PatchedAgent.msi not found under windows/installer/bin"; exit 1 }
+
+        $installer = New-Object -ComObject WindowsInstaller.Installer
+        $database = $installer.OpenDatabase($msi.FullName, 0)
+        $view = $database.OpenView('SELECT `LockObject`, `Table`, `SDDLText`, `Condition` FROM `MsiLockPermissionsEx`')
+        $view.Execute()
+        $actual = @()
+        while ($record = $view.Fetch()) {
+          $actual += "$($record.StringData(2))/$($record.StringData(1))=$($record.StringData(3)) condition=[$($record.StringData(4))]"
+        }
+        $expected = @(
+          'CreateFolder/INSTALLFOLDER=D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU) condition=[]',
+          'File/PatchedServiceExe=D:PAI(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;BU) condition=[]'
+        )
+        $difference = Compare-Object -CaseSensitive ($expected | Sort-Object) @($actual | Sort-Object)
+        if ($difference -or $actual.Count -ne $expected.Count) {
+          throw "MsiLockPermissionsEx does not hold exactly the install-directory ACL. Found: $($actual -join ' | ')"
+        }
+        Write-Host "MsiLockPermissionsEx: $($actual -join ' | ')"

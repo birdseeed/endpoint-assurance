@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% from "_macros.html" import software_type_tag, kpi_summary, group_card_head %}
+{% block content %}
+{% set exception_column_count = 8 %}
+<div class="page-head">
+  <h1>Exceptions</h1>
+  <p class="meta">
+    {{ total }} software exception{{ '' if total == 1 else 's' }} on file - pinned versions and accepted risk. An exception never removes a finding: an excepted product still shows here with its status, and its CVEs still show on Findings.
+    {%- if truncated %} This list is partial - see below.{% endif -%}
+  </p>
+</div>
+
+{% if truncated %}
+<aside class="notice exception-truncation-notice" aria-label="Partial exception register">
+  <strong>Partial register.</strong> Showing the first {{ shown }} of {{ total }} exceptions. Exceptions needing attention - unaccepted or overdue for review - are never cut first.
+</aside>
+{% endif %}
+
+{{ kpi_summary([
+  ('Needs attention', needs_attention | length, 'bad-text' if needs_attention else ''),
+  ('Accepted', accepted | length, 'ok-text' if accepted else '')
+], 'Unaccepted is its own status, not a lesser form of accepted. A review date that has passed needs attention whether or not the exception is accepted.') }}
+
+{% if needs_attention or accepted %}
+<div class="exceptions-toolbar">
+  <input type="search" id="exception-search" class="search" data-table-search=".exception-table" placeholder="Search exceptions" aria-label="Search needs-attention and accepted exceptions">
+</div>
+{% endif %}
+
+<div class="card group-card">
+  {{ group_card_head('Needs attention', needs_attention | length ~ ' exception' ~ ('' if needs_attention | length == 1 else 's'), 'Unaccepted, or accepted but past its review date.', 'bad', true) }}
+  {% if needs_attention %}
+  <div class="table-scroll">
+  <table class="data-table exception-table">
+    <colgroup>
+      <col class="exception-col-product"><col class="exception-col-type col-secondary"><col class="exception-col-version">
+      <col class="exception-col-devices"><col class="exception-col-requested col-secondary"><col class="exception-col-decision">
+      <col class="exception-col-date"><col class="exception-col-actions">
+    </colgroup>
+    <thead>
+      <tr>
+        <th data-sort="text">Product</th>
+        <th data-sort="text" class="col-secondary">Type</th>
+        <th data-sort="text">Version</th>
+        <th data-sort="num">Devices</th>
+        <th data-sort="text" class="col-secondary">Requested by</th>
+        <th data-sort="text">Decision</th>
+        <th data-sort="date">Review date</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in needs_attention %}
+      <tr>
+        <td>{{ e.product }}</td>
+        <td class="col-secondary">{{ software_type_tag(e.kind) }}</td>
+        <td class="mono">{{ e.version or '-' }}</td>
+        <td data-value="{{ e.device_count }}">{{ e.device_count }}</td>
+        <td class="col-secondary cell-anywrap">{{ e.requested_by or '-' }}</td>
+        <td class="exception-decision">
+          {% if e.status == 'unaccepted' %}
+            <div class="cell-stack"><span class="pill pill-bad">Unaccepted</span><span class="cell-detail">Since <span class="nowrap">{{ e.requested_at | humandate }}</span></span></div>
+          {% elif e.status == 'accepted' %}
+            <div class="cell-stack"><span class="pill pill-ok">Accepted</span><span class="cell-detail cell-anywrap">By {{ e.acceptor or 'unknown' }} on <span class="nowrap">{{ e.accepted_at | humandate }}</span></span></div>
+          {% else %}
+            <span class="pill pill-muted">{{ e.status_label }}</span>
+          {% endif %}
+        </td>
+        <td class="exception-review" data-value="{{ e.review_date or '' }}">
+          {% if e.review_date %}
+            <div class="cell-stack"><span class="mono">{{ e.review_date }}</span>{% if e.review_overdue %}<span class="pill pill-bad">Overdue</span>{% endif %}</div>
+          {% else %}-{% endif %}
+        </td>
+        <td class="cell-actions">
+          {% if e.status == 'unaccepted' %}
+          <a class="ask-link" href="{{ exception_action_mailto(e.product, e.version, 'accept') }}">Ask us to decide &rarr;</a>
+          {% endif %}
+          {% if e.review_overdue %}
+          <a class="ask-link" href="{{ exception_action_mailto(e.product, e.version, 'review') }}">Ask us to review &rarr;</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% if e.depends_on or e.devices %}
+      <tr class="row-summary"><td colspan="{{ exception_column_count }}">
+        {%- if e.depends_on %}Depends on: {{ e.depends_on }}{% endif -%}
+        {%- if e.depends_on and e.devices %} &middot; {% endif -%}
+        {%- if e.devices %}Devices:
+          {%- for d in e.devices %} <a href="/devices/{{ d.device_id }}">{{ d.hostname }}</a>{{ ',' if not loop.last }}{% endfor -%}
+          {%- if e.devices_truncated %} and {{ e.device_count - (e.devices | length) }} more device{{ '' if e.device_count - (e.devices | length) == 1 else 's' }}{% endif -%}
+        {%- endif -%}
+      </td></tr>
+      {% endif %}
+      {% if e.history %}
+      <tr class="row-summary"><td colspan="{{ exception_column_count }}">History:
+        {%- for h in e.history %} {{ h.action | replace('_', ' ') | capitalize }} by {{ h.actor }} on <span class="nowrap">{{ h.at | humandate }}</span>{% if h.reason %} ({{ h.reason }}){% endif %}{{ ';' if not loop.last }}{% endfor -%}
+      </td></tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+  {% if not needs_attention %}<p class="empty">Nothing needs attention. Unaccepted exceptions and exceptions overdue for review appear here.</p>{% endif %}
+</div>
+
+<div class="card group-card">
+  {{ group_card_head('Accepted', accepted | length ~ ' exception' ~ ('' if accepted | length == 1 else 's'), 'Accepted with a named acceptor, review date not yet due.', 'ok', true) }}
+  {% if accepted %}
+  <div class="table-scroll">
+  <table class="data-table exception-table exception-table--accepted">
+    <colgroup>
+      <col class="exception-col-product-accepted"><col class="exception-col-type col-secondary"><col class="exception-col-version">
+      <col class="exception-col-devices"><col class="exception-col-requested col-secondary"><col class="exception-col-decision">
+      <col class="exception-col-date"><col class="exception-col-date">
+    </colgroup>
+    <thead>
+      <tr>
+        <th data-sort="text">Product</th>
+        <th data-sort="text" class="col-secondary">Type</th>
+        <th data-sort="text">Version</th>
+        <th data-sort="num">Devices</th>
+        <th data-sort="text" class="col-secondary">Requested by</th>
+        <th data-sort="text">Accepted by</th>
+        <th data-sort="date">Accepted on</th>
+        <th data-sort="date">Review date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in accepted %}
+      <tr>
+        <td>{{ e.product }}</td>
+        <td class="col-secondary">{{ software_type_tag(e.kind) }}</td>
+        <td class="mono">{{ e.version or '-' }}</td>
+        <td data-value="{{ e.device_count }}">{{ e.device_count }}</td>
+        <td class="col-secondary cell-anywrap">{{ e.requested_by or '-' }}</td>
+        <td class="exception-acceptor cell-anywrap">{{ e.acceptor or 'unknown' }}</td>
+        <td data-value="{{ e.accepted_at }}"><span class="nowrap">{{ e.accepted_at | humandate }}</span></td>
+        <td>{{ e.review_date or '-' }}</td>
+      </tr>
+      {% if e.depends_on or e.devices %}
+      <tr class="row-summary"><td colspan="{{ exception_column_count }}">
+        {%- if e.depends_on %}Depends on: {{ e.depends_on }}{% endif -%}
+        {%- if e.depends_on and e.devices %} &middot; {% endif -%}
+        {%- if e.devices %}Devices:
+          {%- for d in e.devices %} <a href="/devices/{{ d.device_id }}">{{ d.hostname }}</a>{{ ',' if not loop.last }}{% endfor -%}
+          {%- if e.devices_truncated %} and {{ e.device_count - (e.devices | length) }} more device{{ '' if e.device_count - (e.devices | length) == 1 else 's' }}{% endif -%}
+        {%- endif -%}
+      </td></tr>
+      {% endif %}
+      {% if e.history %}
+      <tr class="row-summary"><td colspan="{{ exception_column_count }}">History:
+        {%- for h in e.history %} {{ h.action | replace('_', ' ') | capitalize }} by {{ h.actor }} on <span class="nowrap">{{ h.at | humandate }}</span>{% if h.reason %} ({{ h.reason }}){% endif %}{{ ';' if not loop.last }}{% endfor -%}
+      </td></tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+  {% if not accepted %}<p class="empty">No exceptions are clear of attention yet. An accepted exception with its review date not yet due will appear here.</p>{% endif %}
+</div>
+
+{% if unrecognised %}
+<div class="card group-card">
+  {{ group_card_head('Status not recognised', unrecognised | length ~ ' exception' ~ ('' if unrecognised | length == 1 else 's'), "The platform reported a status this page doesn't yet know how to group. Not counted as needing attention or accepted until that's resolved.", 'muted', true) }}
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Type</th>
+        <th>Version</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in unrecognised %}
+      <tr>
+        <td>{{ e.product }}</td>
+        <td>{{ software_type_tag(e.kind) }}</td>
+        <td class="mono">{{ e.version or '-' }}</td>
+        <td>{{ e.status_label }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+
+<p class="toolbar-hint">An exception is only recorded on request, never automatically. Each one carries who accepted it, when, and its review date, so the register you show an assessor is a set of decisions with names on them, not a spreadsheet anyone could have edited. <a class="ask-link" href="{{ exception_action_mailto('a product', '', 'new') }}">Request a new exception &rarr;</a></p>
+{% endblock %}
+{% block scripts %}<script src="{{ static_url('js/portal.js') }}"></script>{% endblock %}

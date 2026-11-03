@@ -1,0 +1,23 @@
+{
+  "label": "detectxswift",
+  "name": "DetectX Swift",
+  "type": "zip",
+  "app_path": "/Applications/DetectX Swift.app",
+  "expected_team_id": "MAJ5XBJSG3",
+  "download": {
+    "method": "static",
+    "url": "https://s3.amazonaws.com/sqwarq.com/PublicZips/DetectX_Swift.app.zip"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

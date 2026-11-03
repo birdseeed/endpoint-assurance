@@ -1,0 +1,342 @@
+{
+  "generated_at": "2026-09-29T10:00:00Z",
+  "statement": "This pack states what Patched's endpoint evidence showed when it was produced, with the source and date of every answer. It is not an audit, a certification or a guarantee, and it does not decide any question of cover. Devices Patched could not see, or that had not reported recently, are shown as unknown and are never counted in your favour. Questions Patched holds no evidence for are listed as not evidenced by Patched, for you to answer from your own records.",
+  "reporting_window_days": 14,
+  "devices_in_scope": 4,
+  "retired_excluded": 1,
+  "questions": [
+    {
+      "id": "edr_coverage",
+      "group": "evidenced_by_patched",
+      "title": "EDR and anti-malware",
+      "question": "Do all of your endpoints have endpoint detection and response (EDR) or anti-malware protection?",
+      "status": "partial",
+      "reason": null,
+      "answer": {
+        "value": 1,
+        "unit": "devices",
+        "percentage": 25,
+        "counts": {
+          "covered": 1,
+          "devices_in_scope": 4,
+          "no_evidence": 1,
+          "not_reporting": 1,
+          "unrecognised_tool": 1
+        }
+      },
+      "unknown_devices": 3,
+      "as_of": "2026-09-29T10:00:00Z",
+      "oldest_evidence_at": "2026-09-26T09:12:00Z",
+      "source": {
+        "label": "Cyber Essentials readiness (EDR coverage)",
+        "path": "/ce-readiness"
+      },
+      "headline": "1 of 4 devices (25.0%)",
+      "answer_text": "1 of 4 devices (25.0%) reports endpoint protection that Patched recognises. 3 devices are unknown (1 reported a security tool Patched does not recognise; 1 reported no security tool evidence; 1 has not reported in the last 14 days) and are not counted in your favour.",
+      "basis": "Security tools each device reported, matched against the endpoint protection products Patched recognises and any you have added. Only a recognised product counts. A device that has not reported in the last 14 days is unknown."
+    },
+    {
+      "id": "disk_encryption",
+      "group": "evidenced_by_patched",
+      "title": "Full-disk encryption",
+      "question": "Are your laptops and other endpoints protected by full-disk encryption?",
+      "status": "partial",
+      "reason": null,
+      "answer": {
+        "value": 1,
+        "unit": "devices",
+        "percentage": 25,
+        "counts": {
+          "devices_in_scope": 4,
+          "encrypted": 1,
+          "no_evidence": 1,
+          "not_encrypted": 1,
+          "not_reporting": 1
+        }
+      },
+      "unknown_devices": 2,
+      "as_of": "2026-09-29T10:00:00Z",
+      "oldest_evidence_at": "2026-09-26T09:12:00Z",
+      "source": {
+        "label": "Encryption and disk posture report",
+        "path": "/reports"
+      },
+      "headline": "1 of 4 devices (25.0%)",
+      "answer_text": "1 of 4 devices (25.0%) reports FileVault or BitLocker full-disk encryption turned on. 1 device reports encryption turned off. Encryption is turned off on: acme-win-accounts. 2 devices are unknown (1 reported no encryption state; 1 has not reported in the last 14 days) and are not counted in your favour.",
+      "basis": "The latest FileVault (macOS) or BitLocker (Windows) state each device reported for its system disk. A device with no reported state, or that has not reported in the last 14 days, is unknown."
+    },
+    {
+      "id": "patching_speed",
+      "group": "evidenced_by_patched",
+      "title": "Security update speed",
+      "question": "How quickly are critical and high severity security updates applied, and are any outstanding for more than 14 or 30 days?",
+      "status": "partial",
+      "reason": null,
+      "answer": {
+        "value": 1,
+        "unit": "updates",
+        "percentage": null,
+        "counts": {
+          "critical_over_14_days": 1,
+          "devices_in_scope": 4,
+          "devices_none_outstanding": 1,
+          "devices_over_14_days": 1,
+          "devices_over_30_days": 1,
+          "devices_unknown": 2,
+          "high_over_14_days": 0,
+          "updates_over_14_days": 1,
+          "updates_over_30_days": 1
+        }
+      },
+      "unknown_devices": 2,
+      "as_of": "2026-09-29T10:00:00Z",
+      "oldest_evidence_at": "2026-09-26T09:12:00Z",
+      "source": {
+        "label": "Cyber Essentials readiness",
+        "path": "/ce-readiness"
+      },
+      "headline": "1 over 14 days, 1 over 30 days",
+      "answer_text": "1 critical or high severity update (1 critical, 0 high) is outstanding for more than 14 days across 1 of 4 devices, of which 1 is outstanding for more than 30 days across 1 device. 1 of 4 devices shows nothing outstanding. 2 devices are unknown because they have not reported in the last 24 hours or their vulnerability matching is not complete, and are not counted in your favour.",
+      "basis": "Confirmed vulnerability matches against the software each device reported, counted from the date each advisory was published, which can make an update look older than the vendor's fix. Operating system update status is not yet evidenced at version level and is not included."
+    },
+    {
+      "id": "unsupported_software",
+      "group": "evidenced_by_patched",
+      "title": "Unsupported systems and software",
+      "question": "Do any of your endpoints run an operating system or software that its vendor no longer supports?",
+      "status": "partial",
+      "reason": null,
+      "answer": {
+        "value": 1,
+        "unit": "devices",
+        "percentage": 25,
+        "counts": {
+          "devices_assessed": 4,
+          "devices_os_support_unknown": 1,
+          "devices_stale": 1,
+          "devices_unknown": 3,
+          "devices_unsupported_os": 1,
+          "devices_unsupported_software": 0,
+          "devices_with_any_unsupported": 1,
+          "devices_without_inventory": 3,
+          "unsupported_software_installations": 0
+        }
+      },
+      "unknown_devices": 3,
+      "as_of": "2026-09-29T10:00:00Z",
+      "oldest_evidence_at": "2026-09-26T09:12:00Z",
+      "source": {
+        "label": "Unsupported software report",
+        "path": "/reports/software/unsupported"
+      },
+      "headline": "1 of 4 devices",
+      "answer_text": "1 of 4 devices runs an operating system past its vendor's end of support, and 0 devices have software past end of support (0 installations). The other 3 devices are unknown: support could not be established for some or all of their software (1 for the operating system itself), or their evidence is more than 14 days old or has no software inventory. Unknown never means supported.",
+      "basis": "Operating system and software versions each device reported, compared with public end of support dates from endoflife.date through a reviewed mapping. A product with no reviewed mapping is unknown, never supported."
+    },
+    {
+      "id": "local_admin_rights",
+      "group": "evidenced_by_patched",
+      "title": "Local administrator rights",
+      "question": "How many user accounts hold standing local administrator rights on your endpoints?",
+      "status": "partial",
+      "reason": null,
+      "answer": {
+        "value": 6,
+        "unit": "accounts",
+        "percentage": null,
+        "counts": {
+          "admin_accounts": 6,
+          "devices_2_or_fewer": 1,
+          "devices_3_to_4": 1,
+          "devices_5_or_more": 0,
+          "devices_builtin_admin_enabled": 0,
+          "devices_in_scope": 4,
+          "devices_with_count": 2,
+          "distinct_account_names": 0,
+          "no_evidence": 1,
+          "not_reporting": 1
+        }
+      },
+      "unknown_devices": 2,
+      "as_of": "2026-09-29T10:00:00Z",
+      "oldest_evidence_at": "2026-09-26T09:12:00Z",
+      "source": {
+        "label": "Local admin and privileged access report",
+        "path": "/reports"
+      },
+      "headline": "6 accounts on 2 of 4 devices",
+      "answer_text": "6 local administrator accounts across the 2 of 4 devices that reported an admin count (an account present on two devices counts twice). 1 device has 2 or fewer, 1 has 3 or 4, and 0 have 5 or more. 2 devices are unknown (1 reported no admin count; 1 has not reported in the last 14 days) and are not counted in your favour.",
+      "basis": "Accounts in each device's local administrators group when it last reported. A disabled built-in Windows Administrator is not counted. Patched cannot tell whether an account's rights are time-limited, so every member is counted as standing."
+    },
+    {
+      "id": "remote_access_tools",
+      "group": "evidenced_by_patched",
+      "title": "Remote access tools",
+      "question": "Which remote access tools are present on your endpoints, and has your organisation approved them?",
+      "status": "partial",
+      "reason": null,
+      "answer": {
+        "value": 1,
+        "unit": "tools",
+        "percentage": null,
+        "counts": {
+          "approved_tools": 0,
+          "devices_assessed": 4,
+          "devices_unknown": 3,
+          "devices_with_tools": 1,
+          "ignored_tools": 0,
+          "rmm_agent_tools": 0,
+          "tools_found": 1,
+          "unapproved_tools": 1,
+          "unreviewed_tools": 0
+        }
+      },
+      "unknown_devices": 3,
+      "as_of": "2026-09-29T10:00:00Z",
+      "oldest_evidence_at": "2026-09-26T09:12:00Z",
+      "source": {
+        "label": "Remote access tools report",
+        "path": "/reports/software/remote-access"
+      },
+      "headline": "1 tool found, 0 approved",
+      "answer_text": "Patched found 1 remote access tool on 1 of 4 devices: 0 approved by your organisation, 1 unapproved, 0 not yet reviewed and 0 ignored. Detection covers only the tools Patched recognises, so finding none is not proof that none is installed. 3 devices are unknown because they have not reported in the last 14 days or report no software inventory.",
+      "basis": "Software and browser extensions each device reported, matched against Patched's catalogue of remote access tools. Approved means your organisation marked the product Approved in Patched."
+    },
+    {
+      "id": "asset_inventory",
+      "group": "evidenced_by_patched",
+      "title": "Endpoint inventory",
+      "question": "Do you keep an inventory of your endpoints, and how much of the estate reports into it?",
+      "status": "partial",
+      "reason": null,
+      "answer": {
+        "value": 4,
+        "unit": "devices",
+        "percentage": 75,
+        "counts": {
+          "devices_in_scope": 4,
+          "no_report_time": 0,
+          "not_reporting": 1,
+          "reported_14_days": 3,
+          "reported_24_hours": 2,
+          "retired_excluded": 1
+        }
+      },
+      "unknown_devices": 1,
+      "as_of": "2026-09-29T10:00:00Z",
+      "oldest_evidence_at": "2026-09-26T09:12:00Z",
+      "source": {
+        "label": "Devices",
+        "path": "/devices"
+      },
+      "headline": "4 devices, 3 reporting (75.0%)",
+      "answer_text": "Patched holds an inventory of 4 devices running its agent, not counting 1 device your organisation has retired. 2 reported in the last 24 hours and 3 in the last 14 days (75.0% of the estate reporting). 1 device has not reported for more than 14 days or has no usable report time. Devices without the Patched agent are not in this count, so it is not a complete asset register.",
+      "basis": "Every device running the Patched agent on a platform enabled for your estate, less any your organisation retired, with the time each last reported."
+    },
+    {
+      "id": "mfa",
+      "group": "not_evidenced_by_patched",
+      "title": "Multi-factor authentication",
+      "question": "Is multi-factor authentication enforced for email, remote access and privileged accounts?",
+      "status": "not_evidenced_by_patched",
+      "reason": "outside_patched_evidence",
+      "answer": {
+        "value": null,
+        "unit": "",
+        "percentage": null,
+        "counts": {}
+      },
+      "unknown_devices": null,
+      "as_of": null,
+      "oldest_evidence_at": null,
+      "source": null,
+      "headline": "Answer from your own records",
+      "answer_text": "Not evidenced by Patched. Patched collects evidence from your endpoints and holds nothing that answers this question. Answer it from your identity provider or email platform's sign-in settings.",
+      "basis": "Outside the endpoint evidence Patched collects."
+    },
+    {
+      "id": "email_security",
+      "group": "not_evidenced_by_patched",
+      "title": "Email security",
+      "question": "Is inbound email filtered for malicious attachments, links and spoofed senders?",
+      "status": "not_evidenced_by_patched",
+      "reason": "outside_patched_evidence",
+      "answer": {
+        "value": null,
+        "unit": "",
+        "percentage": null,
+        "counts": {}
+      },
+      "unknown_devices": null,
+      "as_of": null,
+      "oldest_evidence_at": null,
+      "source": null,
+      "headline": "Answer from your own records",
+      "answer_text": "Not evidenced by Patched. Patched collects evidence from your endpoints and holds nothing that answers this question. Answer it from your email platform or email security provider.",
+      "basis": "Outside the endpoint evidence Patched collects."
+    },
+    {
+      "id": "backups",
+      "group": "not_evidenced_by_patched",
+      "title": "Backups",
+      "question": "Do you keep regular, tested backups that are held offline or otherwise separated from your network?",
+      "status": "not_evidenced_by_patched",
+      "reason": "outside_patched_evidence",
+      "answer": {
+        "value": null,
+        "unit": "",
+        "percentage": null,
+        "counts": {}
+      },
+      "unknown_devices": null,
+      "as_of": null,
+      "oldest_evidence_at": null,
+      "source": null,
+      "headline": "Answer from your own records",
+      "answer_text": "Not evidenced by Patched. Patched collects evidence from your endpoints and holds nothing that answers this question. Answer it from your backup provider's job and restore test records.",
+      "basis": "Outside the endpoint evidence Patched collects."
+    },
+    {
+      "id": "incident_response",
+      "group": "not_evidenced_by_patched",
+      "title": "Incident response plan",
+      "question": "Do you have a documented incident response plan, and has it been tested?",
+      "status": "not_evidenced_by_patched",
+      "reason": "outside_patched_evidence",
+      "answer": {
+        "value": null,
+        "unit": "",
+        "percentage": null,
+        "counts": {}
+      },
+      "unknown_devices": null,
+      "as_of": null,
+      "oldest_evidence_at": null,
+      "source": null,
+      "headline": "Answer from your own records",
+      "answer_text": "Not evidenced by Patched. Patched collects evidence from your endpoints and holds nothing that answers this question. Answer it from your own incident response plan and its test records.",
+      "basis": "Outside the endpoint evidence Patched collects."
+    },
+    {
+      "id": "security_training",
+      "group": "not_evidenced_by_patched",
+      "title": "Security awareness training",
+      "question": "Do staff receive regular security awareness and phishing training?",
+      "status": "not_evidenced_by_patched",
+      "reason": "outside_patched_evidence",
+      "answer": {
+        "value": null,
+        "unit": "",
+        "percentage": null,
+        "counts": {}
+      },
+      "unknown_devices": null,
+      "as_of": null,
+      "oldest_evidence_at": null,
+      "source": null,
+      "headline": "Answer from your own records",
+      "answer_text": "Not evidenced by Patched. Patched collects evidence from your endpoints and holds nothing that answers this question. Answer it from your training provider's completion records.",
+      "basis": "Outside the endpoint evidence Patched collects."
+    }
+  ]
+}

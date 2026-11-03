@@ -1,0 +1,41 @@
+name: test-patched-creds
+
+# PAT-881: proves the safe-credential helpers keep the bearer token and HMAC
+# key off process argv, that the bearer header still reaches the server, and
+# that the HMAC is byte-identical to the openssl computations it replaced.
+# Also a standing regression guard against the secret-on-argv pattern returning.
+# PAT-922 extended the regression guard (and this workflow's trigger paths) to
+# also cover endpoint/*.sh, which had the identical bearer-token-on-argv leak.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/test-patched-creds.zsh'
+      - 'macos/patched-upload.sh'
+      - 'macos/patched-bootstrap.sh'
+      - 'macos/lib/app_control.sh'
+      - 'macos/lib/browser_extension_control.sh'
+      - 'macos/lib/browser_extension_removal.sh'
+      - 'endpoint/*.sh'
+      - '.github/workflows/test-patched-creds.yml'
+  pull_request:
+    paths:
+      - 'macos/lib/test-patched-creds.zsh'
+      - 'macos/patched-upload.sh'
+      - 'macos/patched-bootstrap.sh'
+      - 'macos/lib/app_control.sh'
+      - 'macos/lib/browser_extension_control.sh'
+      - 'macos/lib/browser_extension_removal.sh'
+      - 'endpoint/*.sh'
+      - '.github/workflows/test-patched-creds.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh (safe-credential helper tests exercise a real zsh script)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run safe-credential helper tests
+        run: zsh macos/lib/test-patched-creds.zsh

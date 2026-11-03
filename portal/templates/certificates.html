@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <h1>Certificates</h1>
+  <p class="meta">Track expiry for uploaded public certificates and certificates reported by your agents.</p>
+</div>
+{% if error %}
+<div class="notice" role="alert">
+  <p>{{ error }}</p>
+  <p><a href="/certificates">Back to Certificates</a></p>
+</div>
+{% else %}
+<p class="meta">Expiry is calculated now in whole UTC days: expired below 0, critical at 0 to 7, warning at 8 to 30 and healthy above 30. Unknown means expiry evidence is missing or invalid. This is not a certificate trust or installation check.</p>
+{% if can_edit %}
+<details class="card certificate-upload">
+  <summary>Upload a public certificate</summary>
+  <p id="certificate-upload-help"><strong>Public certificate only.</strong> Private keys are not accepted. Choose one PEM or DER certificate, up to 64 KiB.</p>
+  <form action="/certificates/upload" method="post" enctype="multipart/form-data" class="certificate-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label class="field"><span class="field-label">Label</span><input type="text" name="label" maxlength="200" required></label>
+    <label class="field"><span class="field-label">Public certificate file</span><input type="file" name="certificate" accept=".pem,.der,.cer,.crt" aria-describedby="certificate-upload-help" required></label>
+    <button class="btn" type="submit">Upload certificate</button>
+  </form>
+  <p class="meta">Uploading the same certificate again keeps its existing record and label. Use Edit to change its label or replace it after renewal. Changes are recorded in the estate audit history.</p>
+</details>
+{% endif %}
+{% if rows %}
+<div class="card">
+<div class="table-scroll">
+  <table class="data-table table-stack certificate-table">
+    <thead><tr><th>Certificate</th><th>Source</th><th>Expires (UTC)</th><th>Expiry status</th></tr></thead>
+    <tbody>
+    {% for cert in rows %}
+    <tr>
+      <td data-label="Certificate">
+        <strong>{{ cert.label or cert.subject }}</strong>
+        <details class="certificate-evidence">
+          <summary>Certificate details</summary>
+          <dl>
+            <dt>Subject</dt><dd>{{ cert.subject }}</dd>
+            <dt>Issuer</dt><dd>{{ cert.issuer }}</dd>
+            <dt>Valid from</dt><dd class="mono">{{ cert.not_before }}</dd>
+            <dt>Valid until</dt><dd class="mono">{{ cert.not_after }}</dd>
+            <dt>{{ cert.fingerprint_kind }} fingerprint</dt><dd class="mono">{{ cert.fingerprint }}</dd>
+          </dl>
+        </details>
+        {% if can_edit and cert.id %}
+        <details class="certificate-edit">
+          <summary>Edit uploaded certificate</summary>
+          <form action="/certificates/{{ cert.id }}/update" method="post" enctype="multipart/form-data" class="certificate-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label class="field"><span class="field-label">Label</span><input type="text" name="label" maxlength="200" value="{{ cert.label or '' }}" required></label>
+            <label class="field"><span class="field-label">Replacement public certificate (optional)</span><input type="file" name="certificate" accept=".pem,.der,.cer,.crt" aria-describedby="certificate-replace-{{ loop.index }}"></label>
+            <p class="meta" id="certificate-replace-{{ loop.index }}">Public certificate only, up to 64 KiB. Private keys are not accepted. Leave the file empty to change only the label. A replacement already tracked in another record is refused.</p>
+            <button class="btn" type="submit">Save certificate</button>
+          </form>
+          <details class="certificate-remove">
+            <summary>Remove from tracking</summary>
+            <p>Remove this uploaded certificate from expiry tracking. Its audit history is retained.</p>
+            <form action="/certificates/{{ cert.id }}/delete" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button class="btn btn-danger" type="submit">Remove certificate</button>
+            </form>
+          </details>
+        </details>
+        {% endif %}
+      </td>
+      <td data-label="Source">{{ cert.source }}{% if cert.device_url %}<br><a href="{{ cert.device_url }}">View device</a>{% endif %}</td>
+      <td data-label="Expires (UTC)" class="mono"><span class="nowrap">{{ cert.not_after }}</span></td>
+      <td data-label="Expiry status"><span class="pill {{ cert.pill }}">{{ cert.status | capitalize }}</span><br><span class="meta">{% if cert.days is not none %}{{ cert.days }} days remaining{% else %}Days remaining unknown{% endif %}</span></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+</div>
+{% else %}
+<div class="card"><p>No certificates are currently reported or uploaded for this estate.</p></div>
+{% endif %}
+<p class="meta">Agent records come from endpoint collection and cannot be edited here. Uploaded records have no device association. Certificate expiry uses your existing alert and digest preferences; uploading does not enable deliveries.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,24 @@
+{
+  "label": "cryptomator",
+  "name": "Cryptomator",
+  "type": "dmg",
+  "app_path": "/Applications/Cryptomator.app",
+  "expected_team_id": "YZQJQUHA3L",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://cryptomator.org/downloads/mac-arm64/thanks/"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

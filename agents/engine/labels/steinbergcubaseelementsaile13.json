@@ -1,0 +1,24 @@
+{
+  "label": "steinbergcubaseelementsaile13",
+  "name": "Cubase LE AI Elements 13",
+  "type": "pkgindmg",
+  "app_path": "/Applications/Cubase LE AI Elements 13.app",
+  "expected_team_id": "5PMY476BJ6",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://o.steinberg.net/en/support/downloads/cubase_13/cubase_elements_13.html"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

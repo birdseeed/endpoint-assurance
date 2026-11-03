@@ -1,0 +1,24 @@
+{
+  "label": "grammarly",
+  "name": "Grammarly Desktop",
+  "type": "dmg",
+  "app_path": "/Applications/Grammarly Desktop.app",
+  "expected_team_id": "W8F64X92K3",
+  "download": {
+    "method": "static",
+    "url": "https://download-mac.grammarly.com/Grammarly.dmg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true.",
+    "mirror_eula_approved": false
+  }
+}

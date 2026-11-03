@@ -1,0 +1,150 @@
+name: hello-world-notarize
+
+# PAT-8: Throwaway pipeline proof — sign and notarize a trivial .pkg to validate
+# Apple Developer ID credentials before the real endpoint bundle depends on them.
+#
+# Run this manually (workflow_dispatch only) after PAT-7 delivers the certs.
+# The package installs nothing harmful: a single text file under /tmp/patched-hello.
+# Delete the artifact after verification; it is not for distribution.
+#
+# Secrets required (same set as sign-notarize.yml):
+#   DEVELOPER_ID_INSTALLER_CERT_P12_B64
+#   DEVELOPER_ID_CERT_PASSWORD
+#   SIGNING_KEYCHAIN_PASSWORD
+#   APPLE_TEAM_ID
+#   APPLE_ASC_API_KEY_P8_B64
+#   APPLE_ASC_API_KEY_ID
+#   APPLE_ASC_API_KEY_ISSUER_ID
+#
+# Without secrets (PAT-7 still pending), builds an unsigned dry-run pkg instead.
+# That proves pkgbuild runs correctly on the runner without needing credentials.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  hello-world:
+    runs-on: macos-latest
+
+    env:
+      INSTALLER_CERT_SET: ${{ secrets.DEVELOPER_ID_INSTALLER_CERT_P12_B64 != '' }}
+      NOTARY_KEY_SET:     ${{ secrets.APPLE_ASC_API_KEY_P8_B64 != '' }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # ── Payload ──────────────────────────────────────────────────────────────
+      - name: Build hello-world payload
+        run: |
+          mkdir -p "$RUNNER_TEMP/hw-payload"
+          printf 'Patched hello-world signing proof\nRun ID: %s\n' \
+            "$GITHUB_RUN_ID" > "$RUNNER_TEMP/hw-payload/version.txt"
+
+      # ── Keychain ─────────────────────────────────────────────────────────────
+      - name: Create temporary keychain
+        if: env.INSTALLER_CERT_SET == 'true'
+        env:
+          KC_PW: ${{ secrets.SIGNING_KEYCHAIN_PASSWORD }}
+        run: |
+          KC="$RUNNER_TEMP/signing.keychain-db"
+          security create-keychain -p "$KC_PW" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$KC_PW" "$KC"
+          echo "KC_PATH=$KC" >> "$GITHUB_ENV"
+
+      - name: Import Developer ID Installer cert
+        if: env.INSTALLER_CERT_SET == 'true'
+        env:
+          CERT_B64: ${{ secrets.DEVELOPER_ID_INSTALLER_CERT_P12_B64 }}
+          CERT_PW:  ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
+          KC_PW:    ${{ secrets.SIGNING_KEYCHAIN_PASSWORD }}
+        run: |
+          CERT_FILE="$RUNNER_TEMP/installer-cert.p12"
+          echo "$CERT_B64" | base64 --decode > "$CERT_FILE"
+          security import "$CERT_FILE" -P "$CERT_PW" -A -t cert -f pkcs12 -k "$KC_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KC_PW" "$KC_PATH"
+
+      # ── Build signed .pkg ────────────────────────────────────────────────────
+      - name: Build and sign hello-world.pkg
+        if: env.INSTALLER_CERT_SET == 'true'
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # Sign by Team ID alone (unique CN substring of the one Installer cert
+          # in the CI keychain), so this proof pipeline tracks sign-notarize.yml
+          # and the account transfer stays a pure APPLE_TEAM_ID swap.
+          pkgbuild \
+            --root              "$RUNNER_TEMP/hw-payload" \
+            --install-location  /tmp/patched-hello \
+            --identifier        com.patched.hello-world \
+            --version           0.0.1 \
+            --sign              "$TEAM_ID" \
+            --timestamp \
+            hello-world.pkg
+          echo "=== Signature check ==="
+          pkgutil --check-signature hello-world.pkg
+
+      - name: Build unsigned hello-world.pkg (dry-run)
+        if: env.INSTALLER_CERT_SET != 'true'
+        run: |
+          echo "::notice::No installer cert — building unsigned hello-world.pkg (PAT-7 pending). This is a structural dry-run."
+          pkgbuild \
+            --root              "$RUNNER_TEMP/hw-payload" \
+            --install-location  /tmp/patched-hello \
+            --identifier        com.patched.hello-world \
+            --version           0.0.1 \
+            hello-world.pkg
+
+      # ── Notarize ─────────────────────────────────────────────────────────────
+      - name: Notarize hello-world.pkg
+        if: env.INSTALLER_CERT_SET == 'true' && env.NOTARY_KEY_SET == 'true'
+        env:
+          ASC_KEY_B64: ${{ secrets.APPLE_ASC_API_KEY_P8_B64 }}
+          ASC_KEY_ID:  ${{ secrets.APPLE_ASC_API_KEY_ID }}
+          ASC_ISSUER:  ${{ secrets.APPLE_ASC_API_KEY_ISSUER_ID }}
+        run: |
+          KEY_FILE="$RUNNER_TEMP/asc-api-key.p8"
+          echo "$ASC_KEY_B64" | base64 --decode > "$KEY_FILE"
+          xcrun notarytool submit hello-world.pkg \
+            --key     "$KEY_FILE" \
+            --key-id  "$ASC_KEY_ID" \
+            --issuer  "$ASC_ISSUER" \
+            --wait \
+            --output-format plist \
+            --verbose
+
+      - name: Skip notarization notice
+        if: env.INSTALLER_CERT_SET != 'true' || env.NOTARY_KEY_SET != 'true'
+        run: echo "::notice::Signing secrets not configured — notarization skipped (PAT-7 pending)."
+
+      # ── Staple + verify ───────────────────────────────────────────────────────
+      - name: Staple notarization ticket
+        if: env.INSTALLER_CERT_SET == 'true' && env.NOTARY_KEY_SET == 'true'
+        run: xcrun stapler staple hello-world.pkg
+
+      - name: Verify signed hello-world.pkg
+        if: env.INSTALLER_CERT_SET == 'true'
+        run: |
+          echo "=== pkgutil --check-signature ==="
+          pkgutil --check-signature hello-world.pkg
+          echo ""
+          echo "=== spctl --assess --type install ==="
+          spctl --assess --type install --verbose hello-world.pkg || \
+            echo "::notice::spctl assess not clean — expected on a signed-but-not-yet-notarized package."
+
+      - name: Verify unsigned structure
+        if: env.INSTALLER_CERT_SET != 'true'
+        run: pkgutil --payload-files hello-world.pkg
+
+      # ── Upload ───────────────────────────────────────────────────────────────
+      - name: Upload hello-world.pkg
+        uses: actions/upload-artifact@v7
+        with:
+          name: hello-world-pkg-${{ github.run_id }}
+          path: hello-world.pkg
+          retention-days: 7
+
+      # ── Cleanup ───────────────────────────────────────────────────────────────
+      - name: Delete temporary keychain
+        if: always() && env.KC_PATH != ''
+        run: security delete-keychain "$KC_PATH" 2>/dev/null || true

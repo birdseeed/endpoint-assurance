@@ -1,0 +1,7 @@
+Device name,Primary user UPN,OS,OS version,Compliance,Ownership,Last check-in,Manufacturer,Model
+LAPTOP-ALICE,alice@contoso.com,Windows,10.0.26100.2161,Compliant,Corporate,2026-12-05T09:12:00Z,Dell,Latitude 5540
+LAPTOP-BOB,bob@contoso.com,Windows,10.0.22631.4317,Noncompliant,Corporate,2026-12-04T14:30:00Z,Lenovo,ThinkPad X1 Carbon
+MACBOOK-CAROL,carol@contoso.com,macOS,15.4.1,Compliant,Corporate,2026-12-06T08:00:00Z,Apple,MacBook Pro
+IPHONE-DAVE,dave@contoso.com,iOS,18.3.2,Compliant,Personal,2026-12-03T11:00:00Z,Apple,iPhone 15
+LAPTOP-STALE,stale@contoso.com,Windows,10.0.19045.4842,Compliant,Corporate,2026-11-01T10:00:00Z,HP,EliteBook 840
+LAPTOP-OLD-OS,oldos@contoso.com,Windows,10.0.22621.3155,Noncompliant,Corporate,2026-12-06T07:00:00Z,Dell,Latitude 7430

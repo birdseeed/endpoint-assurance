@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "_feedback_form.html" import feedback_form %}
+{% block content %}
+<div class="page-head">
+  <h1>Feedback</h1>
+  <p class="meta">Suggest a feature or a design improvement. For a problem or question, use <a href="/support?route={{ feedback_route | urlencode }}">Support</a>.</p>
+</div>
+
+<section class="card feedback-page" aria-label="Feedback form">
+  {% if not identity.service %}
+  {% call feedback_form(csrf_token, feedback_route, draft=feedback_draft, error=feedback_error) %}<a class="btn" href="{{ feedback_route }}">Cancel</a>{% endcall %}
+  {% else %}<p>This account is read-only.</p>{% endif %}
+</section>
+{% endblock %}

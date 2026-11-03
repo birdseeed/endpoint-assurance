@@ -1,0 +1,23 @@
+{
+  "label": "nativeaccess",
+  "name": "Native Access",
+  "type": "zip",
+  "app_path": "/Applications/Native Access.app",
+  "expected_team_id": "83K5EG6Z9V",
+  "download": {
+    "method": "static",
+    "url": "https://na-update.native-instruments.com/${naItem}"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

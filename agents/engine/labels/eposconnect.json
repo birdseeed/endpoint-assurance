@@ -1,0 +1,23 @@
+{
+  "label": "eposconnect",
+  "name": "EPOS Connect",
+  "type": "pkg",
+  "app_path": "/Applications/EPOS Connect.app",
+  "expected_team_id": "8956A7Y69J",
+  "download": {
+    "method": "static",
+    "url": "https://www.eposaudio.com/globalassets/___image-library/_enterprise/files/english/epos-connect/epos-connect-7.7.0/eposconnect_7.7.0.44457.pkg"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

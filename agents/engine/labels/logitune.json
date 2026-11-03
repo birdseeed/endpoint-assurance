@@ -1,0 +1,23 @@
+{
+  "label": "logitune",
+  "name": "Logi Tune",
+  "type": "pkg",
+  "app_path": "/Applications/Logi Tune.app",
+  "expected_team_id": "QED4VVPZWA",
+  "download": {
+    "method": "static",
+    "url": "https://software.vc.logitech.com/downloads/tune/LogiTuneInstaller.pkg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

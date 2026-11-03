@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PAT-2005 agent_health.update_channel",
+  "description": "Healthy last actual self-update selection, not a degraded fault or proof of download success. Omit on corrupt/unreadable authority. Null source means the signed server source seam or verified authority is unavailable.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["effective_channel", "source", "config_version", "observed_at"],
+  "properties": {
+    "effective_channel": { "enum": ["stable", "beta"] },
+    "source": { "enum": ["tenant", "device_override", null] },
+    "config_version": { "type": ["integer", "null"], "minimum": 0 },
+    "observed_at": { "type": "string", "format": "date-time" }
+  }
+}

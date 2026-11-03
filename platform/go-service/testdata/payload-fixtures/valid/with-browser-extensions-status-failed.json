@@ -1,0 +1,78 @@
+{
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.9.0",
+  "tenant_id": "44444444-4444-4444-4444-444444444444",
+  "collected_at": "2026-12-12T10:00:00Z",
+  "device": {
+    "serial": "FVFXM2HAEXT1",
+    "hw_uuid": "CCDDAABB-9988-7766-5544-CCDDAABB1122",
+    "hostname": "alice-macbook",
+    "computer_name": "Alice MacBook",
+    "hw_model": "Mac14,7",
+    "arch": "arm64",
+    "last_boot": "2026-12-11T08:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M2",
+    "cpu_cores": 8,
+    "ram_gb": 16,
+    "disk_total_gb": 512.0,
+    "disk_free_gb": 200.0
+  },
+  "os": {
+    "name": "macOS",
+    "version": "15.5.0",
+    "build": "24F74"
+  },
+  "compliance": {
+    "filevault": "On",
+    "sip": "enabled",
+    "gatekeeper": "assessments",
+    "firewall": "enabled",
+    "xprotect_version": "2210",
+    "mrt_version": "1.95",
+    "pending_updates_count": 0,
+    "mdm_enrolment": "dep=Yes mdm=Yes",
+    "secure_boot": "Full Security",
+    "auto_security_updates": "On",
+    "audit_logging": "enabled",
+    "remote_apple_events": "Off",
+    "remote_login": "Off",
+    "screen_sharing": "Off",
+    "sealed_system_volume": "enabled",
+    "screensaver_password": "Yes",
+    "screensaver_delay_seconds": 120,
+    "auto_login_user": "None",
+    "local_admin_count": 1,
+    "password_policy_present": "Yes",
+    "password_policy_is_default": "No",
+    "password_policy_raw": "minLength=12"
+  },
+  "security_tools": [],
+  "system_extensions": [],
+  "background_items": [],
+  "icloud": {
+    "signed_in": "Yes"
+  },
+  "apps": [
+    {
+      "name": "Google Chrome",
+      "version": "126.0.6478.62",
+      "bundle_id": "com.google.Chrome",
+      "path": "/Applications/Google Chrome.app",
+      "size_mb": 390.5,
+      "modified_at": "2026-12-10T09:00:00Z",
+      "architecture": "arm64",
+      "sha256": "aabbccddeeff0011",
+      "team_id": "EQHXZ8M8AV",
+      "signed_by": "Developer ID Application: Google LLC",
+      "notarized": true
+    }
+  ],
+  "browser_extensions": [],
+  "_comment": "PAT-2055: the bare failed block. Nothing is recorded but the status; no absence authority.",
+  "browser_extensions_status": {
+    "collection_status": "failed"
+  }
+}

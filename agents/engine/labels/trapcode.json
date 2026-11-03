@@ -1,0 +1,24 @@
+{
+  "label": "trapcode",
+  "name": "Trapcode Suite",
+  "type": "zip",
+  "app_path": "/Applications/Trapcode Suite.app",
+  "expected_team_id": "4ZY22YGXQG",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://support.maxon.net/hc/en-us/sections/13336955539228-Red-Giant"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

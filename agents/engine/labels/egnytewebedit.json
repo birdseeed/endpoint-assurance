@@ -1,0 +1,25 @@
+{
+  "label": "egnytewebedit",
+  "name": "EgnyteWebEdit",
+  "type": "pkg",
+  "app_path": "/Applications/EgnyteWebEdit.app",
+  "expected_team_id": "FELUD555VC",
+  "download": {
+    "method": "static",
+    "url": "https://egnyte-cdn.egnyte.com/webedit/mac/en-us/latest/EgnyteWebEdit.pkg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [
+    "NONE"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

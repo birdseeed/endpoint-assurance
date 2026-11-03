@@ -1,0 +1,33 @@
+{
+  "label": "microsoftvisualstudiocode",
+  "name": "Visual Studio Code",
+  "type": "zip",
+  "app_path": "/Applications/Visual Studio Code.app",
+  "expected_team_id": "UBF8T346G9",
+  "download": {
+    "method": "static",
+    "url": "https://update.code.visualstudio.com/latest/darwin-universal/stable"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "Code"
+  ],
+  "pinned_sha256": "3e17b726d6af96a33d15aed6bf343198e2e5b9973167c2a2606cf15433c9de93",
+  "cross_hash_sources": [
+    {
+      "type": "vendor_sha256_url",
+      "url": "https://update.code.visualstudio.com/api/update/darwin-universal/stable/latest"
+    }
+  ],
+  "patched": {
+    "allowlisted": false,
+    "mirror": true,
+    "mirror_eula_approved": true,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "PAT-662: mirror_eula_approved=true \u2014 VS Code Universal zip is ~400+ MB; cap raised to 2 GB. VS Code is MIT-licensed; Microsoft permits redistribution of the installer. PAT-719: cross_hash_sources added using VS Code update API (darwin-universal sha256hash).",
+    "mirror_url": "https://mirror.patched.im/microsoftvisualstudiocode/2026-07-11/microsoftvisualstudiocode-2026-07-11.zip"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "label": "tencentmeeting",
+  "name": "TencentMeeting",
+  "type": "dmg",
+  "app_path": "/Applications/TencentMeeting.app",
+  "expected_team_id": "88L2Q4487U",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://meeting.tencent.com/web-service/query-download-info?q=%5B%7B%22package-type%22%3A%22app%22%2C%22channel%22%3A%220300000000%22%2C%22platform%22%3A%22mac%22%2C%22arch%22%3A%22arm64%22%7D%5D&c_os=web&c_os_version=1&c_os_model=web&c_timestamp=1653366550252&c_instance_id=5&c_nonce=DcaDam4y&c_app_id=1400143280&c_app_version=1&c_lang=zh-cn&c_district=0&nonce=miwSceJNQaSZttma"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

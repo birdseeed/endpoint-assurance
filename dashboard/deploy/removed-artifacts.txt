@@ -1,0 +1,107 @@
+# Box-side artefacts installed by earlier deploys that the repo has since
+# deleted, and stale leftovers on example-prod-host that nothing should run
+# (PAT-2311, PAT-2312). scripts/deploy.sh's sync_box_config() removes each
+# of these (if present) with `rm -f` on every deploy, so a box that still
+# has one converges instead of drifting forever — see PAT-986. Entries are
+# whole files; nothing here edits a file's content.
+#
+# Format: one absolute path per line. Blank lines and lines starting with
+# `#` are ignored.
+#
+# Add an entry whenever you delete a deploy/ artefact that may already be
+# installed on the box, with a comment above it citing the ticket and what
+# superseded it.
+#
+# NOTE — removal here is one-directional. scripts/deploy.sh's rollback path
+# reverts the systemd unit and polkit rules.d files back to match whatever
+# commit it rolls back to (those are plain "make dst match src" file
+# comparisons), but it does NOT recreate anything removed by this manifest.
+# Only list a path here once you're confident no rollback-reachable commit
+# still depends on it — see the KNOWN LIMITATION note above sync_box_config()
+# in scripts/deploy.sh.
+
+# PAT-931: superseded by the polkit rule deploy/49-patched-ops-fw.rules —
+# www-data no longer needs sudo to start the firewall-apply units.
+/etc/sudoers.d/patched-ops-fw
+
+# PAT-2311: the standalone deploy copy from before PAT-909. It is not what
+# the hook runs (the hook execs scripts/deploy.sh from the checkout), and
+# running it would chown the whole tree to www-data, after which PAT-2307's
+# guard fails every deploy until the tree is adopted again. Nothing on
+# example-prod-host runs it: no unit, timer, cron entry or hook names it
+# (checked read-only 2026-09-30). The only reference is
+# /etc/sudoers.d/patched-deploy, a NOPASSWD grant for a user (openclaw) that
+# no longer exists; with the file gone that grant has nothing to run.
+/usr/local/bin/patched-deploy.sh
+
+# PAT-2311: runtime data left in the code tree by the PAT-2307 move. Neither
+# is tracked, so `git reset --hard` never removes them. The NVD cache the app
+# reads is /var/lib/patched-dashboard/nvd.db (scanner.nvd_db_path(), with
+# DASHBOARD_STATE_DIR set by the unit); the in-tree copy was byte-identical
+# to it on 2026-09-30 and nothing reads it. The in-tree dashboard.db is a
+# 0-byte stray: the database has lived at DASHBOARD_DB_PATH
+# (/var/lib/patched-dashboard/dashboard.db) since PAT-994. Every commit a
+# deploy can roll back to from here (PAT-2307 on) reads both from the state
+# directory. reports/ is not listed: this manifest removes files only, and
+# the backup still reads that directory (see PAT-2311).
+/opt/patched-dashboard/nvd.db
+/opt/patched-dashboard/dashboard.db
+
+# PAT-2312: sudoers grants for two accounts that do not exist on
+# example-prod-host (`getent passwd jarvis` and `getent passwd openclaw` both
+# return nothing, checked read-only 2026-09-30). sudo matches a grant by
+# user name, so whoever is next created as jarvis or openclaw would inherit
+# it. 90-jarvis is unrestricted passwordless root for jarvis; jarvis-claude
+# let jarvis run /usr/local/bin/jarvis-claude as openclaw; patched-deploy
+# let openclaw run /usr/local/bin/patched-deploy.sh as root, and PAT-2311
+# already removed that script. None was installed by this repo and no
+# commit a deploy can roll back to uses them.
+#
+# Each whole file is deleted with `rm -f`. Nothing in the deploy edits
+# sudoers content, so this cannot leave a half-written file behind (sudo
+# refuses to run at all if any file in /etc/sudoers.d fails to parse).
+# 90-cloud-init-users, the provider's, is not listed and must never be. Root
+# SSH over Tailscale, which the deploy workflow and admin access use, does
+# not go through sudo, so a sudo problem cannot lock root out of the box.
+/etc/sudoers.d/90-jarvis
+/etc/sudoers.d/jarvis-claude
+/etc/sudoers.d/patched-deploy
+
+# PAT-2312: passwordless root for the `patched` login account
+# (`patched ALL=(ALL) NOPASSWD: ALL`, root:root 0440, written in
+# the same second the account was created). Andy decided on 2026-09-30 to
+# remove the account entirely: nobody used it by hand, and agent sessions
+# reached it only through a stale SSH config default and a tailnet ACL
+# entry. Nothing runs as it (no process, crontab or unit, checked read-only
+# 2026-09-30), and no deploy or admin path uses it: both are root over
+# Tailscale. This entry applies on the first deploy that carries it, because
+# the manifest is read from the new checkout. scripts/deploy.sh's
+# remove_retired_account then removes the account itself, one deploy later
+# (the hook runs the previous deploy.sh), after the grant is already gone,
+# so no later account created as `patched` can inherit it.
+/etc/sudoers.d/patched
+
+# PAT-2312: the shim the jarvis-claude grant above ran (root:root 0755,
+#). It shells out to `openclaw agent` (no openclaw in
+# /usr/bin or /usr/local/bin) and was reachable only as `sudo -u openclaw`
+# from jarvis. No
+# unit, timer, cron entry or file under /etc, /opt, /usr/local, /root, /home
+# or /var/spool/cron names it apart from itself and that grant (checked
+# read-only 2026-09-30).
+/usr/local/bin/jarvis-claude
+
+# PAT-2312: openclaw's crontab, owned 999:990 0600 (uid 999 has no passwd
+# entry; gid 990 is crontab). Its one line runs
+# /home/openclaw/worker-backup.sh hourly; neither the user nor /home/openclaw
+# exists, so cron skips it as an orphan today, but the next account created
+# as openclaw would inherit the job. Deleting the file is all it takes: cron
+# (cron -f -P) re-reads the spool when the directory's mtime changes, which
+# the delete does, and `crontab -r -u openclaw` would refuse because the
+# user does not exist. root's crontab beside it is not listed.
+/var/spool/cron/crontabs/openclaw
+
+# PAT-2312: systemd-logind's linger flag for openclaw, a user that no longer
+# exists (see its sudoers grant and crontab above). logind ignores it today;
+# the next account created as openclaw would get a user manager started at
+# boot and kept running without ever logging in.
+/var/lib/systemd/linger/openclaw

@@ -1,0 +1,850 @@
+{
+  "_schema_version": "1.0.0",
+  "_description": "Tier 2 deploy catalogue — maps top-50 SMB apps to Installomator labels (macOS) and winget package IDs (Windows). Source of truth for cross-platform deploy coverage reporting. See ci/validate-catalogue.py for the CI gate.",
+  "entries": [
+    {
+      "id": "zoom",
+      "display_name": "Zoom",
+      "prevalence_rank": 1,
+      "macos": {
+        "installomator_label": "zoom",
+        "bundle_id": "us.zoom.xos",
+        "verified": true,
+        "source_trust": "publisher_allowlist"
+      },
+      "windows": {
+        "winget_id": "Zoom.Zoom",
+        "publisher": "Zoom Video Communications, Inc.",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "slack",
+      "display_name": "Slack",
+      "prevalence_rank": 2,
+      "macos": {
+        "installomator_label": "slack",
+        "bundle_id": "com.tinyspeck.slackmacgap",
+        "verified": true,
+        "source_trust": "publisher_allowlist"
+      },
+      "windows": {
+        "winget_id": "SlackTechnologies.Slack",
+        "publisher": "Slack Technologies, LLC",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "googlechrome",
+      "display_name": "Google Chrome",
+      "prevalence_rank": 3,
+      "macos": {
+        "installomator_label": "googlechrome",
+        "bundle_id": "com.google.Chrome",
+        "verified": true,
+        "source_trust": "publisher_allowlist"
+      },
+      "windows": {
+        "winget_id": "Google.Chrome",
+        "publisher": "Google LLC",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "firefox",
+      "display_name": "Mozilla Firefox",
+      "prevalence_rank": 4,
+      "macos": {
+        "installomator_label": "firefox",
+        "bundle_id": "org.mozilla.firefox",
+        "verified": true,
+        "source_trust": "publisher_allowlist"
+      },
+      "windows": {
+        "winget_id": "Mozilla.Firefox",
+        "publisher": "Mozilla",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "microsoftteams",
+      "display_name": "Microsoft Teams",
+      "prevalence_rank": 5,
+      "macos": {
+        "installomator_label": "microsoftteams",
+        "bundle_id": "com.microsoft.teams",
+        "verified": false,
+        "source_trust": "installomator_import",
+        "notes": "Installomator label targets Microsoft Teams classic; new Teams (com.microsoft.teams2) requires a separate label."
+      },
+      "windows": {
+        "winget_id": "Microsoft.Teams",
+        "publisher": "Microsoft Corporation",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "1password",
+      "display_name": "1Password",
+      "prevalence_rank": 6,
+      "macos": {
+        "installomator_label": "1password",
+        "bundle_id": "com.1password.1password",
+        "verified": true,
+        "source_trust": "publisher_allowlist"
+      },
+      "windows": {
+        "winget_id": "AgileBits.1Password",
+        "publisher": "AgileBits Inc.",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "1password8",
+      "display_name": "1Password 8",
+      "prevalence_rank": 7,
+      "macos": {
+        "installomator_label": "1password8",
+        "bundle_id": "com.1password.1password",
+        "verified": false,
+        "source_trust": "installomator_import",
+        "notes": "Installomator import; same CDN URL as 1password label — keep both entries until label consolidation is resolved."
+      },
+      "windows": {
+        "winget_id": "AgileBits.1Password",
+        "publisher": "AgileBits Inc.",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "notion",
+      "display_name": "Notion",
+      "prevalence_rank": 8,
+      "macos": {
+        "installomator_label": "notion",
+        "bundle_id": "notion.id",
+        "verified": true,
+        "source_trust": "publisher_allowlist"
+      },
+      "windows": {
+        "winget_id": "Notion.Notion",
+        "publisher": "Notion Labs, Inc.",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "figma",
+      "display_name": "Figma",
+      "prevalence_rank": 9,
+      "macos": {
+        "installomator_label": "figma",
+        "bundle_id": "com.figma.Desktop",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Figma.Figma",
+        "publisher": "Figma",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "dropbox",
+      "display_name": "Dropbox",
+      "prevalence_rank": 10,
+      "macos": {
+        "installomator_label": "dropbox",
+        "bundle_id": "com.dropbox.client2",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Dropbox.Dropbox",
+        "publisher": "Dropbox, Inc.",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "vscode",
+      "display_name": "Visual Studio Code",
+      "prevalence_rank": 11,
+      "macos": {
+        "installomator_label": "microsoftvisualstudiocode",
+        "bundle_id": "com.microsoft.VSCode",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Microsoft.VisualStudioCode",
+        "publisher": "Microsoft Corporation",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "spotify",
+      "display_name": "Spotify",
+      "prevalence_rank": 12,
+      "macos": {
+        "installomator_label": "spotify",
+        "bundle_id": "com.spotify.client",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Spotify.Spotify",
+        "publisher": "Spotify AB",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "discord",
+      "display_name": "Discord",
+      "prevalence_rank": 13,
+      "macos": {
+        "installomator_label": "discord",
+        "bundle_id": "com.hnc.Discord",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Discord.Discord",
+        "publisher": "Discord Inc.",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "signal",
+      "display_name": "Signal",
+      "prevalence_rank": 14,
+      "macos": {
+        "installomator_label": "signal",
+        "bundle_id": "org.whispersystems.signal-desktop",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "OpenWhisperSystems.Signal",
+        "publisher": "Signal Messenger, LLC",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "brave",
+      "display_name": "Brave Browser",
+      "prevalence_rank": 15,
+      "macos": {
+        "installomator_label": "brave",
+        "bundle_id": "com.brave.Browser",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Brave.Brave",
+        "publisher": "Brave Software",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "grammarly",
+      "display_name": "Grammarly Desktop",
+      "prevalence_rank": 16,
+      "macos": {
+        "installomator_label": "grammarly",
+        "bundle_id": "com.grammarly.ProjectLlama",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Grammarly.Grammarly",
+        "publisher": "Grammarly",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "loom",
+      "display_name": "Loom",
+      "prevalence_rank": 17,
+      "macos": {
+        "installomator_label": "loom",
+        "bundle_id": "com.loom.desktop",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Loom.Loom",
+        "publisher": "Loom, Inc.",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "bitwarden",
+      "display_name": "Bitwarden",
+      "prevalence_rank": 18,
+      "macos": {
+        "installomator_label": "bitwarden",
+        "bundle_id": "com.bitwarden.desktop",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Bitwarden.Bitwarden",
+        "publisher": "Bitwarden Inc",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "nordvpn",
+      "display_name": "NordVPN",
+      "prevalence_rank": 19,
+      "macos": {
+        "installomator_label": "nordvpn",
+        "bundle_id": "com.nordvpn.macos",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "NordVPN.NordVPN",
+        "publisher": "nordvpn s.a.",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "anydesk",
+      "display_name": "AnyDesk",
+      "prevalence_rank": 20,
+      "macos": {
+        "installomator_label": "anydesk",
+        "bundle_id": "com.anydesk.anydeskMac",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "AnyDesk.AnyDesk",
+        "publisher": "AnyDesk Software GmbH",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "teamviewer",
+      "display_name": "TeamViewer",
+      "prevalence_rank": 21,
+      "macos": {
+        "installomator_label": "teamviewer",
+        "bundle_id": "com.teamviewer.TeamViewer",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "TeamViewer.TeamViewer",
+        "publisher": "TeamViewer",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "malwarebytes",
+      "display_name": "Malwarebytes",
+      "prevalence_rank": 22,
+      "macos": {
+        "installomator_label": "malwarebytes",
+        "bundle_id": "com.malwarebytes.mbam.frontend.mac",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Malwarebytes.Malwarebytes",
+        "publisher": "Malwarebytes",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "webex",
+      "display_name": "Webex",
+      "prevalence_rank": 23,
+      "macos": {
+        "installomator_label": "webex",
+        "bundle_id": "com.cisco.webexmeetings",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Cisco.Webex",
+        "publisher": "Cisco Systems, Inc.",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "gotomeeting",
+      "display_name": "GoToMeeting",
+      "prevalence_rank": 24,
+      "macos": {
+        "installomator_label": "gotomeeting",
+        "bundle_id": "com.logmein.GoToMeeting",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "LogMeIn.GoToMeeting",
+        "publisher": "LogMeIn, Inc.",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "microsoftedge",
+      "display_name": "Microsoft Edge",
+      "prevalence_rank": 25,
+      "macos": {
+        "installomator_label": "microsoftedge",
+        "bundle_id": "com.microsoft.edgemac",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Microsoft.Edge",
+        "publisher": "Microsoft Corporation",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "microsoftonedrive",
+      "display_name": "Microsoft OneDrive",
+      "prevalence_rank": 26,
+      "macos": {
+        "installomator_label": "microsoftonedrive",
+        "bundle_id": "com.microsoft.OneDrive",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Microsoft.OneDrive",
+        "publisher": "Microsoft Corporation",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "microsoftword",
+      "display_name": "Microsoft Word",
+      "prevalence_rank": 27,
+      "macos": {
+        "installomator_label": "microsoftword",
+        "bundle_id": "com.microsoft.Word",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Microsoft.Word",
+        "publisher": "Microsoft Corporation",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "microsoftexcel",
+      "display_name": "Microsoft Excel",
+      "prevalence_rank": 28,
+      "macos": {
+        "installomator_label": "microsoftexcel",
+        "bundle_id": "com.microsoft.Excel",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Microsoft.Excel",
+        "publisher": "Microsoft Corporation",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "microsoftpowerpoint",
+      "display_name": "Microsoft PowerPoint",
+      "prevalence_rank": 29,
+      "macos": {
+        "installomator_label": "microsoftpowerpoint",
+        "bundle_id": "com.microsoft.Powerpoint",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Microsoft.PowerPoint",
+        "publisher": "Microsoft Corporation",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "microsoftoutlook",
+      "display_name": "Microsoft Outlook",
+      "prevalence_rank": 30,
+      "macos": {
+        "installomator_label": "microsoftoutlook",
+        "bundle_id": "com.microsoft.Outlook",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Microsoft.Outlook",
+        "publisher": "Microsoft Corporation",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "adobeacrobatreader",
+      "display_name": "Adobe Acrobat Reader",
+      "prevalence_rank": 31,
+      "macos": {
+        "installomator_label": "adobereaderdc",
+        "bundle_id": "com.adobe.Reader",
+        "verified": false,
+        "source_trust": "installomator_import",
+        "notes": "Installomator label is 'adobereaderdc'; catalogue ID is 'adobeacrobatreader' to match current branding."
+      },
+      "windows": {
+        "winget_id": "Adobe.Acrobat.Reader.64-bit",
+        "publisher": "Adobe",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "vlc",
+      "display_name": "VLC Media Player",
+      "prevalence_rank": 32,
+      "macos": {
+        "installomator_label": "vlc",
+        "bundle_id": "org.videolan.vlc",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "VideoLAN.VLC",
+        "publisher": "VideoLAN",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "rectangle",
+      "display_name": "Rectangle",
+      "prevalence_rank": 33,
+      "macos": {
+        "installomator_label": "rectangle",
+        "bundle_id": "com.knollsoft.Rectangle",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": null,
+      "platform_scope": "macos_only",
+      "coverage_status": "covered"
+    },
+    {
+      "id": "alfred",
+      "display_name": "Alfred",
+      "prevalence_rank": 34,
+      "macos": {
+        "installomator_label": "alfred",
+        "bundle_id": "com.runningwithcrayons.Alfred",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": null,
+      "platform_scope": "macos_only",
+      "coverage_status": "covered"
+    },
+    {
+      "id": "cleanmymac",
+      "display_name": "CleanMyMac",
+      "prevalence_rank": 36,
+      "macos": {
+        "installomator_label": null,
+        "bundle_id": "com.macpaw.CleanMyMac4",
+        "verified": false,
+        "source_trust": "catalogue_pending"
+      },
+      "windows": null,
+      "platform_scope": "macos_only",
+      "coverage_status": "gap",
+      "gap_reason": "no_installomator_label — CleanMyMac is not present in the Installomator-derived label manifest; a new label record must be authored and allowlisted before it can be deployed."
+    },
+    {
+      "id": "hazel",
+      "display_name": "Hazel",
+      "prevalence_rank": 37,
+      "macos": {
+        "installomator_label": "hazel",
+        "bundle_id": "com.noodlesoft.Hazel",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": null,
+      "platform_scope": "macos_only",
+      "coverage_status": "covered"
+    },
+    {
+      "id": "istatmenus",
+      "display_name": "iStat Menus",
+      "prevalence_rank": 38,
+      "macos": {
+        "installomator_label": "istatmenus",
+        "bundle_id": "com.bjango.istatmenus",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": null,
+      "platform_scope": "macos_only",
+      "coverage_status": "covered"
+    },
+    {
+      "id": "superduper",
+      "display_name": "SuperDuper!",
+      "prevalence_rank": 39,
+      "macos": {
+        "installomator_label": null,
+        "bundle_id": "com.shirt-pocket.SuperDuper",
+        "verified": false,
+        "source_trust": "catalogue_pending"
+      },
+      "windows": null,
+      "platform_scope": "macos_only",
+      "coverage_status": "gap",
+      "gap_reason": "no_installomator_label — SuperDuper is not present in the Installomator-derived label manifest; a new label record must be authored and allowlisted before it can be deployed."
+    },
+    {
+      "id": "backblaze",
+      "display_name": "Backblaze",
+      "prevalence_rank": 40,
+      "macos": {
+        "installomator_label": null,
+        "bundle_id": "com.backblaze.backup.mac-menubar",
+        "verified": false,
+        "source_trust": "catalogue_pending"
+      },
+      "windows": {
+        "winget_id": "Backblaze.Backblaze",
+        "publisher": "Backblaze, Inc.",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "gap",
+      "gap_reason": "macos_label_pending — Backblaze is not present in the Installomator-derived label manifest; Windows is covered via winget but macOS deploy requires a new label record."
+    },
+    {
+      "id": "tunnelblick",
+      "display_name": "Tunnelblick",
+      "prevalence_rank": 41,
+      "macos": {
+        "installomator_label": "tunnelblick",
+        "bundle_id": "net.tunnelblick.tunnelblick",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": null,
+      "platform_scope": "macos_only",
+      "coverage_status": "covered"
+    },
+    {
+      "id": "viscosity",
+      "display_name": "Viscosity",
+      "prevalence_rank": 42,
+      "macos": {
+        "installomator_label": "viscosity",
+        "bundle_id": "com.viscosityvpn.Viscosity",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": null,
+        "publisher": "Sparklabs",
+        "verified": false,
+        "source_trust": "winget_pending"
+      },
+      "coverage_status": "gap",
+      "gap_reason": "windows_winget_unverified — Viscosity for Windows exists (sparklabs.com/viscosity/win) but a verified winget catalog entry has not been confirmed; macOS is covered."
+    },
+    {
+      "id": "kindle",
+      "display_name": "Kindle",
+      "prevalence_rank": 43,
+      "macos": {
+        "installomator_label": null,
+        "bundle_id": "com.amazon.Kindle",
+        "verified": false,
+        "source_trust": "catalogue_pending"
+      },
+      "windows": {
+        "winget_id": "Amazon.Kindle",
+        "publisher": "Amazon",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "gap",
+      "gap_reason": "macos_label_pending — Kindle is not present in the Installomator-derived label manifest; Windows is covered via winget but macOS deploy requires a new label record."
+    },
+    {
+      "id": "whatsapp",
+      "display_name": "WhatsApp",
+      "prevalence_rank": 44,
+      "macos": {
+        "installomator_label": "whatsapp",
+        "bundle_id": "net.whatsapp.WhatsApp",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "WhatsApp.WhatsApp",
+        "publisher": "WhatsApp LLC",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "telegram",
+      "display_name": "Telegram",
+      "prevalence_rank": 45,
+      "macos": {
+        "installomator_label": "telegram",
+        "bundle_id": "ru.keepcoder.Telegram",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Telegram.TelegramDesktop",
+        "publisher": "Telegram FZ-LLC",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "githubdesktop",
+      "display_name": "GitHub Desktop",
+      "prevalence_rank": 47,
+      "macos": {
+        "installomator_label": "githubdesktop",
+        "bundle_id": "com.github.GitHubClient",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "GitHub.GitHubDesktop",
+        "publisher": "GitHub, Inc.",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "sourcetree",
+      "display_name": "Sourcetree",
+      "prevalence_rank": 48,
+      "macos": {
+        "installomator_label": "sourcetree",
+        "bundle_id": "com.torusknot.SourceTreeNotMAS",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Atlassian.Sourcetree",
+        "publisher": "Atlassian",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "tableplus",
+      "display_name": "TablePlus",
+      "prevalence_rank": 49,
+      "macos": {
+        "installomator_label": "tableplus",
+        "bundle_id": "io.tableplus.tableplus",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "TablePlus.TablePlus",
+        "publisher": "TablePlus",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    },
+    {
+      "id": "postman",
+      "display_name": "Postman",
+      "prevalence_rank": 50,
+      "macos": {
+        "installomator_label": "postman",
+        "bundle_id": "com.postmanlabs.mac",
+        "verified": false,
+        "source_trust": "installomator_import"
+      },
+      "windows": {
+        "winget_id": "Postman.Postman",
+        "publisher": "Postman",
+        "verified": true,
+        "source_trust": "winget_community"
+      },
+      "coverage_status": "covered"
+    }
+  ]
+}

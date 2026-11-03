@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% from "_macros.html" import kpi_summary %}
+{% block content %}
+<p class="crumb"><a href="/reports">Reports</a> / Unapproved and unreviewed software</p>
+<div class="page-head">
+  <h1>Unapproved and unreviewed software</h1>
+  <p class="meta">Installed products that are Unapproved or Unreviewed, with a 26-week trend and the devices carrying the most Unapproved software.</p>
+</div>
+
+{% if not coverage.complete %}
+<div class="notice">Coverage is partial. Some devices are stale, retired or have not yet reported an inventory, so this list may not cover the whole estate.</div>
+{% endif %}
+
+{% call kpi_summary([
+  ('Installed products', counts.installed_products, ''),
+  ('Unapproved', counts.unapproved, 'bad-text' if counts.unapproved else ''),
+  ('Unreviewed', counts.unreviewed, 'warn-text' if counts.unreviewed else ''),
+  ('Devices with Unapproved software', counts.unapproved_devices, 'bad-text' if counts.unapproved_devices else ''),
+]) %}<a class="btn btn-small" href="{{ csv_url }}">Download CSV</a>{% endcall %}
+
+<section class="card card-trend" aria-labelledby="drift-trend-title">
+  <h2 id="drift-trend-title">26-week trend</h2>
+  {% if not trend.sparse %}
+  <svg viewBox="0 0 {{ trend.width }} {{ trend.height }}" preserveAspectRatio="none" class="trend-svg" role="img" aria-label="26-week Unapproved and Unreviewed trend">
+    {% if trend.unreviewed_points %}<polyline points="{{ trend.unreviewed_points }}" fill="none" stroke="var(--warn)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>{% endif %}
+    {% if trend.unreviewed_last %}<circle cx="{{ trend.unreviewed_last[0] }}" cy="{{ trend.unreviewed_last[1] }}" r="3.5" fill="var(--warn)"/>{% endif %}
+    {% if trend.unapproved_points %}<polyline points="{{ trend.unapproved_points }}" fill="none" stroke="var(--bad)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>{% endif %}
+    {% if trend.unapproved_last %}<circle cx="{{ trend.unapproved_last[0] }}" cy="{{ trend.unapproved_last[1] }}" r="4" fill="var(--bad)"/>{% endif %}
+  </svg>
+  <div class="trend-axis">
+    <span>{{ trend.labels[0] }}</span>
+    <span>{{ trend.labels[1] }}</span>
+  </div>
+  <p class="trend-legend">
+    <span class="trend-legend__item"><i class="legend-dot legend-dot--bad"></i>Unapproved</span>
+    <span class="trend-legend__item"><i class="legend-dot legend-dot--warn"></i>Unreviewed</span>
+  </p>
+  {% elif trend.recorded_count == 1 %}
+  <p class="empty">Trend starts {{ trend.first_recorded_week | humandate }}. One weekly snapshot so far; the line appears after the next weekly capture.</p>
+  {% else %}
+  <p class="empty">No weekly snapshot recorded yet. The trend appears once the first weekly capture completes.</p>
+  {% endif %}
+</section>
+
+<div class="card card-table" aria-labelledby="drift-top-devices-title">
+  <h2 id="drift-top-devices-title">Top devices by Unapproved count</h2>
+  {% if top_devices %}
+  <div class="table-scroll">
+  <table class="data-table table-stack" id="drift-top-devices-table">
+    <colgroup><col><col><col><col></colgroup>
+    <thead><tr><th>Device</th><th class="col-secondary">Platform</th><th>Unapproved count</th><th>Products</th></tr></thead>
+    <tbody>
+      {% for d in top_devices %}
+      <tr>
+        <td data-label="Device">{{ d.hostname }}{% if d.stale %} <span class="cell-subtle">(stale)</span>{% endif %}</td>
+        <td class="col-secondary" data-label="Platform">{{ d.platform | platform_display if d.platform else '-' }}</td>
+        <td data-label="Unapproved count">{{ d.unapproved_product_count }}</td>
+        <td data-label="Products"><span class="cell-subtle">{{ d.unapproved_products | join(', ') }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">No device currently carries Unapproved software.</p>
+  {% endif %}
+</div>
+
+<div class="card card-table" aria-labelledby="drift-products-title">
+  <h2 id="drift-products-title">{{ products_total }} Unapproved or Unreviewed product{{ '' if products_total == 1 else 's' }}</h2>
+  {% if products %}
+  <div class="table-scroll">
+  <table class="data-table table-stack" id="drift-products-table">
+    <colgroup><col><col class="col-secondary"><col><col><col></colgroup>
+    <thead><tr><th>Product</th><th class="col-secondary">Platform</th><th>Devices</th><th>Observed since</th><th>State</th></tr></thead>
+    <tbody>
+      {% for p in products %}
+      <tr>
+        <td data-label="Product"><strong>{{ p.name }}</strong>{% if p.identifier %}<span class="cell-subtle mono">{{ p.identifier }}</span>{% endif %}</td>
+        <td class="col-secondary" data-label="Platform">{{ p.platform | platform_display if p.platform else '-' }}</td>
+        <td data-label="Devices">{{ p.device_count }}{% if p.stale_device_count %} <span class="cell-subtle">({{ p.stale_device_count }} stale)</span>{% endif %}</td>
+        <td data-label="Observed since" class="mono">{% if p.observed_since %}{{ p.observed_since | humandate_nowrap(true) }}{% else %}-{% endif %}</td>
+        <td data-label="State"><span class="pill {{ 'pill-bad' if p.approval_state == 'unapproved' else 'pill-muted' }}">{{ p.approval_state_label or 'Unknown' }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">No unapproved or unreviewed software on your estate right now. Nothing unapproved has been found.</p>
+  {% endif %}
+</div>
+<p class="toolbar-hint">Marking a product Approved, Unapproved or Ignored is done from the Software page.</p>
+{% endblock %}

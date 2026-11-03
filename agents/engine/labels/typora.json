@@ -1,0 +1,23 @@
+{
+  "label": "typora",
+  "name": "Typora",
+  "type": "dmg",
+  "app_path": "/Applications/Typora.app",
+  "expected_team_id": "9HWK5273G4",
+  "download": {
+    "method": "static",
+    "url": "https://downloads.typora.io/mac/Typora.dmg"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "pat-664",
+    "reviewed_at": "2026-07-04",
+    "notes": "PAT-664: fixed DNS/SSL failure on old typora.io URL. Updated from https://www.typora.io/download/Typora.dmg (DNS failure) to https://downloads.typora.io/mac/Typora.dmg. New URL verified live 2026-07-04: HTTP 200, ~14 MB DMG, served via Cloudflare. Typora is a paid app (freemium trial) but the installer itself is publicly downloadable."
+  }
+}

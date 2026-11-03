@@ -1,0 +1,100 @@
+name: portal-build
+
+# Lints and tests both services in this repo (portal + scan) on every push to
+# main, and via workflow_call from deploy-portal-01.yml so the same checks
+# gate a real deploy. It NEVER pushes anything to patched-portal-01.
+#
+# PAT-1979: this job used to live inside deploy-portal-01.yml and ran on every
+# push to main. Because the sibling `deploy` job was gated on
+# workflow_dispatch, a push built, tested, skipped the deploy and still
+# reported the whole run green under the name `deploy-portal-01` — the same
+# shape PAT-1970 fixed in deploy-api-01.yml, applied here. A workflow named
+# as a promise to deploy reported success when it deliberately did not
+# deploy, and the Actions run list gave no visible sign that nothing shipped.
+#
+# The Andy-gate itself is correct and unchanged: shipping to portal-01 is
+# still a deliberate `gh workflow run deploy-portal-01.yml`. What changed is
+# the name and the trigger, so the Actions run list tells the truth at a
+# glance:
+#   push to main            -> `portal-build`      (green means tested, never shipped)
+#   gh workflow run deploy  -> `deploy-portal-01`   (only ever appears for a deploy)
+#
+# deploy-portal-01.yml calls this workflow via `workflow_call` so the
+# lint/test steps are defined once. A called workflow runs inside the
+# caller's run, same as api-build.yml / deploy-api-01.yml.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'main.py'
+      - 'auth.py'
+      - 'upstream.py'
+      - 'templates/**'
+      - 'static/**'
+      - 'scan/**'
+      - 'requirements.txt'
+      - 'requirements-test.txt'
+      - 'requirements.lock'
+      - 'deploy/**'
+      - '.github/workflows/portal-build.yml'
+      - '.github/workflows/deploy-portal-01.yml'
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # requirements.txt / scan/requirements.txt are runtime-only
+          # (PAT-1893); test-only deps (pytest, httpx) live in the matching
+          # requirements-test.txt.
+          pip install -r requirements.txt -r requirements-test.txt \
+            -r scan/requirements.txt -r scan/requirements-test.txt ruff
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Tests (pytest)
+        run: pytest
+
+      - name: Lint the box-side deploy scripts
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          # -x is required: install.sh/install-scan.sh source a validated helper
+          # through a file descriptor (source "/dev/fd/$helper_fd"), and their
+          # `# shellcheck source=...` hint directives only take effect once -x
+          # tells shellcheck to actually follow non-literal source targets.
+          # Without -x, SC1091 fires and exits 1 regardless of the directive.
+          shellcheck -x deploy/install.sh deploy/install-scan.sh deploy/deploy-portal-01.sh
+
+      - name: State plainly that nothing was shipped
+        # Only on the push path. When deploy-portal-01.yml calls this workflow
+        # the caller's own run-name already says whether it is shipping, and a
+        # second contradictory notice inside a real deploy run would be worse
+        # than none. github.event_name is the CALLER's event under
+        # workflow_call, so this is `push` only for a genuine push build.
+        if: github.event_name == 'push'
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ## Tested, not deployed
+
+          This is `portal-build`. It linted and tested both services (portal
+          and scan) from this commit. Nothing was pushed to `patched-portal-01`.
+
+          Shipping is a separate, deliberate run:
+
+              gh workflow run deploy-portal-01.yml -R Patched-LTD/portal
+          SUMMARY

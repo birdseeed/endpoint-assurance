@@ -1,0 +1,24 @@
+{
+  "label": "icons",
+  "name": "Icons",
+  "type": "pkg",
+  "app_path": "/Applications/Icons.app",
+  "expected_team_id": "7R5ZEU67FQ",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/SAP/macOS-icon-generator/releases/latest"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

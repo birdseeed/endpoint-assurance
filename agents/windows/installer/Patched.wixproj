@@ -1,0 +1,38 @@
+<Project Sdk="WixToolset.Sdk/5.0.0">
+  <PropertyGroup>
+    <OutputName>PatchedAgent</OutputName>
+    <OutputType>Package</OutputType>
+    <Platform>x64</Platform>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <!-- Set by the release workflow after strict MSI-version validation. Do not
+         add a default: an unversioned package must fail rather than recreate
+         the old hardcoded 1.0.0 upgrade regression. -->
+    <DefineConstants>$(DefineConstants);ProductVersion=$(ProductVersion)</DefineConstants>
+    <!-- WiX extensions -->
+    <WixExtensions>WixToolset.Util.wixext;WixToolset.UI.wixext</WixExtensions>
+  </PropertyGroup>
+
+  <!-- Service is NOT harvested here. WiX Sdk/5.0.0 OutputItemType=Harvest
+       only triggers dotnet publish via the WiX 'Publish' MSBuild target, which is
+       skipped when the wixproj is invoked via 'dotnet build'. CI pre-publishes the service
+       project (see windows-agent-release.yml) so the publish/ directories exist
+       before WiX runs; Product.wxs references the outputs via <?define?> variables. -->
+  <ItemGroup>
+    <ProjectReference Include="..\src\Service\Service.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!-- PAT-599's CredentialsCA DLL custom action (source formerly at
+       windows/installer/CredentialsCA/) was deleted in PAT-1793 once PAT-599 had
+       proven stable in production across x64 and ARM64: the ARM64 in-process-DLL
+       load failure (error 1603/1154) it was removed for is fully superseded by the
+       EXE-type custom action documented in Product.wxs, so there is nothing left to
+       roll back to. -->
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Util.wixext" Version="5.0.0" />
+    <PackageReference Include="WixToolset.UI.wixext" Version="5.0.0" />
+  </ItemGroup>
+</Project>

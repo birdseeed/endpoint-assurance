@@ -1,0 +1,25 @@
+{
+  "label": "dbeaverce",
+  "name": "DBeaver",
+  "type": "dmg",
+  "app_path": "/Applications/DBeaver.app",
+  "expected_team_id": "42B6MDKMW8",
+  "download": {
+    "method": "static",
+    "url": "https://dbeaver.io/files/dbeaver-ce-latest-macos-aarch64.dmg"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [
+    "dbeaver"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Patched.Service</RootNamespace>
+    <AssemblyName>Patched.Service</AssemblyName>
+    <!-- Produces a Windows Service exe -->
+    <UseWindowsService>true</UseWindowsService>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Service.Tests" />
+    <!-- Non-shipping quarantine target: compiles retained runners without
+         restoring them to the assurance Service artifact. -->
+    <InternalsVisibleTo Include="QuarantinedRunners.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Shared.csproj" />
+    <ProjectReference Include="..\Verifier\Verifier.csproj" />
+  </ItemGroup>
+  <!--
+    DEPRECATED — PAT-1531: Windows is an assurance-only agent. Keep the legacy
+    installer/removal implementation in the repository for a separately reviewed
+    future boundary, but do not compile it into Patched.Service or its published
+    single-file executable. This is deliberately an MSBuild exclusion rather than
+    a runtime tier gate: a security review of the installed MSI must not find the
+    execution code at all. The retained tests are explicitly quarantined in
+    Service.Tests.csproj for the same reason.
+  -->
+  <ItemGroup>
+    <Compile Remove="DeviceRemovalRunner.cs" />
+    <Compile Remove="DeviceRemovalTasksClient.cs" />
+    <Compile Remove="InstallRunner.cs" />
+    <Compile Remove="InventoryCollector.cs" />
+    <Compile Remove="PendingInstallsFetcher.cs" />
+    <Compile Remove="PendingRemovalsFetcher.cs" />
+    <Compile Remove="RegistryUninstallLookup.cs" />
+    <Compile Remove="RemovalRunner.cs" />
+    <Compile Remove="UninstallExecutor.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.EventLog" Version="8.0.1" />
+    <PackageReference Include="System.Management" Version="8.0.0" />
+    <!-- PAT-605: local group membership enumeration + removal (approved-admins enforcement). -->
+    <PackageReference Include="System.DirectoryServices.AccountManagement" Version="8.0.0" />
+  </ItemGroup>
+</Project>

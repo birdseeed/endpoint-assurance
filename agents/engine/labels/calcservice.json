@@ -1,0 +1,24 @@
+{
+  "label": "calcservice",
+  "name": "CalcService",
+  "type": "zip",
+  "app_path": "/Applications/CalcService.app",
+  "expected_team_id": "679S2QUWR8",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.devontechnologies.com/support/download"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

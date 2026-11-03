@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- net8.0 (no -windows suffix): platform-neutral; CredentialStore is guarded by [SupportedOSPlatform("windows")] -->
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <RootNamespace>Patched.Shared</RootNamespace>
+    <AssemblyName>Patched.Shared</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- CredentialManager P/Invoke uses only BCL APIs; no extra NuGet needed -->
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <!-- Platform-neutral Ed25519 verification for agent-config (PAT-310). -->
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.4.0" />
+    <!-- ILogger<T>/ILoggerFactory/NullLoggerFactory — kept here so the Tray's
+         wpftmp shadow project (which inherits ProjectReferences but not
+         PackageReferences) can compile files that use ILogger<T>. (PAT-353) -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+    <!-- WMI access for DeviceIdentityHandler (PAT-513). Windows-only package; guarded by [SupportedOSPlatform]. -->
+    <PackageReference Include="System.Management" Version="8.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Ed25519Verifier is internal to Shared; the Service fetcher and the test
+         suite need it (PAT-310). -->
+    <InternalsVisibleTo Include="Patched.Service" />
+    <InternalsVisibleTo Include="Patched.Shared.Tests" />
+    <!-- PAT-552: AppAllowlistEnforcerTests uses InventoryApp -->
+    <InternalsVisibleTo Include="Service.Tests" />
+    <!-- Non-shipping quarantined-runner compile/test target. -->
+    <InternalsVisibleTo Include="QuarantinedRunners.Tests" />
+  </ItemGroup>
+</Project>

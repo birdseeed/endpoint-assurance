@@ -1,0 +1,24 @@
+{
+  "label": "fsmonitor",
+  "name": "FSMonitor",
+  "type": "zip",
+  "app_path": "/Applications/FSMonitor.app",
+  "expected_team_id": "V85GBYB7B9",
+  "download": {
+    "method": "resolved",
+    "strategy": "sparkle-appcast",
+    "source": "https://fsmonitor.com/FSMonitor/Archives/appcast2.xml"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

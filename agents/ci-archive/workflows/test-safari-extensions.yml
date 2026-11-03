@@ -1,0 +1,35 @@
+name: test-safari-extensions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/browser_extensions.sh'
+      - 'macos/patched-collect.sh'
+      - 'contracts/inventory-browser-extensions-status.schema.json'
+      - 'macos/lib/test-safari-extensions.zsh'
+      - 'macos/lib/test-browser-extensions.zsh'
+  pull_request:
+    paths:
+      - 'macos/lib/browser_extensions.sh'
+      - 'macos/patched-collect.sh'
+      - 'contracts/inventory-browser-extensions-status.schema.json'
+      - 'macos/lib/test-safari-extensions.zsh'
+      - 'macos/lib/test-browser-extensions.zsh'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh (Safari App Extension collector tests exercise a real zsh script)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run Safari App Extension collector tests
+        run: zsh macos/lib/test-safari-extensions.zsh
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install the pinned jsonschema (PAT-2065 validates the status block against the vendored platform schema)
+        run: python3 -m pip install --disable-pip-version-check --quiet "$(grep -E '^jsonschema==' requirements.txt)"
+      - name: Run browser extension collector tests (PAT-2054 file safety and wire identity, PAT-2065 status block)
+        run: zsh macos/lib/test-browser-extensions.zsh

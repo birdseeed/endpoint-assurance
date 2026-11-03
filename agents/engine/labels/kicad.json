@@ -1,0 +1,32 @@
+{
+  "label": "kicad",
+  "name": "KiCad",
+  "type": "dmg",
+  "app_path": "/Applications/KiCad.app",
+  "expected_team_id": "9FQDHNY6U2",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/KiCad/kicad-source-mirror/releases/latest"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "gerbview",
+    "bitmap2component",
+    "kicad",
+    "pl_editor",
+    "pcb_calculator",
+    "pcbnew",
+    "eeschema"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

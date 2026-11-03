@@ -1,0 +1,47 @@
+[Unit]
+Description=Restic backup — dashboard.db + reports/ to Cloudflare R2
+Documentation=file:///etc/patched-dashboard/backup.env
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+# Restic env vars live outside the repo — never commit backup.env
+EnvironmentFile=/etc/patched-dashboard/backup.env
+# Operational executable is deliberately outside the recursively-chowned
+# dashboard checkout; install.sh provisions it root:root 0750.
+ExecStart=/usr/local/libexec/patched-prod-backup/prod-backup.sh
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=patched-prod-backup
+# Limit blast radius if something goes wrong
+PrivateTmp=true
+
+# prod-backup.sh never calls sudo/pg_dump (unlike api-01's backup.sh), so
+# unlike the api-01 reference this can safely lock down new privileges.
+NoNewPrivileges=true
+
+# ProtectSystem=strict + explicit write exceptions:
+#   /srv/backup/health ("-": heartbeat is best-effort, must not block the
+#     backup if the monitoring dir ever goes missing)
+#   /var/lib/patched-dashboard: DASHBOARD_DB_PATH runs in WAL mode, and `sqlite3
+#     .backup` opens the source DB read-write to manage its -wal/-shm
+#     sidecar files even though it only reads app data — read-only here
+#     makes the open() itself fail (confirmed by a real failed run, PAT-1791).
+#   /opt/patched-dashboard remains readable for reports but has no write grant.
+# ProtectHome=true not set: this unit runs as root and needs
+# /root/.ssh/id_prod_backup to scp the heartbeat to api-01.
+ProtectSystem=strict
+ReadWritePaths=-/srv/backup/health /var/lib/patched-dashboard
+CacheDirectory=patched-prod-backup
+Environment=RESTIC_CACHE_DIR=/var/cache/patched-prod-backup
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+CapabilityBoundingSet=CAP_DAC_OVERRIDE

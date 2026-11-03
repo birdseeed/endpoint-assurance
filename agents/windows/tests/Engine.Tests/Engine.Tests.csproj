@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Platform-neutral: AllowlistLoader logic has no Windows dependencies -->
+    <!-- Test projects target net10.0 to match available runtime; Shared targets net8.0 for Windows deployment -->
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Patched.Engine.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Shared\Shared.csproj" />
+  </ItemGroup>
+  <!-- Engine sources included directly since Engine.csproj targets net8.0-windows -->
+  <ItemGroup>
+    <Compile Include="..\..\src\Engine\AllowlistLoader.cs" />
+    <Compile Include="..\..\src\Engine\ChocolateyEngine.cs" />
+    <Compile Include="..\..\src\Engine\IPackageEngine.cs" />
+    <Compile Include="..\..\src\Engine\WingetCliEngine.cs" />
+    <Compile Include="..\..\src\Engine\FallbackPackageEngine.cs" />
+  </ItemGroup>
+</Project>

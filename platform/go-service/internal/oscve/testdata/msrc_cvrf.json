@@ -1,0 +1,45 @@
+{
+  "_note": "Representative fixture hand-authored from the documented MSRC CVRF v3.0 schema (api.msrc.microsoft.com/cvrf/v3.0). Trimmed to two client Windows products plus one Server product to prove the client-Windows filter. ProductStatus Type 3 = Known Affected; Threat Type 3 = Severity; Remediation Type 2 = Vendor Fix.",
+  "ProductTree": {
+    "FullProductName": [
+      {"ProductID": "11926", "Value": "Windows 10 Version 22H2 for x64-based Systems"},
+      {"ProductID": "12085", "Value": "Windows 11 Version 23H2 for x64-based Systems"},
+      {"ProductID": "12000", "Value": "Windows Server 2022"}
+    ]
+  },
+  "Vulnerability": [
+    {
+      "CVE": "CVE-2024-30080",
+      "Title": {"Value": "Microsoft Message Queuing (MSMQ) Remote Code Execution Vulnerability"},
+      "CVSSScoreSets": [
+        {"BaseScore": 9.8, "Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", "ProductID": ["11926", "12085"]}
+      ],
+      "ProductStatuses": [
+        {"Type": 3, "ProductID": ["11926", "12085", "12000"]}
+      ],
+      "Threats": [
+        {"Type": 3, "Description": {"Value": "Critical"}, "ProductID": ["11926", "12085", "12000"]}
+      ],
+      "Remediations": [
+        {"Type": 2, "Description": {"Value": "5039217"}, "ProductID": ["11926"], "FixedBuild": "10.0.19045.4651"},
+        {"Type": 2, "Description": {"Value": "5039212"}, "ProductID": ["12085"], "FixedBuild": "10.0.22631.3737"}
+      ]
+    },
+    {
+      "CVE": "CVE-2024-30078",
+      "Title": {"Value": "Windows Wi-Fi Driver Remote Code Execution Vulnerability"},
+      "CVSSScoreSets": [
+        {"BaseScore": 8.8, "Vector": "CVSS:3.1/AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H", "ProductID": ["11926"]}
+      ],
+      "ProductStatuses": [
+        {"Type": 3, "ProductID": ["11926"]}
+      ],
+      "Threats": [
+        {"Type": 3, "Description": {"Value": "Important"}, "ProductID": ["11926"]}
+      ],
+      "Remediations": [
+        {"Type": 2, "Description": {"Value": "KB5039217"}, "ProductID": ["11926"], "FixedBuild": "10.0.19045.4651"}
+      ]
+    }
+  ]
+}

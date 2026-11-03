@@ -1,0 +1,23 @@
+{
+  "label": "whiterabbit",
+  "name": "White Rabbit",
+  "type": "dmg",
+  "app_path": "/Applications/White Rabbit.app",
+  "expected_team_id": "TRLMQKJQ97",
+  "download": {
+    "method": "static",
+    "url": "https://delivery.kadomaru.app/white-rabbit/White%20Rabbit.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

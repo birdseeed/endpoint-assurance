@@ -1,0 +1,47 @@
+name: deploy-docs
+
+# docs.patched.im is served by the Cloudflare Worker Static Assets project
+# configured in wrangler.jsonc. GitHub Pages is not part of this deployment
+# path.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A Worker version is immutable, so queued deployments cannot corrupt a shared
+# deployment target. Keeping them ordered makes the resulting Cloudflare
+# deployment history match main.
+concurrency:
+  group: deploy-docs
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check navigation and footer consistency
+        run: bash check-nav-consistency.sh
+
+      - name: Check validator syntax
+        run: bash -n check-nav-consistency.sh
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy docs Worker
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy

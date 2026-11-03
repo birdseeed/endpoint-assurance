@@ -1,0 +1,31 @@
+{
+  "label": "microsoftoffice365",
+  "name": "MicrosoftOffice365",
+  "type": "pkg",
+  "app_path": "/Applications/MicrosoftOffice365.app",
+  "expected_team_id": "UBF8T346G9",
+  "download": {
+    "method": "static",
+    "url": "https://go.microsoft.com/fwlink/?linkid=525133"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [
+    "Microsoft AutoUpdate",
+    "Microsoft Word",
+    "Microsoft PowerPoint",
+    "Microsoft Excel",
+    "Microsoft OneNote",
+    "Microsoft Outlook",
+    "OneDrive"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

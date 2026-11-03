@@ -1,0 +1,42 @@
+name: test-dashboard-registration-pattern
+
+# PAT-1233: release-menubar.yml's "Register artifact with dashboard" step had
+# drifted back to the pre-PAT-987 unauthenticated, failure-swallowing curl
+# pattern, so it always reported success even though every registration
+# attempt 401'd. This is read-only static regression coverage over the
+# checked-in YAML for both release workflows' registration step — it never
+# contacts Tailscale, prod-01, or the dashboard API.
+
+on:
+  push:
+    paths:
+      - '.github/workflows/test-dashboard-registration-pattern.yml'
+      - '.github/workflows/release-menubar.yml'
+      - '.github/workflows/macos-agent-release.yml'
+      - 'ci/test_dashboard_registration_pattern.py'
+  pull_request:
+    paths:
+      - '.github/workflows/test-dashboard-registration-pattern.yml'
+      - '.github/workflows/release-menubar.yml'
+      - '.github/workflows/macos-agent-release.yml'
+      - 'ci/test_dashboard_registration_pattern.py'
+
+permissions:
+  contents: read
+
+jobs:
+  regressions:
+    name: PAT-1233 dashboard-registration pattern regressions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Run dashboard-registration pattern regression suite
+        run: python3 ci/test_dashboard_registration_pattern.py -v

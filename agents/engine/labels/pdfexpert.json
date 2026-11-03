@@ -1,0 +1,24 @@
+{
+  "label": "pdfexpert",
+  "name": "PDF Expert",
+  "type": "zip",
+  "app_path": "/Applications/PDF Expert.app",
+  "expected_team_id": "3L68KQB4HG",
+  "download": {
+    "method": "resolved",
+    "strategy": "sparkle-appcast",
+    "source": "https://downloads.pdfexpert.com/pem3/release/appcast.xml"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true. PAT-1380 (2026-08-15): alerted under catalogue-scope verification (PAT-1296) on 'VirusTotal: 1 malicious, 0 suspicious (of 75 engines)' for sha256 253cf3d4441182707c4b0841fb698a6376de7f1a95998472eab33b28d19c78d8. The sparkle-appcast resolution itself worked fine (resolved to downloads.pdfexpert.com/pem3/versions/1170/PDFExpert.zip); expected_team_id 3L68KQB4HG matched observed, notarization passed, https_ok. Same shape and same disposition as daisydisk and proxyman's PAT-1380 alerts: this agent's VT check (PAT-503) fails closed on any malicious>0, which is correct, but this session had no VT_API_KEY to see which engine flagged it or why. Left alerting: do not clear this without pulling the actual VT engine-level report."
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "label": "signal",
+  "name": "Signal",
+  "type": "dmg",
+  "app_path": "/Applications/Signal.app",
+  "expected_team_id": "U68MSDN6DR",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://updates.signal.org/desktop/latest-mac.yml"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true.",
+    "mirror_eula_approved": false
+  }
+}

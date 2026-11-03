@@ -1,0 +1,12 @@
+.git/
+.gitignore
+.DS_Store
+.assetsignore
+wrangler.jsonc
+.wrangler/
+node_modules/
+README.md
+AGENTS.md
+CLAUDE.md
+pat-782-endpoint-tamper-resistance-threat-model.md
+check-nav-consistency.sh

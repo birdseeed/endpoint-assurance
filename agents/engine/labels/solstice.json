@@ -1,0 +1,23 @@
+{
+  "label": "solstice",
+  "name": "Mersive Solstice",
+  "type": "dmg",
+  "app_path": "/Applications/Mersive Solstice.app",
+  "expected_team_id": "63B5A5WDNG",
+  "download": {
+    "method": "static",
+    "url": "https://www.mersive.com/files/41693/"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

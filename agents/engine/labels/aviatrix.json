@@ -1,0 +1,23 @@
+{
+  "label": "aviatrix",
+  "name": "Aviatrix VPN Client",
+  "type": "pkg",
+  "app_path": "/Applications/Aviatrix VPN Client.app",
+  "expected_team_id": "32953Z7NBN",
+  "download": {
+    "method": "static",
+    "url": "https://s3-us-west-2.amazonaws.com/aviatrix-download/AviatrixVPNClient/AVPNC_mac.pkg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

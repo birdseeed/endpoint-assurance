@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patched.im/schemas/install-status.schema.json",
+  "title": "Patched endpoint install status",
+  "description": "Platform-neutral terminal outcome contract written atomically by the macOS and Windows install engines and read by Self Service.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at", "last_run", "installs"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "last_run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["started_at", "finished_at"],
+      "properties": {
+        "started_at": { "type": "string", "format": "date-time" },
+        "finished_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "installs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["package_id", "package_source", "display_name", "outcome", "recorded_at"],
+        "properties": {
+          "package_id": { "type": "string", "minLength": 1 },
+          "package_source": { "enum": ["vendor", "mas", "winget"] },
+          "display_name": { "type": "string" },
+          "outcome": { "enum": ["success", "already_installed", "failed", "authority_refused"] },
+          "failure_kind": { "enum": ["install_failed", "verification_blocked", "execution_authority_refused"] },
+          "error_message": { "type": "string" },
+          "recorded_at": { "type": "string", "format": "date-time" }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "outcome": { "enum": ["failed", "authority_refused"] } }, "required": ["outcome"] },
+            "then": { "required": ["failure_kind", "error_message"] },
+            "else": { "not": { "anyOf": [{ "required": ["failure_kind"] }, { "required": ["error_message"] }] } }
+          },
+          {
+            "if": { "properties": { "outcome": { "const": "authority_refused" } }, "required": ["outcome"] },
+            "then": { "properties": { "failure_kind": { "const": "execution_authority_refused" } } }
+          }
+        ]
+      }
+    }
+  }
+}

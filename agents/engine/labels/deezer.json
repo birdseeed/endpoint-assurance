@@ -1,0 +1,23 @@
+{
+  "label": "deezer",
+  "name": "Deezer",
+  "type": "dmg",
+  "app_path": "/Applications/Deezer.app",
+  "expected_team_id": "7QLUP2K45C",
+  "download": {
+    "method": "static",
+    "url": "https://www.deezer.com/desktop/download?platform=darwin&architecture=x64&platformVersion=9999"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "installed_os": "12.7.6",
+  "latest_os": null,
+  "target_os": "14.6.1",
+  "state": "unsupported_hardware",
+  "severity": "none",
+  "security_relevant": false,
+  "actively_exploited": false,
+  "deadline": null,
+  "deferrals_remaining": 0,
+  "release_age_days": null,
+  "checked_at": "2026-12-10T10:00:00Z"
+}

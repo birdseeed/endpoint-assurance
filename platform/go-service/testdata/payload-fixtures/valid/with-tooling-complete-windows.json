@@ -1,0 +1,527 @@
+{
+  "schema_version": 3,
+  "platform": "windows",
+  "agent": "patched-collect-win",
+  "agent_version": "0.1.0",
+  "tenant_id": "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB",
+  "collected_at": "2026-12-01T10:00:00Z",
+  "device": {
+    "serial": "DMT1234567",
+    "hw_uuid": "CCCCCCCC-DDDD-EEEE-FFFF-AAAAAAAAAAAA",
+    "hostname": "DESKTOP-TESTWIN",
+    "hw_model": "Dell OptiPlex 7090",
+    "arch": "x86_64",
+    "last_boot": "2026-11-30T08:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Intel(R) Core(TM) i7-10700",
+    "cpu_cores": 8,
+    "ram_gb": 16,
+    "disk_total_gb": 476.9,
+    "disk_free_gb": 210.3
+  },
+  "os": {
+    "name": "Windows",
+    "version": "11.0.22631",
+    "build": "22631.3593"
+  },
+  "compliance": {
+    "bitlocker_os_drive": "On",
+    "windows_firewall_domain": "enabled",
+    "windows_firewall_private": "enabled",
+    "windows_firewall_public": "enabled",
+    "defender_realtime": "enabled",
+    "uac_enabled": "Yes",
+    "pending_updates_count": 0,
+    "pwpolicy_min_length": 12
+  },
+  "security_tools": [
+    {
+      "id": "defender-for-endpoint",
+      "name": "Microsoft Defender for Endpoint"
+    }
+  ],
+  "apps": [
+    {
+      "name": "Microsoft Edge",
+      "version": "124.0.2478.97",
+      "identifier": "Microsoft Edge",
+      "publisher": "Microsoft Corporation",
+      "architecture": "x86_64"
+    },
+    {
+      "name": "7-Zip 23.01 (x64)",
+      "version": "23.01",
+      "identifier": "{23170F69-40C1-2702-2301-000001000000}",
+      "publisher": "Igor Pavlov",
+      "architecture": "x86_64"
+    }
+  ],
+  "pending_updates": [
+    {
+      "label": "KB5040442",
+      "title": "2024-07 Cumulative Update for Windows 11",
+      "version": "22631.3880",
+      "action": null,
+      "recommended": true
+    }
+  ],
+  "ide_extensions": {
+    "collection_status": "complete",
+    "truncated": false,
+    "truncation_reason": null,
+    "users": [
+      {
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "collection_status": "complete",
+        "profiles": 3
+      }
+    ],
+    "profiles": [
+      {
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "family": "vscode",
+        "editor": "vscode",
+        "editor_version": null,
+        "collection_status": "complete",
+        "manifest_source": "extensions_json",
+        "extension_count": 2
+      },
+      {
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "family": "vscode",
+        "editor": "cursor",
+        "editor_version": null,
+        "collection_status": "complete",
+        "manifest_source": "extensions_json",
+        "extension_count": 1
+      },
+      {
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "family": "jetbrains",
+        "editor": "PyCharm",
+        "editor_version": "2025.2",
+        "collection_status": "complete",
+        "manifest_source": "plugin_xml",
+        "extension_count": 1
+      }
+    ],
+    "issues": [],
+    "extensions": [
+      {
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "family": "vscode",
+        "editor": "vscode",
+        "editor_version": null,
+        "id": "github.copilot",
+        "name": "copilot",
+        "publisher": "GitHub",
+        "publisher_display_name": "GitHub",
+        "version": "1.372.0",
+        "installed_at": "2027-03-01T09:14:02Z",
+        "source": "gallery",
+        "pre_release": false,
+        "target_platform": null,
+        "disabled": null,
+        "directory": "github.copilot-1.372.0",
+        "manifest_source": "extensions_json",
+        "manifest_status": "read"
+      },
+      {
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "family": "vscode",
+        "editor": "vscode",
+        "editor_version": null,
+        "id": "ms-python.python",
+        "name": "python",
+        "publisher": "ms-python",
+        "publisher_display_name": "Microsoft",
+        "version": "2026.14.0",
+        "installed_at": "2027-02-20T11:00:00Z",
+        "source": "gallery",
+        "pre_release": false,
+        "target_platform": "darwin-arm64",
+        "disabled": null,
+        "directory": "ms-python.python-2026.14.0-darwin-arm64",
+        "manifest_source": "extensions_json",
+        "manifest_status": "read"
+      },
+      {
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "family": "vscode",
+        "editor": "cursor",
+        "editor_version": null,
+        "id": "saoudrizwan.claude-dev",
+        "name": "claude-dev",
+        "publisher": "saoudrizwan",
+        "publisher_display_name": null,
+        "version": "3.30.0",
+        "installed_at": "2027-03-10T08:00:00Z",
+        "source": "gallery",
+        "pre_release": false,
+        "target_platform": null,
+        "disabled": null,
+        "directory": "saoudrizwan.claude-dev-3.30.0",
+        "manifest_source": "extensions_json",
+        "manifest_status": "read"
+      },
+      {
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "family": "jetbrains",
+        "editor": "PyCharm",
+        "editor_version": "2025.2",
+        "id": "com.github.copilot",
+        "name": "GitHub Copilot",
+        "publisher": "GitHub",
+        "publisher_display_name": null,
+        "version": "1.5.60",
+        "installed_at": null,
+        "source": null,
+        "pre_release": null,
+        "target_platform": null,
+        "disabled": false,
+        "directory": "github-copilot-intellij",
+        "manifest_source": "plugin_xml_jar",
+        "manifest_status": "read"
+      }
+    ]
+  },
+  "package_managers": {
+    "collection_status": "complete",
+    "truncated": false,
+    "truncation_reason": null,
+    "sources": {
+      "npm_global": {
+        "collection_status": "complete",
+        "truncated": false,
+        "package_count": 2,
+        "location_count": 2
+      },
+      "pip_user": {
+        "collection_status": "complete",
+        "truncated": false,
+        "package_count": 1,
+        "location_count": 1
+      },
+      "pipx": {
+        "collection_status": "not_present",
+        "truncated": false,
+        "package_count": 0,
+        "location_count": 0
+      }
+    },
+    "users": [
+      {
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "collection_status": "complete",
+        "sources": {
+          "npm_global": "complete",
+          "pip_user": "complete",
+          "pipx": "not_present"
+        }
+      }
+    ],
+    "locations": [
+      {
+        "source": "npm_global",
+        "manager": "appdata",
+        "scope": "user",
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "path": "C:\\Users\\alice\\AppData\\Roaming\\npm",
+        "runtime_version": null,
+        "interpreters": [],
+        "collection_status": "complete",
+        "package_count": 2
+      },
+      {
+        "source": "pip_user",
+        "manager": "appdata_python",
+        "scope": "user",
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "path": "C:\\Users\\alice\\AppData\\Roaming\\Python\\Python313\\site-packages",
+        "runtime_version": "3.13",
+        "interpreters": [],
+        "collection_status": "complete",
+        "package_count": 1
+      }
+    ],
+    "issues": [],
+    "packages": [
+      {
+        "source": "npm_global",
+        "manager": "appdata",
+        "scope": "user",
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "name": "@anthropic-ai/claude-code",
+        "version": "2.0.14",
+        "prefix": "C:\\Users\\alice\\AppData\\Roaming\\npm",
+        "runtime_version": null,
+        "interpreter": null,
+        "directory": "@anthropic-ai/claude-code",
+        "metadata_status": "read",
+        "pipx_app": null,
+        "pipx_main": null
+      },
+      {
+        "source": "npm_global",
+        "manager": "appdata",
+        "scope": "user",
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "name": "@openai/codex",
+        "version": "0.40.0",
+        "prefix": "C:\\Users\\alice\\AppData\\Roaming\\npm",
+        "runtime_version": null,
+        "interpreter": null,
+        "directory": "@openai/codex",
+        "metadata_status": "read",
+        "pipx_app": null,
+        "pipx_main": null
+      },
+      {
+        "source": "pip_user",
+        "manager": "appdata_python",
+        "scope": "user",
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "name": "OpenAI",
+        "version": "1.108.0",
+        "prefix": "C:\\Users\\alice\\AppData\\Roaming\\Python\\Python313\\site-packages",
+        "runtime_version": "3.13",
+        "interpreter": null,
+        "directory": "openai-1.108.0.dist-info",
+        "metadata_status": "read",
+        "pipx_app": null,
+        "pipx_main": null
+      }
+    ]
+  },
+  "local_models": {
+    "collection_status": "complete",
+    "truncated": false,
+    "truncation_reason": null,
+    "runtimes": {
+      "ollama": {
+        "collection_status": "complete",
+        "installation_count": 1,
+        "store_count": 1,
+        "model_count": 2,
+        "total_bytes": 7300000000
+      },
+      "lm_studio": {
+        "collection_status": "not_present",
+        "installation_count": 0,
+        "store_count": 0,
+        "model_count": 0,
+        "total_bytes": 0
+      },
+      "llama_cpp": {
+        "collection_status": "not_present",
+        "installation_count": 0,
+        "store_count": 0,
+        "model_count": 0,
+        "total_bytes": 0
+      }
+    },
+    "totals": {
+      "model_count": 2,
+      "total_bytes": 7300000000
+    },
+    "users": [
+      {
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "collection_status": "complete",
+        "runtimes": {
+          "ollama": "complete",
+          "lm_studio": "not_present",
+          "llama_cpp": "not_present"
+        }
+      }
+    ],
+    "installations": [
+      {
+        "runtime": "ollama",
+        "scope": "user",
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "kind": "local_programs",
+        "path": "C:\\Users\\alice\\AppData\\Local\\Programs\\Ollama\\ollama.exe",
+        "version": "0.12.3",
+        "version_source": "pe_version_resource",
+        "identifier": null
+      }
+    ],
+    "stores": [
+      {
+        "runtime": "ollama",
+        "scope": "user",
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "path": "C:\\Users\\alice\\.ollama\\models",
+        "collection_status": "complete",
+        "model_count": 2,
+        "total_bytes": 7300000000
+      }
+    ],
+    "issues": [],
+    "models": [
+      {
+        "runtime": "ollama",
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "store_path": "C:\\Users\\alice\\.ollama\\models",
+        "name": "llama3.2",
+        "tag": "latest",
+        "format": null,
+        "size_bytes": 2019393189,
+        "file_count": null,
+        "size_source": "manifest",
+        "missing_blobs": 0,
+        "metadata_status": "read"
+      },
+      {
+        "runtime": "ollama",
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "store_path": "C:\\Users\\alice\\.ollama\\models",
+        "name": "qwen3",
+        "tag": "8b",
+        "format": null,
+        "size_bytes": 5225388164,
+        "file_count": null,
+        "size_source": "manifest",
+        "missing_blobs": 0,
+        "metadata_status": "read"
+      }
+    ]
+  },
+  "mcp_servers": {
+    "collection_status": "complete",
+    "truncated": false,
+    "truncation_reason": null,
+    "clients": {
+      "claude_desktop": {
+        "collection_status": "complete",
+        "config_count": 1,
+        "server_count": 2
+      },
+      "cursor": {
+        "collection_status": "complete",
+        "config_count": 1,
+        "server_count": 1
+      },
+      "vscode": {
+        "collection_status": "not_present",
+        "config_count": 0,
+        "server_count": 0
+      },
+      "windsurf": {
+        "collection_status": "not_present",
+        "config_count": 0,
+        "server_count": 0
+      },
+      "claude_code": {
+        "collection_status": "not_present",
+        "config_count": 0,
+        "server_count": 0
+      }
+    },
+    "totals": {
+      "config_count": 2,
+      "server_count": 3
+    },
+    "users": [
+      {
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "collection_status": "complete",
+        "clients": {
+          "claude_desktop": "complete",
+          "cursor": "complete",
+          "vscode": "not_present",
+          "windsurf": "not_present",
+          "claude_code": "not_present"
+        }
+      }
+    ],
+    "configs": [
+      {
+        "client": "claude_desktop",
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "path": "C:\\Users\\alice\\AppData\\Roaming\\Claude\\claude_desktop_config.json",
+        "collection_status": "complete",
+        "server_count": 2
+      },
+      {
+        "client": "cursor",
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "path": "C:\\Users\\alice\\.cursor\\mcp.json",
+        "collection_status": "complete",
+        "server_count": 1
+      }
+    ],
+    "issues": [],
+    "servers": [
+      {
+        "client": "claude_desktop",
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "config_path": "C:\\Users\\alice\\AppData\\Roaming\\Claude\\claude_desktop_config.json",
+        "scope": "user",
+        "name": "filesystem",
+        "transport": "stdio",
+        "transport_source": "inferred",
+        "executable": "npx.cmd",
+        "runner": "npx",
+        "package": "@modelcontextprotocol/server-filesystem",
+        "package_status": "extracted",
+        "host": null
+      },
+      {
+        "client": "claude_desktop",
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "config_path": "C:\\Users\\alice\\AppData\\Roaming\\Claude\\claude_desktop_config.json",
+        "scope": "user",
+        "name": "github",
+        "transport": "http",
+        "transport_source": "declared",
+        "executable": null,
+        "runner": null,
+        "package": null,
+        "package_status": "not_applicable",
+        "host": "api.githubcopilot.com"
+      },
+      {
+        "client": "cursor",
+        "user": "CONTOSO\\alice",
+        "user_id": "S-1-5-21-1004336348-1177238915-682003330-1001",
+        "config_path": "C:\\Users\\alice\\.cursor\\mcp.json",
+        "scope": "user",
+        "name": "sentry",
+        "transport": "stdio",
+        "transport_source": "inferred",
+        "executable": "uvx",
+        "runner": "uvx",
+        "package": "mcp-server-sentry",
+        "package_status": "extracted",
+        "host": null
+      }
+    ]
+  }
+}

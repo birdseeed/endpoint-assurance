@@ -1,0 +1,24 @@
+{
+  "label": "jamfsetupmanager",
+  "name": "Setup Manager",
+  "type": "pkg",
+  "app_path": "/Applications/Setup Manager.app",
+  "expected_team_id": "483DWKW443",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/jamf/Setup-Manager/releases/latest"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

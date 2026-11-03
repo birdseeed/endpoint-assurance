@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% from "_macros.html" import device_page_head, cve_confidence_badge %}
+{% block content %}
+{% set cve_visible_limit = 3 %}
+{{ device_page_head(device, tabs, cve_tile, issues_tile) }}
+
+{#- PAT-2164: Vulnerabilities tab - Applications with open findings, then
+    CVE assessment. .grid-two keeps the single full-width track (tighter
+    cell padding) the findings table already needed at ordinary desktop
+    widths - see static/css/portal.css's own .grid-two comment. -#}
+<div class="grid grid-two">
+  <section class="card">
+    <h2>Applications with open findings</h2>
+    {% if apps %}
+    <p class="toolbar-hint">Confidence is how certain we are that the installed version is affected, not severity, exploitability or remediation certainty. This confidence is grouped for each application and version across its listed CVEs, not a per-CVE result. Hover over a confidence label for its definition.</p>
+    <div class="table-scroll">
+    <table class="data-table">
+      <thead><tr><th>Application</th><th>Version</th><th>CVEs</th><th>Max severity</th><th>Confidence</th><th>Fixes at</th></tr></thead>
+      <tbody>
+        {% for a in apps %}
+        <tr>
+          <td>{{ a.app }}</td>
+          <td>{{ a.version }}</td>
+          <td class="mono cve-cell">
+            {%- if a.cve_ids -%}
+            {#- PAT-1954: bounded cell. The first three IDs always show, in the order the platform sent them
+                (per-CVE severity is not available, so no sort is invented); the rest sit in a native
+                disclosure, which works without JavaScript and is keyboard operable. -#}
+            {%- set shown = a.cve_ids[:cve_visible_limit] -%}
+            {%- set hidden = a.cve_ids[cve_visible_limit:] -%}
+            <span class="cve-list">{% for c in shown %}<span class="cve-item"><a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ c }}" target="_blank" rel="noopener noreferrer">{{ c }}</a>{{ ',' if not loop.last or hidden }}</span> {% endfor %}</span>
+            {%- if hidden %}
+            <details class="cve-more">
+              <summary>{{ hidden | length }} more CVE{{ '' if hidden | length == 1 else 's' }}</summary>
+              <span class="cve-list">{% for c in hidden %}<span class="cve-item"><a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ c }}" target="_blank" rel="noopener noreferrer">{{ c }}</a>{{ ',' if not loop.last }}</span> {% endfor %}</span>
+            </details>
+            {%- endif -%}
+            {%- else -%}-{%- endif -%}
+          </td>
+          <td><span class="pill pill-{{ (a.max_severity or 'low') | lower }}">{{ (a.max_severity or '-') | capitalize }}</span></td>
+          <td>{{ cve_confidence_badge(a.match_confidence) }}</td>
+          <td>{{ a.fixed_version }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="empty">No applications on this device have open CVE findings.</p>
+    {% endif %}
+  </section>
+</div>
+
+<section class="card cve-assessment-card" id="cve-assessment" aria-labelledby="cve-assessment-heading">
+  <h2 id="cve-assessment-heading">CVE assessment</h2>
+  <dl class="kv">
+    <dt>Device state</dt>
+    <dd><span class="pill {{ cve_assessment.pill_class }}">{{ cve_assessment.display_label }}</span></dd>
+    <dt>Last matched</dt>
+    <dd class="mono">{% if cve_assessment.last_matched_at %}{{ cve_assessment.last_matched_at | humandate_nowrap(true) }} UTC{% else %}-{% endif %}</dd>
+    <dt>Products assessed / checking / not yet assessed</dt>
+    <dd>{{ cve_assessment.assessed_products }} / {{ cve_assessment.pending_products }} / {{ cve_assessment.not_assessed_products }}</dd>
+  </dl>
+  {% if cve_products %}
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>Product</th><th>Versions</th><th>CVE state</th><th>Last matched</th></tr></thead>
+    <tbody>
+      {% for p in cve_products %}
+      <tr>
+        <td>{{ p.app }}</td>
+        <td class="mono">{{ p.versions | join(', ') if p.versions else '-' }}</td>
+        <td>
+          <span class="pill {{ p.pill_class }}">{{ p.display_label }}</span>
+          {% if p.explanation %}<p class="meta">{{ p.explanation }}</p>{% endif %}
+        </td>
+        <td class="mono">{% if p.last_matched_at %}{{ p.last_matched_at | humandate_nowrap(true) }} UTC{% else %}-{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">No CVE assessment data is available for this device yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

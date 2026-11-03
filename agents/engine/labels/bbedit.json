@@ -1,0 +1,24 @@
+{
+  "label": "bbedit",
+  "name": "BBEdit",
+  "type": "dmg",
+  "app_path": "/Applications/BBEdit.app",
+  "expected_team_id": "W52GZAXT98",
+  "download": {
+    "method": "resolved",
+    "strategy": "sparkle-plist-feed",
+    "source": "https://versioncheck.barebones.com/BBEdit.xml"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true. PAT-1380: was declared strategy sparkle-appcast, the exact same bug PAT-1350 fixed for bbeditpkg -- versioncheck.barebones.com/BBEdit.xml is a legacy Sparkle plist feed (a SUFeedEntries array), not an RSS appcast with <enclosure> elements, so the appcast resolver could never find a match ('Sparkle appcast has no matching HTTPS enclosure') and this label alerted every run once catalogue-scope verification started checking it (PAT-1296). PAT-1350 explicitly left bbedit out of scope and flagged it as the next hit for this same failure -- this is that follow-up. Now resolves via strategy sparkle-plist-feed, same as bbeditpkg. Unlike bbeditpkg, bbedit's declared type was already dmg (matches what the feed's SUFeedEntryDownloadURL actually names), so no type change was needed here. See PAT-1380 writeup for a recommendation on whether bbedit and bbeditpkg (same app, same feed, differ only in installer format) should both continue to exist."
+  }
+}

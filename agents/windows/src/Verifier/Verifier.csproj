@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Patched.Verifier</RootNamespace>
+    <AssemblyName>Patched.Verifier</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- SignedCms (PAT-844 MSIX AppxSignature.p7x parsing). The type lives in the
+         runtime but is type-forwarded and not in the default compile-time reference
+         set for this TFM, so it needs an explicit package reference. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="8.0.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Verifier.Tests exercises ExtractOrganization/ExtractCommonName directly (PAT-823). -->
+    <InternalsVisibleTo Include="Verifier.Tests" />
+  </ItemGroup>
+</Project>

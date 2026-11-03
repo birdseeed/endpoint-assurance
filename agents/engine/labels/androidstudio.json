@@ -1,0 +1,26 @@
+{
+  "label": "androidstudio",
+  "name": "Android Studio",
+  "type": "dmg",
+  "app_path": "/Applications/Android Studio.app",
+  "expected_team_id": "EQHXZ8M8AV",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://developer.android.com/studio#downloads"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [
+    "androidstudio"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

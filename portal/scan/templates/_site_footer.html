@@ -1,0 +1,19 @@
+  {#- PAT-2560: the one site footer for every scan.patched.im page. Its links
+      are the patched.im footer's, in the same order. Edit it here, never in a
+      page template; tests/test_pat1693_footer_favicon_parity.py pins it. -#}
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__logo"><img src="/static/patched-lockup-onslate.svg" width="136" height="28" alt="Patched"></div>
+      <nav class="footer__links" aria-label="Footer">
+        <a href="https://patched.im/#what">What it does</a>
+        <a href="https://patched.im/#price">Price</a>
+        <a href="https://patched.im/#who">Who makes it</a>
+        <a href="https://patched.im/privacy.html">Privacy</a>
+        <a href="https://patched.im/cookies.html">Cookies</a>
+        <a href="https://patched.im/terms">Terms</a>
+        <a href="https://patched.im/refunds">Refunds</a>
+        <a href="mailto:hello@patched.im">Contact</a>
+      </nav>
+      <div class="footer__meta">&copy; <span data-year>2026</span> {{ legal_line }}</div>
+    </div>
+  </footer>

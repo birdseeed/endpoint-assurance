@@ -1,0 +1,24 @@
+{
+  "label": "logitechghub",
+  "name": "Logi G-HUB",
+  "type": "zip",
+  "app_path": "/Applications/Logi G-HUB.app",
+  "expected_team_id": "QED4VVPZWA",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://support.logi.com/api/v2/help_center/en-us/articles.json"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

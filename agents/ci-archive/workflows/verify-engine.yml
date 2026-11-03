@@ -1,0 +1,215 @@
+name: verify-engine
+
+# Runs shellcheck, zsh syntax check, and the PAT-43 fail-closed verification
+# guard unit tests on every PR or push that touches the engine or CI scripts.
+
+on:
+  pull_request:
+    paths:
+      - 'engine/Installomator.sh'
+      - 'engine/assemble.sh'
+      - 'engine/labels/**'
+      - 'endpoint/patched-update.sh'
+      - 'endpoint/patched-fetch-config.sh'
+      - 'endpoint/patched-log-upload.sh'
+      - 'endpoint/verify-agent-config.py'
+      - 'endpoint/agent_config_floor.py'
+      - 'endpoint/agent_config_tenant.py'
+      - 'endpoint/install.sh'
+      - 'endpoint/patched-install.sh'
+      - 'endpoint/patched-legacy-app-execution-gate.py'
+      - 'endpoint/uninstall.sh'
+      - 'endpoint/test-catalogue-retirement-cleanup.sh'
+      - 'tools/pkg-scripts/postinstall'
+      - 'macos/lib/agent_health.sh'
+      - 'endpoint/com.patched.update.plist'
+      - 'endpoint/com.patched.config-poll.plist'
+      - 'endpoint/patched-uninstall.sh'
+      - 'endpoint/test-legacy-app-execution-gate.zsh'
+      - 'endpoint/test-uninstall-path-resolution.zsh'
+      - 'endpoint/test-blocked-version-preflight.zsh'
+      - 'endpoint/test-deploy-result-reconciliation.zsh'
+      - 'endpoint/com.patched.uninstall-check.plist'
+      - 'contracts/update-status.schema.json'
+      - 'contracts/install-status.schema.json'
+      - 'contracts/update-status.sample.json'
+      - 'contracts/uninstall-status.schema.json'
+      - 'contracts/agent-config.schema.json'
+      - 'ci/test_agent_config_schema.py'
+      - 'ci/test-verification-guards.zsh'
+      - 'ci/test-engine-hardening.zsh'
+      - 'ci/test-daemon-exit-mapping.zsh'
+      - 'ci/test-daemon-endtoend.zsh'
+      - 'ci/test-install-daemon-endtoend.zsh'
+      - '.github/workflows/verify-engine.yml'
+      - 'ci/test-fetch-config.zsh'
+      - 'ci/validate-install-types.py'
+      - 'ci/test_validate_install_types.py'
+      - 'ci/test-install-status-contract.py'
+      - 'endpoint/test-verify-agent-config.py'
+      - 'tools/build-bundle.sh'
+  push:
+    branches: [main]
+    paths:
+      - 'engine/Installomator.sh'
+      - 'engine/assemble.sh'
+      - 'engine/labels/**'
+      - 'endpoint/patched-update.sh'
+      - 'endpoint/patched-fetch-config.sh'
+      - 'endpoint/patched-log-upload.sh'
+      - 'endpoint/verify-agent-config.py'
+      - 'endpoint/agent_config_floor.py'
+      - 'endpoint/agent_config_tenant.py'
+      - 'endpoint/install.sh'
+      - 'endpoint/patched-install.sh'
+      - 'endpoint/patched-legacy-app-execution-gate.py'
+      - 'endpoint/uninstall.sh'
+      - 'endpoint/test-catalogue-retirement-cleanup.sh'
+      - 'tools/pkg-scripts/postinstall'
+      - 'macos/lib/agent_health.sh'
+      - 'endpoint/com.patched.update.plist'
+      - 'endpoint/com.patched.config-poll.plist'
+      - 'endpoint/patched-uninstall.sh'
+      - 'endpoint/test-legacy-app-execution-gate.zsh'
+      - 'endpoint/test-uninstall-path-resolution.zsh'
+      - 'endpoint/test-blocked-version-preflight.zsh'
+      - 'endpoint/test-deploy-result-reconciliation.zsh'
+      - 'endpoint/com.patched.uninstall-check.plist'
+      - 'contracts/update-status.schema.json'
+      - 'contracts/install-status.schema.json'
+      - 'contracts/update-status.sample.json'
+      - 'contracts/uninstall-status.schema.json'
+      - 'contracts/agent-config.schema.json'
+      - 'ci/test_agent_config_schema.py'
+      - 'ci/test-verification-guards.zsh'
+      - 'ci/test-engine-hardening.zsh'
+      - 'ci/test-daemon-exit-mapping.zsh'
+      - 'ci/test-daemon-endtoend.zsh'
+      - 'ci/test-install-daemon-endtoend.zsh'
+      - '.github/workflows/verify-engine.yml'
+      - 'ci/test-fetch-config.zsh'
+      - 'ci/validate-install-types.py'
+      - 'ci/test_validate_install_types.py'
+      - 'ci/test-install-status-contract.py'
+      - 'endpoint/test-verify-agent-config.py'
+      - 'tools/build-bundle.sh'
+
+jobs:
+  engine-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install zsh and shellcheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y zsh shellcheck
+
+      - name: shellcheck engine
+        run: shellcheck -S warning engine/Installomator.sh || true
+        # upstream Installomator has many pre-existing shellcheck findings;
+        # we run at warning severity to surface regressions without failing
+        # on inherited issues. A follow-on ticket will enforce error severity.
+
+      - name: zsh syntax check — engine
+        run: zsh -n engine/Installomator.sh
+
+      - name: zsh syntax check — assemble
+        run: zsh -n engine/assemble.sh
+
+      - name: H5 engine hardening gate (canonical engine + assemble.sh fail-closed)
+        run: zsh ci/test-engine-hardening.zsh
+
+      - name: PAT-1294 install-type dispatch gate (every shell type must be installable)
+        run: python3 ci/validate-install-types.py
+
+      - name: PAT-1294 install-type dispatch gate unit tests
+        run: python3 ci/test_validate_install_types.py
+
+      - name: Install jsonschema for schema validation tests
+        run: pip install jsonschema --quiet
+
+      - name: PAT-1481 signed agent-config schema regression test
+        run: python3 ci/test_agent_config_schema.py
+
+      - name: PAT-1364 platform-neutral install outcome contract
+        run: python3 ci/test-install-status-contract.py
+
+      - name: PAT-43 fail-closed verification guard tests
+        run: zsh ci/test-verification-guards.zsh
+
+      - name: PAT-45 daemon exit-code mapping and provenance tests
+        run: zsh ci/test-daemon-exit-mapping.zsh
+
+      - name: PAT-45 daemon end-to-end smoke test (catches runtime errors zsh -n misses)
+        run: zsh ci/test-daemon-endtoend.zsh
+
+      - name: PAT-1673 install daemon end-to-end smoke test (went stale unrun across PAT-1481 and PAT-1236)
+        run: zsh ci/test-install-daemon-endtoend.zsh
+
+      - name: PAT-1238 blocked-version catalogue preflight tests
+        run: zsh endpoint/test-blocked-version-preflight.zsh
+
+      - name: PAT-1365 deploy-result reconciliation tests
+        run: zsh endpoint/test-deploy-result-reconciliation.zsh
+
+      - name: PAT-1481 legacy app-execution containment gate
+        run: zsh endpoint/test-legacy-app-execution-gate.zsh
+
+      - name: PAT-282 verify-agent-config.py unit tests
+        run: python3 endpoint/test-verify-agent-config.py
+
+      - name: PAT-282 fetch-config shell integration tests
+        run: zsh ci/test-fetch-config.zsh
+
+      - name: zsh syntax check — daemon
+        run: zsh -n endpoint/patched-update.sh
+
+      - name: zsh syntax check — fetch-config
+        run: zsh -n endpoint/patched-fetch-config.sh
+
+      - name: zsh syntax check — log-upload
+        run: zsh -n endpoint/patched-log-upload.sh
+
+      - name: zsh syntax check — uninstall engine
+        run: zsh -n endpoint/patched-uninstall.sh
+
+      - name: PAT-806 uninstall path-resolution tests (curated allowlist > known_app_bundles > name-guess)
+        run: zsh endpoint/test-uninstall-path-resolution.zsh
+
+      - name: shellcheck install scripts
+        run: shellcheck -S warning endpoint/install.sh endpoint/uninstall.sh
+
+      - name: bash syntax check — install scripts
+        run: |
+          bash -n endpoint/install.sh
+          bash -n endpoint/uninstall.sh
+
+      - name: PAT-926 uninstall.sh state-cleanup tests
+        run: bash endpoint/test-uninstall-cleanup.sh
+
+      - name: PAT-1505 install.sh legacy-purge tests
+        run: bash endpoint/test-install-legacy-purge.sh
+
+      - name: PAT-2245 catalogue retirement cleanup (install.sh, .pkg postinstall, uninstall.sh, agent health)
+        run: bash endpoint/test-catalogue-retirement-cleanup.sh
+
+      - name: Build bundle
+        run: bash tools/build-bundle.sh
+
+      - name: Assert manifest.sha256 matches fresh shasum
+        run: |
+          cd dist/patched-updater
+          fail=0
+          while IFS= read -r line; do
+            [[ -z "$line" || "$line" == '#'* ]] && continue
+            want="${line%% *}"
+            rel="${line##* }"
+            got=$(shasum -a 256 "$rel" | awk '{print $1}')
+            if [[ "$got" != "$want" ]]; then
+              echo "FAIL: manifest drift for $rel (expected $want, got $got)"
+              fail=1
+            fi
+          done < manifest.sha256
+          [[ $fail -eq 0 ]] && echo "manifest.sha256 matches fresh shasum — no drift."
+          exit $fail

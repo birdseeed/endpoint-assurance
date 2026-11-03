@@ -1,0 +1,24 @@
+{
+  "label": "realvncserver",
+  "name": "RealVNC Server",
+  "type": "pkg",
+  "app_path": "/Applications/RealVNC Server.app",
+  "expected_team_id": "ZNCQ8JEH7X",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://realvnc.zendesk.com/api/v2/help_center/en-us/articles/5835892358941.json"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

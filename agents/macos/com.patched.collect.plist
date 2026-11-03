@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.patched.collect</string>
+
+    <!--
+      Collector LaunchDaemon. Required for the GitHub-Release / standalone
+      install path, where there is no Intune Platform Script to trigger
+      collection. (Under Intune, collection is driven by a recurring Platform
+      Script and this daemon is not installed.)
+
+      Runs once at load (seeds a payload immediately after install / reboot),
+      then daily. The uploader daemon (com.patched.upload) drains the queue.
+    -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Library/Patched/patched-collect.sh</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Daily. The queue + uploader retry interval absorbs missed ticks. -->
+    <key>StartInterval</key>
+    <integer>86400</integer>
+
+    <key>StandardOutPath</key>
+    <string>/var/log/patched-collect.out</string>
+
+    <key>StandardErrorPath</key>
+    <string>/var/log/patched-collect.err</string>
+
+    <!-- Collection shells out to many system tools; keep it off the user's back. -->
+    <key>LowPriorityIO</key>
+    <true/>
+    <key>Nice</key>
+    <integer>10</integer>
+</dict>
+</plist>

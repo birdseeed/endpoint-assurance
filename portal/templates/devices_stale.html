@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_macros.html" import device_table %}
+{% block content %}
+<p class="crumb"><a href="/devices">&larr; Devices</a></p>
+<div class="page-head">
+  <h1>Silent {{ stale_days }}+ days</h1>
+  <p class="meta">{{ stale_count }} of {{ total }} device{{ '' if total == 1 else 's' }} {{ 'has' if stale_count == 1 else 'have' }} not reported for {{ stale_days }}+ days.</p>
+</div>
+
+<div class="toolbar toolbar-devices">
+  <input type="search" id="device-search" class="search" data-table-search="#device-table" placeholder="Search hostname, platform or OS version" aria-label="Search devices">
+  <div class="threshold-picker">
+    <span class="threshold-label">Stale after</span>
+    <nav class="view-tabs" aria-label="Staleness threshold">
+      {% for n in stale_choices %}<a href="/devices?view=stale&amp;stale_days={{ n }}" {% if stale_days == n %}class="tab-active" aria-current="true"{% endif %}>{{ n }}d</a>{% endfor %}
+    </nav>
+  </div>
+  <div class="toolbar-actions">
+    <a class="btn btn-small" href="/devices.pdf?stale_days={{ stale_days }}">Download PDF</a>
+    <a class="btn btn-small" href="/devices.csv?stale_days={{ stale_days }}">Download CSV</a>
+  </div>
+</div>
+
+<div class="card card-table">
+  {{ device_table(devices, stale_days=stale_days) }}
+  {% if not devices %}
+    <p class="empty">No stale devices. Every device in your estate has reported within the last {{ stale_days }} days.</p>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ static_url('js/portal.js') }}"></script>{% endblock %}

@@ -1,0 +1,24 @@
+{
+  "label": "iriunwebcam",
+  "name": "IriunWebcam",
+  "type": "pkg",
+  "app_path": "/Applications/IriunWebcam.app",
+  "expected_team_id": "R84MX49LQY",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://iriun.com"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

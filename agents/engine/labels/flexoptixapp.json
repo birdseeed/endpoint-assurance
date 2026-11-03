@@ -1,0 +1,23 @@
+{
+  "label": "flexoptixapp",
+  "name": "FLEXOPTIX App",
+  "type": "dmg",
+  "app_path": "/Applications/FLEXOPTIX App.app",
+  "expected_team_id": "C5JETSFPHL",
+  "download": {
+    "method": "static",
+    "url": "https://flexbox.reconfigure.me/download/electron/mac/arm64/current"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

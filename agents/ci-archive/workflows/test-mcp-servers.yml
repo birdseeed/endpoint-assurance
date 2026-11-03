@@ -1,0 +1,41 @@
+name: test-mcp-servers
+
+# PAT-2020: the MCP server configuration collector's contract tests,
+# including one planted-secret case per place a config carries credentials
+# (env, arguments, headers, URL query and userinfo), the static guard that
+# fails if the collector gains a process launch or a network client, the
+# privacy guard that fails if it opens anything but the six named config files
+# or its server model reads env or headers, the guard that pins the block on
+# the wire (PAT-2225) while still exercising the off path, and its byte
+# budget. The helper drift guard runs in test-package-managers.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/mcp_servers.sh'
+      - 'macos/lib/test-mcp-servers.zsh'
+      - 'macos/patched-collect.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/agent_health.sh'
+      - 'macos/lib/tcc-deny-hook.zsh'
+      - '.github/workflows/test-mcp-servers.yml'
+  pull_request:
+    paths:
+      - 'macos/lib/mcp_servers.sh'
+      - 'macos/lib/test-mcp-servers.zsh'
+      - 'macos/patched-collect.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/agent_health.sh'
+      - 'macos/lib/tcc-deny-hook.zsh'
+      - '.github/workflows/test-mcp-servers.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh (the collector and its tests are zsh)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run MCP server collector tests
+        run: zsh macos/lib/test-mcp-servers.zsh

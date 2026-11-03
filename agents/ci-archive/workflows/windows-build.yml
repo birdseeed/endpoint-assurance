@@ -1,0 +1,122 @@
+name: windows-build
+
+# Builds and tests the Windows agent on every PR or push to main that touches
+# the Windows source tree or shared contracts. Mirrors the gate that verify-engine
+# provides for the macOS/Installomator side.
+
+on:
+  pull_request:
+    paths:
+      - 'windows/**'
+      - 'ci/test-windows-assurance-build-seam.py'
+      - 'contracts/**'
+      - '.github/workflows/windows-build.yml'
+      - '.github/workflows/windows-agent-release.yml'
+      - '.github/actions/windows-agent-msi/**'
+  push:
+    branches: [main]
+    paths:
+      - 'windows/**'
+      - 'ci/test-windows-assurance-build-seam.py'
+      - 'contracts/**'
+      - '.github/workflows/windows-build.yml'
+      - '.github/workflows/windows-agent-release.yml'
+      - '.github/actions/windows-agent-msi/**'
+  # PAT-1971: lets main be re-run against the current runner image without a new push,
+  # so an image-caused failure can be retried and confirmed without an empty commit.
+  workflow_dispatch: {}
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup .NET (8 + 10)
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Guard Windows assurance-only build seam
+        run: python ci/test-windows-assurance-build-seam.py
+
+      - name: Guard MSI credential properties stay out of install logs
+        # PAT-1755: ENROLLMENT_TOKEN is the only credential the MSI accepts, it must
+        # stay Secure + Hidden, and the custom action that provisions it must keep
+        # HideTarget so no verbose msiexec log records the token.
+        run: python windows/installer/test_hidden_credentials.py
+
+      - name: Guard MSI sets an explicit install-directory ACL
+        # PAT-2399: %ProgramFiles%\Patched and the service executable carry a protected
+        # ACL set by the MSI itself (SYSTEM and Administrators full control, Users read
+        # and execute), instead of whatever Program Files hands down.
+        run: python windows/installer/test_install_directory_acl.py
+
+      - name: Test Windows release version pipeline
+        # Use Git for Windows explicitly. A bare `bash` launched by Python on
+        # windows-latest resolves to the WSL launcher in System32 instead.
+        shell: bash
+        env:
+          PATCHED_RELEASE_TEST_BASH: 'C:\Program Files\Git\bin\bash.exe'
+        run: python windows/installer/test_release_versioning.py
+
+      - name: Restore
+        run: dotnet restore windows/PatchedAgent.sln
+
+      - name: Build
+        run: dotnet build windows/PatchedAgent.sln -c Release --no-restore --nologo
+
+      - name: Build Engine + Service for win-arm64 (unpackaged, framework-dependent)
+        # PAT-344 repro target: Microsoft.Management.Deployment's WinRT projection was
+        # unresolvable for unpackaged .NET 8 apps on ARM64 (`-r win-arm64 --no-self-contained`).
+        # The default solution build above only exercises the implicit x64 RID, so it would
+        # not have caught this. WingetComEngine (the WinRT-dependent file) is gone — replaced
+        # by WingetCliEngine/FallbackPackageEngine, which shell out to winget.exe/choco.exe
+        # instead of using the projection — so this must build clean on ARM64 unpackaged.
+        run: |
+          dotnet build windows/src/Engine/Engine.csproj -c Release -r win-arm64 --no-self-contained --nologo
+          dotnet build windows/src/Service/Service.csproj -c Release -r win-arm64 --no-self-contained --nologo
+
+      - name: Test
+        run: dotnet test windows/PatchedAgent.sln -c Release --no-build --nologo --logger "console;verbosity=normal"
+
+      - name: Authenticode evidence reader against a real signed binary (diagnostic, non-gating)
+        # PAT-1971: the installation-evidence reader must still resolve a genuine Authenticode
+        # signer, but every signed binary available here comes from outside the repository, so
+        # asserting on one inside the gate turned main red with no code regression. It runs here
+        # so the result stays visible on every build, and it cannot fail the build.
+        #
+        # The fixture is dotnet.exe, installed by the setup step above, because it carries an
+        # embedded Authenticode signature. powershell.exe and the rest of System32 are catalog
+        # signed; PAT-1981 taught the reader to look those up in the catalog store, and the
+        # gating Test step above now asserts on them directly. This step stays for the embedded
+        # branch, which still needs a signed binary from outside the repository.
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $fixture = if ($env:DOTNET_ROOT) { Join-Path $env:DOTNET_ROOT 'dotnet.exe' }
+                     else { (Get-Command dotnet -ErrorAction SilentlyContinue).Source }
+          # The test skips when the variable is unset, and a skip prints much like a pass, so
+          # say plainly when the fixture is missing rather than letting the step read as clean.
+          if (-not $fixture -or -not (Test-Path -LiteralPath $fixture)) {
+            Write-Host "::warning::no signed fixture found; the Authenticode reader was not exercised"
+            exit 1
+          }
+          Write-Host "fixture: $fixture"
+          $env:PATCHED_SIGNED_FIXTURE = $fixture
+          $env:PATCHED_SIGNED_FIXTURE_SIGNER = 'Microsoft'
+          dotnet test windows/tests/Service.Tests/Service.Tests.csproj -c Release --no-build --nologo `
+            --logger "console;verbosity=normal" `
+            --filter "FullyQualifiedName~SignedWindowsExecutableProvidesVerifiedSignerAndHash|FullyQualifiedName~TamperedEmbeddedSignatureStaysInvalidRatherThanFallingThroughToTheCatalog"
+
+      - name: Build and test quarantined legacy runners (non-shipping)
+        # This target links the excluded source into its own test assembly. It
+        # must never be added to PatchedAgent.sln or the MSI/release pipeline.
+        run: dotnet test windows/tests/QuarantinedRunners.Tests/QuarantinedRunners.Tests.csproj -c Release --nologo --logger "console;verbosity=normal"

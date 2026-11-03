@@ -1,0 +1,27 @@
+{
+  "label": "adobedigitaleditions",
+  "name": "Adobe Digital Editions",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "root-unique-pkg"
+  },
+  "app_path": "/Applications/Adobe Digital Editions.app",
+  "expected_team_id": "JQ525L2MZD",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.adobe.com/solutions/ebook/digital-editions/download.html"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "PAT-882: download.source was a regex-fragment auto-conversion artifact (https://[^\", captured from the fragment's grep pattern). Replaced with the real vendor downloads page the fragment scrapes (engine/fragments/labels/adobedigitaleditions.sh). Team ID and URL still require human review before setting allowlisted=true."
+  }
+}

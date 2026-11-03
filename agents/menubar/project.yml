@@ -1,0 +1,74 @@
+name: PatchedUpdater
+options:
+  bundleIdPrefix: im.patched.updater
+  createIntermediateGroups: true
+  deploymentTarget:
+    macOS: "13.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+    CODE_SIGN_IDENTITY: ""
+    CODE_SIGNING_REQUIRED: "NO"
+    CODE_SIGNING_ALLOWED: "NO"
+    ENABLE_HARDENED_RUNTIME: "NO"
+    # Local builds retain usable defaults. Release CI overrides both settings
+    # from the validated menubar-vX.Y.Z tag for each archived application.
+    MARKETING_VERSION: "0.1.5"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  PatchedUpdater:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: PatchedUpdater
+        createIntermediateGroups: true
+    resources:
+      # Posture sample fixture — bundled for agent popover previews.
+      - path: ../contracts/posture.sample.macos.json
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: im.patched.updater.menubar
+        INFOPLIST_FILE: PatchedUpdater/Info.plist
+        CODE_SIGN_IDENTITY: ""
+        CODE_SIGNING_REQUIRED: "NO"
+        CODE_SIGNING_ALLOWED: "NO"
+        ENABLE_HARDENED_RUNTIME: "NO"
+        PRODUCT_NAME: PatchedUpdater
+        SWIFT_VERSION: "5.9"
+
+  PatchedUpdaterTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: PatchedUpdaterTests
+        createIntermediateGroups: true
+    dependencies:
+      - target: PatchedUpdater
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: im.patched.updater.tests
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        CODE_SIGN_IDENTITY: ""
+        CODE_SIGNING_REQUIRED: "NO"
+        CODE_SIGNING_ALLOWED: "NO"
+
+schemes:
+  PatchedUpdater:
+    build:
+      targets:
+        PatchedUpdater: all
+        PatchedUpdaterTests: [testing]
+    run:
+      config: Debug
+    test:
+      targets:
+        - PatchedUpdaterTests
+    archive:
+      config: Release

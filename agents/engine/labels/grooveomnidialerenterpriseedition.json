@@ -1,0 +1,24 @@
+{
+  "label": "grooveomnidialerenterpriseedition",
+  "name": "Groove Omnidialer Enterprise Edition",
+  "type": "zip",
+  "app_path": "/Applications/Groove Omnidialer Enterprise Edition.app",
+  "expected_team_id": "ZDYDJ5XPF3",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://groove-dialer.s3.us-west-2.amazonaws.com/electron/enterprise/latest-mac.yml"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

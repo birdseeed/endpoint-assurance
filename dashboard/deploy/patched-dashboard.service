@@ -1,0 +1,111 @@
+[Unit]
+Description=Patched.im Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/patched-dashboard
+ExecStart=/opt/patched-dashboard/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+# Secrets live in a 0640 root:www-data EnvironmentFile so they are not
+# world-readable in the unit (which is mode 0644 in /etc/systemd/system).
+# This line is box-only state that predates PAT-887 and was never captured
+# in this repo file (confirmed via `git log -p` — absent since the original
+# baseline import; same root-cause class as PAT-909's un-version-controlled
+# hook). Restored here (PAT-935) so a repo-based deploy of this file can't
+# silently drop the app's secrets file on restart.
+EnvironmentFile=/etc/patched-dashboard/dashboard.env
+
+# ── Sandboxing (PAT-887) ─────────────────────────────────────────────────
+# Directive-by-directive rationale lives in the PR body. Summary of the
+# app behaviors this must stay compatible with:
+#   - binds 127.0.0.1:8000 (unprivileged TCP, AF_INET)
+#   - outbound HTTPS (AF_INET/AF_INET6): patched-api-01 admin API over
+#     Tailscale, Microsoft Graph sendMail, Cloudflare
+#     Turnstile verify, NVD CVE feed download (codeload.github.com)
+#   - reads/writes dashboard.db (WAL, -wal/-shm sidecars) and, lazily if
+#     missing, nvd.db, both in its state directory (PAT-994, PAT-2307)
+#   - writes generated reports under the state directory's reports/
+#   - reads its own code, templates and static files from WorkingDirectory,
+#     and runs read-only git commands against that checkout
+#   - writes scratch files under /tmp (NVD feed zip, tempfile.mkdtemp)
+#   - shells out to systemctl/journalctl/git (AF_UNIX to the system bus)
+#     and, for the Ops panel firewall-apply trigger, `sudo systemctl
+#     start <unit>` — this is why NoNewPrivileges/CapabilityBoundingSet
+#     are NOT set here, see PR body.
+
+NoNewPrivileges=true
+CapabilityBoundingSet=
+# PAT-931: /api/ops/firewall-apply (PAT-710, main.py ~L7614) used to shell
+# `sudo systemctl start hetzner-firewall-apply(-api).service`, which needed
+# a setuid transition NoNewPrivileges=true blocks outright — that's why both
+# directives were disabled here originally. The trigger now runs plain
+# `systemctl start <unit>` (no sudo) authorized by a polkit rule
+# (deploy/49-patched-ops-fw.rules, installed on the box) scoped to exactly
+# those two units' start verb for www-data — no setuid transition, no
+# elevated capabilities needed, so both directives can stay on.
+
+PrivateTmp=true
+ProtectSystem=strict
+
+# PAT-2307: the code tree (WorkingDirectory, /opt/patched-dashboard) is
+# owned by root with no group or other write, because root runs and
+# installs things out of it on every deploy (deploy/code-tree-guard.sh has
+# the list). This unit no longer grants any write access to it, so under
+# ProtectSystem=strict it is read-only in the service's namespace as well
+# as by ownership. That replaces the old /opt/patched-dashboard grant and
+# its per-path ReadOnlyPaths carve-outs, which left scripts/ (and with it
+# the deploy script root runs) writable by the app.
+#
+# Everything the app writes lives in its state directory instead:
+#   dashboard.db (+ -wal/-shm)  DASHBOARD_DB_PATH in the EnvironmentFile (PAT-994)
+#   nvd.db                      local NVD match cache, created lazily (scanner.py)
+#   reports/                    generated .docx reports (shared.REPORTS_DIR)
+# StateDirectory= has systemd create /var/lib/patched-dashboard, owned by
+# User=/Group= and mode 0750, before it starts the service, and grants
+# write access to it. So the unit can never fail to start on a missing
+# ReadWritePaths= target, which is what a bare ReadWritePaths= grant does
+# when the directory is absent. The directory already exists on
+# patched-prod-01 (www-data:www-data 0750, created for PAT-994), so this
+# changes nothing on disk there.
+StateDirectory=patched-dashboard
+StateDirectoryMode=0750
+Environment=DASHBOARD_STATE_DIR=/var/lib/patched-dashboard
+
+# The deploy_drift check and the provenance record run read-only git
+# commands (rev-parse, status, log) against the checkout. Git refuses to
+# work in a repository owned by another user unless safe.directory names
+# it, and the checkout is root's now. Trust exactly that one path here,
+# rather than relying on a hand-placed ~/.gitconfig. Environment-supplied
+# config is git's "command" scope, which counts as protected
+# configuration, so safe.directory is honoured from it (verified on
+# patched-prod-01's git 2.43 against the bare mirror, 2026-09-30).
+Environment=GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0=/opt/patched-dashboard
+
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+
+RestrictNamespaces=true
+LockPersonality=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallArchitectures=native
+
+# cryptography (x509 parsing only, Rust backend) and uvicorn[standard]'s
+# C extensions (httptools/uvloop) are precompiled, no runtime codegen —
+# should be compatible. Watch first-boot logs regardless (see PR body).
+MemoryDenyWriteExecute=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Patched — macOS Menu Bar Agent</title>
+<style>
+  :root {
+    /* Brand · Pivot-Quiet, native-tuned */
+    --uv: #f5530a;
+    --uv-deep: #c93f04;
+    --uv-wash: rgba(245, 83, 10, 0.08);
+    --slate: #0f1115;
+    --graphite: #2a2d33;
+    --mute: #7d8089;
+    --rule: rgba(15, 17, 21, 0.12);
+    --hair: rgba(15, 17, 21, 0.07);
+    /* Semantic states */
+    --secure: #1e9e57;
+    --secure-dot: #2fbd66;
+    --critical: #e23b2e;
+    --idle: #8a8d94;
+
+    --sys: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+    --mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
+
+    /* Board */
+    --board: #17181b;
+    --board-2: #1f2024;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background:
+      radial-gradient(1200px 700px at 18% -8%, #20222a 0%, transparent 60%),
+      var(--board);
+    color: #e9eaec;
+    font-family: var(--sys);
+    -webkit-font-smoothing: antialiased;
+    padding: 52px 56px 80px;
+  }
+
+  /* ─────────────── Board header ─────────────── */
+  .board-head { max-width: 1280px; margin: 0 auto 44px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--uv); margin-bottom: 16px;
+  }
+  h1.title {
+    font-size: 34px; font-weight: 600; letter-spacing: -0.8px; margin: 0;
+    color: #fff;
+  }
+  .lede {
+    font-size: 15px; line-height: 1.6; color: #a8abb1; max-width: 680px; margin: 14px 0 0;
+  }
+  .legend {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px;
+  }
+  .tagpill {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.04em;
+    color: #c9ccd1; background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    padding: 5px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .tagpill .sw { width: 9px; height: 9px; border-radius: 2px; }
+
+  /* ─────────────── Section ─────────────── */
+  .section { max-width: 1280px; margin: 0 auto; }
+  .section + .section { margin-top: 64px; }
+  .sec-label {
+    display: flex; align-items: baseline; gap: 14px; margin-bottom: 24px;
+    border-top: 1px solid rgba(255,255,255,0.08); padding-top: 18px;
+  }
+  .sec-num { font-family: var(--mono); font-size: 11px; color: var(--mute); letter-spacing: 0.1em; }
+  .sec-name { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: -0.2px; }
+  .sec-note { font-size: 13px; color: #8d9097; margin-left: auto; max-width: 460px; text-align: right; }
+
+  /* ─────────────── Menu bar (icon row) ─────────────── */
+  .barwrap { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .barcard { border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); }
+  .barcard .barcap {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 9px 14px; color: var(--mute);
+    background: #15161a; border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .menubar {
+    height: 26px; display: flex; align-items: center; justify-content: flex-end;
+    padding: 0 12px; gap: 16px;
+  }
+  .menubar.light { background: linear-gradient(120deg, #d9dde3, #c5cad2); }
+  .menubar.dark { background: linear-gradient(120deg, #2a2f38, #1a1d23); }
+  .menubar .grp { display: flex; align-items: center; gap: 15px; }
+  .menubar.light .sysicon { color: #1d2026; }
+  .menubar.dark .sysicon { color: rgba(255,255,255,0.92); }
+  .menubar .clock { font-size: 12px; font-weight: 500; }
+  .menubar.light .clock { color: #1d2026; }
+  .menubar.dark .clock { color: rgba(255,255,255,0.94); }
+  .sysicon svg { display: block; }
+
+  /* The Patched menu-bar item */
+  .mbitem {
+    position: relative; display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 20px; border-radius: 5px;
+  }
+  .mbitem.active.light { background: rgba(0,0,0,0.10); }
+  .mbitem.active.dark { background: rgba(255,255,255,0.16); }
+  .menubar.light .mark-cell { background: #1d2026; }
+  .menubar.dark .mark-cell { background: rgba(255,255,255,0.94); }
+  .mark { display: grid; gap: 1px; }
+  .mark-cell { border-radius: 0.5px; }
+  .badge {
+    position: absolute; top: -1px; right: -1px; width: 7px; height: 7px; border-radius: 50%;
+  }
+  .menubar.light .badge { box-shadow: 0 0 0 1.5px #cfd4db; }
+  .menubar.dark .badge { box-shadow: 0 0 0 1.5px #21252c; }
+  .badge.orange { background: var(--uv); }
+  .badge.red { background: var(--critical); }
+  .badge.grey { background: transparent; border: 1.5px solid var(--idle); box-shadow: none !important; }
+
+  .iconrow { display: flex; align-items: center; gap: 26px; padding: 16px 18px; }
+  .menubar.light .iconrow, .menubar.dark .iconrow { }
+  .istate { display: flex; flex-direction: column; align-items: center; gap: 11px; }
+  .istate .lab { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .barcard.light .lab { color: #5a5f67; }
+  .barcard.dark .lab { color: #9498a0; }
+  .stage { height: 26px; display: flex; align-items: center; padding: 0 8px; border-radius: 6px; }
+  .barcard.light .stage { background: linear-gradient(120deg, #d9dde3, #c5cad2); }
+  .barcard.dark .stage { background: linear-gradient(120deg, #2a2f38, #1a1d23); }
+  .barcard.light .mark-cell { background: #1d2026; }
+  .barcard.dark .mark-cell { background: rgba(255,255,255,0.94); }
+  .barcard.light .badge { box-shadow: 0 0 0 1.5px #cfd4db; }
+  .barcard.dark .badge { box-shadow: 0 0 0 1.5px #21252c; }
+  .scan-anim { animation: breathe 1.3s ease-in-out infinite; }
+  @keyframes breathe { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* ─────────────── Popover frames board ─────────────── */
+  .frames {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(372px, 1fr));
+    gap: 34px 30px; align-items: start;
+  }
+  .frame { display: flex; flex-direction: column; gap: 16px; }
+  .screen {
+    position: relative; height: 520px; border-radius: 12px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.09);
+    background:
+      radial-gradient(120% 80% at 80% -10%, #5b6473 0%, transparent 55%),
+      linear-gradient(160deg, #424b59 0%, #2c323c 60%, #242932 100%);
+  }
+  .screen .mbar {
+    position: absolute; top: 0; left: 0; right: 0; height: 24px; z-index: 3;
+    display: flex; align-items: center; justify-content: flex-end; gap: 14px; padding: 0 12px;
+    background: rgba(18, 20, 24, 0.26); backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+  }
+  .screen .mbar .sysicon { color: rgba(255,255,255,0.88); }
+  .screen .mbar .clock { font-size: 11.5px; font-weight: 500; color: rgba(255,255,255,0.92); }
+  .screen .mbar .mark-cell { background: rgba(255,255,255,0.95); }
+  .screen .mbar .badge { box-shadow: 0 0 0 1.5px rgba(40,44,52,0.9); }
+  .screen .mbar .mbitem.active { background: rgba(255,255,255,0.18); }
+
+  /* The popover */
+  .pop {
+    position: absolute; top: 32px; right: 10px; width: 300px; z-index: 2;
+    background: rgba(244, 244, 246, 0.78);
+    backdrop-filter: blur(50px) saturate(180%);
+    -webkit-backdrop-filter: blur(50px) saturate(180%);
+    border-radius: 12px;
+    box-shadow: 0 0 0 0.5px rgba(0,0,0,0.16), 0 18px 44px -10px rgba(0,0,0,0.45);
+    color: var(--slate);
+    padding: 13px;
+    text-align: left;
+  }
+  .pop::before {
+    content: ""; position: absolute; top: -6px; right: 18px; width: 12px; height: 12px;
+    background: rgba(244, 244, 246, 0.82);
+    backdrop-filter: blur(50px) saturate(180%);
+    -webkit-backdrop-filter: blur(50px) saturate(180%);
+    transform: rotate(45deg);
+    border-top: 0.5px solid rgba(0,0,0,0.12); border-left: 0.5px solid rgba(0,0,0,0.12);
+    border-top-left-radius: 3px;
+  }
+
+  .pophead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; }
+  .brandrow { display: flex; align-items: center; gap: 7px; }
+  .brandrow .wordmark { height: 14px; width: auto; display: block; }
+  .pwlk { display: inline-flex; align-items: center; gap: 0.32em; line-height: 1; color: var(--slate); }
+  .pwlk .pw-mark { height: 0.72em; width: auto; display: block; }
+  .pwlk .pw-word { font-family: var(--sys); font-weight: 600; font-size: 1em; letter-spacing: -0.018em; color: currentColor; }
+  .gear { background: none; border: none; cursor: pointer; color: var(--mute); padding: 2px; display: flex; }
+  .gear:hover { color: var(--graphite); }
+
+  .status { display: flex; gap: 10px; align-items: flex-start; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .dot.secure { background: var(--secure-dot); box-shadow: 0 0 0 3px rgba(47,189,102,0.16); }
+  .dot.orange { background: var(--uv); box-shadow: 0 0 0 3px var(--uv-wash); }
+  .dot.red { background: var(--critical); box-shadow: 0 0 0 3px rgba(226,59,46,0.14); }
+  .dot.grey { background: var(--idle); }
+  .spinner {
+    width: 13px; height: 13px; margin-top: 3px; flex-shrink: 0; border-radius: 50%;
+    border: 2px solid rgba(15,17,21,0.16); border-top-color: var(--graphite);
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .status-title { font-size: 16px; font-weight: 600; letter-spacing: -0.25px; color: var(--slate); line-height: 1.2; }
+  .status-sub { font-size: 12px; color: var(--mute); margin-top: 3px; line-height: 1.4; }
+
+  .compliance {
+    display: flex; align-items: center; gap: 7px; margin-top: 13px;
+    font-family: var(--mono); font-size: 11px; color: var(--graphite); letter-spacing: 0.01em;
+  }
+  .compliance .seal { color: var(--secure); }
+
+  .hr { height: 1px; background: var(--rule); margin: 13px -13px; }
+  .hr.tight { margin: 11px -13px; }
+
+  /* menu-style footer rows */
+  .menurow {
+    display: flex; align-items: center; gap: 9px; height: 30px; padding: 0 9px;
+    margin: 0 -4px; border-radius: 6px; cursor: pointer;
+    font-size: 13px; color: var(--slate); transition: background 120ms;
+  }
+  .menurow:hover { background: rgba(15,17,21,0.06); }
+  .menurow .ic { color: var(--graphite); display: flex; width: 16px; justify-content: center; }
+  .menurow .sc { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--mute); }
+
+  /* update rows */
+  .updlist { display: flex; flex-direction: column; margin-top: 4px; }
+  .updrow { display: flex; gap: 10px; padding: 9px 0; }
+  .updrow + .updrow { border-top: 1px solid var(--hair); }
+  .appicon {
+    width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; color: #fff;
+    box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.25);
+  }
+  .updmain { flex: 1; min-width: 0; }
+  .updname { font-size: 13px; font-weight: 590; color: var(--slate); letter-spacing: -0.1px; }
+  .updver { font-family: var(--mono); font-size: 11px; color: var(--mute); margin-top: 2px; }
+  .updver .arr { color: var(--graphite); }
+  .updver .to { color: var(--secure); }
+  .updchips { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+  .chip {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.01em;
+    padding: 2px 6px; border-radius: 5px; display: inline-flex; align-items: center; gap: 4px;
+  }
+  .chip-cve { color: var(--graphite); background: rgba(15,17,21,0.055); }
+  .chip-verified { color: var(--secure); background: rgba(30,158,87,0.10); }
+  .chip-verified .seal { display: flex; }
+
+  /* finding card (action needed) */
+  .finding {
+    margin-top: 13px; border: 1px solid rgba(226,59,46,0.28); background: rgba(226,59,46,0.05);
+    border-radius: 8px; padding: 11px 12px;
+  }
+  .finding-top { display: flex; align-items: center; gap: 8px; }
+  .sev { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: #fff; background: var(--critical); padding: 2px 6px; border-radius: 4px; }
+  .finding-name { font-size: 13px; font-weight: 600; color: var(--slate); }
+  .finding-body { font-size: 12px; color: var(--graphite); line-height: 1.5; margin-top: 7px; }
+  .finding-meta { font-family: var(--mono); font-size: 10.5px; color: var(--mute); margin-top: 8px; }
+
+  /* progress (scanning) */
+  .progblock { margin-top: 14px; }
+  .progline { font-size: 12.5px; color: var(--graphite); line-height: 1.5; }
+  .track { height: 4px; background: rgba(15,17,21,0.09); border-radius: 2px; overflow: hidden; position: relative; margin-top: 12px; }
+  .track::after {
+    content: ""; position: absolute; top: 0; height: 100%; width: 38%;
+    background: var(--uv); border-radius: 2px; animation: indet 1.25s ease-in-out infinite;
+  }
+  @keyframes indet { 0% { left: -40%; } 100% { left: 102%; } }
+  .track.det::after { display: none; }
+  .track .fill {
+    position: absolute; top: 0; left: 0; height: 100%; background: var(--uv); border-radius: 2px;
+    box-shadow: 0 0 8px rgba(245,83,10,0.35);
+  }
+  .track .fill::after {
+    content: ""; position: absolute; inset: 0; border-radius: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+  @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+  .progmeta { display: flex; justify-content: space-between; margin-top: 9px; font-family: var(--mono); font-size: 10.5px; color: var(--mute); }
+
+  /* note line */
+  .note {
+    display: flex; align-items: center; gap: 7px; margin-top: 12px;
+    font-size: 11.5px; color: var(--mute); line-height: 1.4;
+  }
+  .note .ic { color: var(--mute); display: flex; flex-shrink: 0; }
+
+  /* buttons */
+  .btnrow { display: flex; gap: 8px; margin-top: 14px; }
+  .btn {
+    flex: 1; height: 30px; border-radius: 7px; border: none; cursor: pointer; white-space: nowrap;
+    font-family: var(--sys); font-size: 13px; font-weight: 600; letter-spacing: -0.1px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    transition: background 130ms, color 130ms;
+  }
+  .btn.grow { flex: 2.2; }
+  .btn-primary { background: var(--uv); color: #fff; }
+  .btn-primary:hover { background: var(--uv-deep); }
+  .btn-secondary { background: rgba(15,17,21,0.06); color: var(--slate); }
+  .btn-secondary:hover { background: rgba(15,17,21,0.10); }
+  .btn-slate { background: var(--slate); color: #fff; }
+  .btn-slate:hover { background: var(--graphite); }
+
+  /* frame caption */
+  .cap { display: flex; gap: 13px; align-items: baseline; }
+  .cap .cnum { font-family: var(--mono); font-size: 11px; color: var(--uv); letter-spacing: 0.08em; flex-shrink: 0; }
+  .cap .cmain { }
+  .cap .cname { font-size: 14px; font-weight: 600; color: #fff; letter-spacing: -0.1px; }
+  .cap .cnote { font-size: 12.5px; color: #8d9097; line-height: 1.5; margin-top: 4px; }
+
+  .footer {
+    max-width: 1280px; margin: 72px auto 0; padding-top: 22px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--mono); font-size: 10.5px; color: var(--mute); letter-spacing: 0.08em; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="board-head">
+  <div class="eyebrow">Patched · macOS Agent / MMXXVI</div>
+  <h1 class="title">Menu Bar Agent</h1>
+  <p class="lede">
+    The always-present status surface for Patched — a managed <strong>Scan · Patch · Prove</strong> service.
+    Branded but native: it should read as a first-party Apple menu-bar utility, never a marketing surface.
+    Built as a <span style="font-family:var(--mono);font-size:13px;">MenuBarExtra</span> + popover. Nothing depends on MDM; every substantive action hands off to the Self Service app.
+  </p>
+  <div class="legend">
+    <span class="tagpill"><span class="sw" style="background:var(--uv)"></span>One accent · signal orange</span>
+    <span class="tagpill"><span class="sw" style="background:var(--secure-dot)"></span>Secure</span>
+    <span class="tagpill"><span class="sw" style="background:var(--uv)"></span>Attention</span>
+    <span class="tagpill"><span class="sw" style="background:var(--critical)"></span>Critical</span>
+    <span class="tagpill"><span class="sw" style="background:var(--idle)"></span>Idle / offline</span>
+    <span class="tagpill">System font · SF Mono for evidence</span>
+  </div>
+</div>
+
+<!-- ───────── Icon states ───────── -->
+<div class="section">
+  <div class="sec-label">
+    <span class="sec-num">A</span>
+    <span class="sec-name">Menu bar icon — state by tint &amp; badge</span>
+    <span class="sec-note">A monochrome template of the Patched mark. It adapts to the light or dark menu bar and encodes state with a small badge — never a colour fill of the glyph itself.</span>
+  </div>
+  <div class="barwrap">
+    <div class="barcard light">
+      <div class="barcap">Light menu bar</div>
+      <div class="iconrow" id="row-light"></div>
+    </div>
+    <div class="barcard dark">
+      <div class="barcap">Dark menu bar</div>
+      <div class="iconrow" id="row-dark"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ───────── Popover states ───────── -->
+<div class="section">
+  <div class="sec-label">
+    <span class="sec-num">B</span>
+    <span class="sec-name">Popover — every state</span>
+    <span class="sec-note">~320 pt wide, hung from the menu bar item over live vibrancy. Reassurance by default; evidence (last scan + a compliance figure) is always on screen.</span>
+  </div>
+  <div class="frames" id="frames"></div>
+</div>
+
+<div class="footer">
+  <span>Patched — Menu Bar Agent</span>
+  <span>MenuBarExtra · .window · NSVisualEffectView</span>
+</div>
+
+<script>
+/* ───────────── Pixel-P mark (monochrome template) ───────────── */
+const P_GLYPH = [
+  [1,1,1,1,0],
+  [1,0,0,0,1],
+  [1,0,0,0,1],
+  [1,1,1,1,0],
+  [1,0,0,0,0],
+  [1,0,0,0,0],
+  [1,0,0,0,0],
+];
+function makeMark(cell, gap) {
+  const wrap = document.createElement('div');
+  wrap.className = 'mark';
+  wrap.style.gridTemplateColumns = `repeat(5, ${cell}px)`;
+  wrap.style.gridAutoRows = `${cell}px`;
+  wrap.style.gap = (gap ?? Math.max(1, cell * 0.18)) + 'px';
+  P_GLYPH.forEach(row => row.forEach(c => {
+    const d = document.createElement('div');
+    if (c) d.className = 'mark-cell';
+    d.style.width = cell + 'px'; d.style.height = cell + 'px';
+    wrap.appendChild(d);
+  }));
+  return wrap;
+}
+
+/* ───────────── SF Symbol-style icon set ───────────── */
+const SF = {
+  gear: '<circle cx="12" cy="12" r="3.2"/><path d="M12 4.2v2.2M12 17.6v2.2M19.8 12h-2.2M6.4 12H4.2M17.5 6.5l-1.6 1.6M8.1 15.9l-1.6 1.6M17.5 17.5l-1.6-1.6M8.1 8.1L6.5 6.5"/>',
+  clock: '<circle cx="12" cy="12" r="8.2"/><path d="M12 7.4V12l3.2 1.9"/>',
+  control: '<rect x="3.5" y="6.5" width="17" height="11" rx="5.5"/><circle cx="9" cy="12" r="2.4" fill="currentColor" stroke="none"/>',
+  wifi: '<path d="M4.5 9.3c4.4-3.3 10.6-3.3 15 0M7.2 12.4c2.8-2.1 6.8-2.1 9.6 0M9.8 15.4c1.3-1 3.1-1 4.4 0"/><circle cx="12" cy="18" r="0.9" fill="currentColor" stroke="none"/>',
+  battery: '<rect x="3" y="8.5" width="15" height="7" rx="2"/><rect x="4.7" y="10.2" width="9" height="3.6" rx="1" fill="currentColor" stroke="none"/><path d="M19.6 11v2"/>',
+  search: '<circle cx="11" cy="11" r="6"/><path d="M15.5 15.5L20 20"/>',
+  shieldcheck: '<path d="M12 3.2l7 2.4v5.1c0 4.4-2.9 7.6-7 8.9-4.1-1.3-7-4.5-7-8.9V5.6l7-2.4z"/><path d="M8.7 11.7l2.3 2.3 4.3-4.5"/>',
+  refresh: '<path d="M19 12a7 7 0 1 1-2.1-5"/><path d="M19.2 5v3.4h-3.4"/>',
+  open: '<path d="M13.5 5H6.2A1.2 1.2 0 0 0 5 6.2v11.6A1.2 1.2 0 0 0 6.2 19h11.6a1.2 1.2 0 0 0 1.2-1.2V10.5"/><path d="M14 5h5v5M19 5l-7.5 7.5"/>',
+  power: '<path d="M12 3.5v8"/><path d="M7.7 6.6a7 7 0 1 0 8.6 0"/>',
+  lock: '<rect x="5.2" y="10.8" width="13.6" height="8.4" rx="2"/><path d="M7.6 10.8V8.2a4.4 4.4 0 0 1 8.8 0v2.6"/>',
+  seal: '<path d="M12 3l2.1 1.6 2.6-.3 1 2.4 2.3 1.2-.6 2.6 1.3 2.3-1.8 1.9.2 2.6-2.5.7-1.2 2.3-2.6-.5L12 21l-2.1-1.3-2.6.5-1.2-2.3-2.5-.7.2-2.6L2 12.1 3.3 9.8l-.6-2.6L5 6l1-2.4 2.6.3z"/><path d="M9.2 12l2 2 3.6-3.8"/>',
+  warning: '<path d="M12 4.2l8.4 14.6H3.6L12 4.2z"/><path d="M12 10v4.2"/><circle cx="12" cy="16.8" r="0.5" fill="currentColor" stroke="none"/>',
+  wifislash: '<path d="M4.5 9.3c1.4-1 3-1.8 4.6-2.2M14 7.2c2 .4 3.9 1.3 5.5 2.5M7.2 12.4c1-.7 2.1-1.2 3.3-1.5M16.8 12.4c-.4-.3-.9-.6-1.3-.8M9.8 15.4c1.3-1 3.1-1 4.4 0"/><circle cx="12" cy="18" r="0.9" fill="currentColor" stroke="none"/><path d="M4 4l16 16"/>',
+  cancel: '<circle cx="12" cy="12" r="8.2"/><path d="M9 9l6 6M15 9l-6 6"/>',
+  arrowright: '<path d="M5 12h13M13 6.5l5.5 5.5L13 17.5"/>',
+  remind: '<path d="M18.5 9.5a6.5 6.5 0 1 0-1.2 6"/><path d="M18.8 4.5v4.2h-4.2"/><path d="M12 9v3.4l2.4 1.4"/>',
+};
+function sf(name, size = 16, stroke = 1.7) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">${SF[name] || ''}</svg>`;
+}
+
+/* ───────────── Menu bar (in-frame) ───────────── */
+function frameMenuBar(state) {
+  const badge = { secure: '', updates: 'orange', action: 'red', scanning: 'scan', offline: 'grey' }[state];
+  const bar = document.createElement('div');
+  bar.className = 'mbar';
+  bar.innerHTML = `
+    <span class="sysicon">${sf('battery', 18, 1.5)}</span>
+    <span class="sysicon">${sf('wifi', 15, 1.6)}</span>
+    <span class="sysicon">${sf('search', 14, 1.7)}</span>
+    <span class="sysicon">${sf('control', 18, 1.6)}</span>`;
+  const item = document.createElement('span');
+  item.className = 'mbitem active';
+  const mk = makeMark(2.1, 1.1);
+  if (badge === 'scan') mk.classList.add('scan-anim');
+  item.appendChild(mk);
+  if (badge && badge !== 'scan') {
+    const b = document.createElement('span');
+    b.className = 'badge ' + (badge === 'grey' ? 'grey' : badge);
+    item.appendChild(b);
+  }
+  // insert Patched item before control center cluster (to the left of clock)
+  bar.appendChild(item);
+  const clock = document.createElement('span');
+  clock.className = 'clock';
+  clock.textContent = 'Wed 9:41';
+  bar.appendChild(clock);
+  return bar;
+}
+
+/* ───────────── Popover bodies ───────────── */
+function pwMarkSVG() {
+  const ink = 'fill="currentColor"', cells = [
+    [0,0,ink],[10,0,ink],[20,0,ink],[30,0,ink],[0,10,ink],[30,10,ink],[0,20,ink],[30,20,ink],
+    [0,30,ink],[10,30,ink],[20,30,ink],[30,30,'fill="#f5530a"'],[0,40,ink],[0,50,ink],
+  ].map(([x,y,f]) => `<rect x="${x}" y="${y}" width="10" height="10" rx="1.3" ${f}/>`).join('');
+  return `<svg class="pw-mark" viewBox="0 0 40 60" fill="none" aria-hidden="true">${cells}</svg>`;
+}
+function pwLockup(px) {
+  return `<span class="pwlk" style="font-size:${px}px"><span class="pw-word">Patched</span></span>`;
+}
+function popHead() {
+  return `<div class="pophead">
+    ${pwLockup(15)}
+    <button class="gear" aria-label="Settings">${sf('gear', 15, 1.6)}</button>
+  </div>`;
+}
+
+const POPS = {
+  secure: () => `
+    ${popHead()}
+    <div class="status">
+      <span class="dot secure"></span>
+      <div><div class="status-title">Protected</div>
+        <div class="status-sub">Last scanned 2 minutes ago · continuous</div></div>
+    </div>
+    <div class="compliance"><span class="seal">${sf('seal', 14, 1.6)}</span>CIS 142 / 142 · No known CVEs</div>
+    <div class="hr"></div>
+    <div class="menurow"><span class="ic">${sf('refresh', 15, 1.7)}</span>Scan now<span class="sc">⌘R</span></div>
+    <div class="menurow"><span class="ic">${sf('open', 15, 1.6)}</span>Open Patched</div>
+    <div class="menurow"><span class="ic">${sf('power', 15, 1.7)}</span>Quit<span class="sc">⌘Q</span></div>`,
+
+  updates: () => `
+    ${popHead()}
+    <div class="status">
+      <span class="dot orange"></span>
+      <div><div class="status-title">3 updates ready</div>
+        <div class="status-sub">Recommended — you choose when to install</div></div>
+    </div>
+    <div class="hr tight"></div>
+    <div class="updlist">
+      ${updRow('Sa', '#1a73e8', 'Safari', '17.4', '17.5', 'CVE-2026-1842', 'Apple')}
+      ${updRow('Ch', '#11a36b', 'Google Chrome', '125.0', '126.0', 'CVE-2026-2011', 'Google')}
+      ${updRow('Zo', '#2b6cff', 'Zoom', '6.0.10', '6.1.2', 'CVE-2026-1990', 'Zoom')}
+    </div>
+    <div class="note"><span class="ic">${sf('lock', 13, 1.7)}</span>Nothing installs without your approval.</div>
+    <div class="btnrow">
+      <button class="btn btn-primary grow">Review in Patched ${sf('arrowright', 14, 1.9)}</button>
+      <button class="btn btn-secondary">Later</button>
+    </div>`,
+
+  action: () => `
+    ${popHead()}
+    <div class="status">
+      <span class="dot red"></span>
+      <div><div class="status-title">Action needed</div>
+        <div class="status-sub">1 critical finding on this device</div></div>
+    </div>
+    <div class="finding">
+      <div class="finding-top"><span class="sev">Critical</span><span class="finding-name">Disk encryption is off</span></div>
+      <div class="finding-body">This device’s drive isn’t encrypted. If it’s lost or stolen, your files could be read. Turn on encryption to close this gap.</div>
+      <div class="finding-meta">Benchmark · CIS 2.5.1 · Full-disk encryption</div>
+    </div>
+    <div class="btnrow">
+      <button class="btn btn-primary">Resolve in Patched ${sf('arrowright', 14, 1.9)}</button>
+    </div>
+    <div class="note"><span class="ic">${sf('shieldcheck', 13, 1.7)}</span>You stay in control — Patched guides the fix, nothing is forced.</div>`,
+
+  scanning: () => `
+    ${popHead()}
+    <div class="status">
+      <span class="spinner"></span>
+      <div><div class="status-title">Scanning…</div>
+        <div class="status-sub">Checking against live CVE data &amp; CIS benchmarks</div></div>
+    </div>
+    <div class="progblock">
+      <div class="progline">Comparing app 118 of 247 against the National Vulnerability Database.</div>
+      <div class="track det"><span class="fill" style="width:48%"></span></div>
+      <div class="progmeta"><span>118 / 247 apps · 142 checks</span><span>48%</span></div>
+    </div>
+    <div class="hr"></div>
+    <div class="menurow" style="color:var(--graphite)"><span class="ic">${sf('cancel', 15, 1.7)}</span>Cancel scan</div>`,
+
+  offline: () => `
+    ${popHead()}
+    <div class="status">
+      <span class="dot grey"></span>
+      <div><div class="status-title">Can’t reach Patched</div>
+        <div class="status-sub">Last scan 6 days ago</div></div>
+    </div>
+    <div class="note" style="margin-top:13px; color:var(--graphite); font-size:12.5px;">
+      <span class="ic">${sf('wifislash', 15, 1.7)}</span>
+      Your protection status may be out of date. Check your connection and try again.
+    </div>
+    <div class="compliance" style="color:var(--mute)"><span style="color:var(--mute)">${sf('clock', 13, 1.6)}</span>Showing last known result · CIS 141 / 142</div>
+    <div class="btnrow">
+      <button class="btn btn-slate">${sf('refresh', 14, 1.9)} Retry now</button>
+      <button class="btn btn-secondary">Open Patched</button>
+    </div>`,
+};
+
+function updRow(letter, color, name, from, to, cve, vendor) {
+  return `<div class="updrow">
+    <span class="appicon" style="background:${color}">${letter}</span>
+    <div class="updmain">
+      <div class="updname">${name}</div>
+      <div class="updver">${from} <span class="arr">→</span> <span class="to">${to}</span></div>
+      <div class="updchips">
+        <span class="chip chip-cve">${cve}</span>
+        <span class="chip chip-verified"><span class="seal">${sf('seal', 11, 1.7)}</span>Verified · ${vendor}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ───────────── Frame meta ───────────── */
+const FRAMES = [
+  ['01', 'secure',   'Secure',            'Quiet and finished, not empty. A green status line plus the evidence that backs it: last-scan time and a compliance figure. Footer actions stay understated.'],
+  ['02', 'updates',  'Updates available', 'Nudge-style. Each update shows current → target in SF Mono, the CVE it closes, and a verified-source provenance chip. Primary CTA opens Self Service; nothing is forced.'],
+  ['03', 'action',   'Action needed',     'Critical finding in plain language with the benchmark cited as evidence. One CTA hands off to Self Service; copy reassures the user stays in control.'],
+  ['04', 'scanning', 'Scanning',          'Determinate progress with a live count (118 / 247). Names what it checks against (NVD · CIS) and stays cancellable.'],
+  ['05', 'offline',  'Offline / stale',   'Muted. Admits it couldn’t reach Patched, dates the last result, and still shows the last known compliance figure. Retry is neutral, not alarming.'],
+];
+
+/* ───────────── Render ───────────── */
+function renderIconRow(container, theme) {
+  const states = [
+    ['Secure', ''], ['Attention', 'orange'], ['Critical', 'red'], ['Scanning', 'scan'], ['Offline', 'grey'],
+  ];
+  states.forEach(([label, badge]) => {
+    const cell = document.createElement('div');
+    cell.className = 'istate';
+    const stage = document.createElement('div');
+    stage.className = 'stage';
+    const item = document.createElement('span');
+    item.className = 'mbitem';
+    const mk = makeMark(2.4, 1.3);
+    if (badge === 'scan') mk.classList.add('scan-anim');
+    item.appendChild(mk);
+    if (badge && badge !== 'scan') {
+      const b = document.createElement('span');
+      b.className = 'badge ' + badge;
+      item.appendChild(b);
+    }
+    stage.appendChild(item);
+    const lab = document.createElement('span');
+    lab.className = 'lab';
+    lab.textContent = label;
+    cell.appendChild(stage);
+    cell.appendChild(lab);
+    container.appendChild(cell);
+  });
+}
+renderIconRow(document.getElementById('row-light'), 'light');
+renderIconRow(document.getElementById('row-dark'), 'dark');
+
+const framesEl = document.getElementById('frames');
+FRAMES.forEach(([num, key, name, note]) => {
+  const frame = document.createElement('div');
+  frame.className = 'frame';
+  const screen = document.createElement('div');
+  screen.className = 'screen';
+  screen.appendChild(frameMenuBar(key));
+  const pop = document.createElement('div');
+  pop.className = 'pop';
+  pop.innerHTML = POPS[key]();
+  screen.appendChild(pop);
+  const cap = document.createElement('div');
+  cap.className = 'cap';
+  cap.innerHTML = `<span class="cnum">${num}</span><div class="cmain"><div class="cname">${name}</div><div class="cnote">${note}</div></div>`;
+  frame.appendChild(screen);
+  frame.appendChild(cap);
+  framesEl.appendChild(frame);
+});
+
+/* fill brand marks in popover headers */
+document.querySelectorAll('[data-mark="brand"]').forEach(el => el.appendChild(makeMark(2.2, 1.1)));
+</script>
+</body>
+</html>

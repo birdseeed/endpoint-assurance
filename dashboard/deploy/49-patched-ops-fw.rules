@@ -1,0 +1,38 @@
+// /etc/polkit-1/rules.d/49-patched-ops-fw.rules
+//
+// PAT-931: authorize the dashboard process (www-data) to start exactly the
+// two Hetzner firewall-apply oneshot units over D-Bus, without a setuid
+// transition — replaces deploy/sudoers-patched-ops-fw (deleted) so
+// patched-dashboard.service can run with NoNewPrivileges=true.
+//
+// Constraints (mirrors the sudoers-era scope exactly):
+//   - Only the "start" verb — not stop/restart/enable/disable/anything else.
+//   - Only these two exact unit names — no wildcards.
+//   - Only for the www-data user (the dashboard's systemd User=).
+//   - The units themselves still run as root (User=root in the .service);
+//     this rule only lets www-data initiate the start, not become root.
+//   - Paired with the dashboard's own owner-only + confirm + audit-log guard
+//     (POST /api/ops/firewall-apply requires CF-Access session + owner role).
+//
+// Install:
+//   install -m 0644 -o root -g root deploy/49-patched-ops-fw.rules \
+//       /etc/polkit-1/rules.d/49-patched-ops-fw.rules
+//   rm -f /etc/sudoers.d/patched-ops-fw   # superseded, no longer used
+//   systemctl restart patched-dashboard   # picks up NoNewPrivileges=true
+//
+// polkitd auto-reloads rules.d on change; no polkit restart needed. Verify:
+//   sudo -u www-data systemctl start hetzner-firewall-apply.service   # ok
+//   sudo -u www-data systemctl start hetzner-firewall-apply-api.service  # ok
+//   sudo -u www-data systemctl start ssh.service   # must be denied
+//   sudo -u www-data systemctl stop hetzner-firewall-apply.service   # must be denied
+//   systemd-analyze security patched-dashboard   # score should improve
+
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.systemd1.manage-units" &&
+        action.lookup("verb") == "start" &&
+        (action.lookup("unit") == "hetzner-firewall-apply.service" ||
+         action.lookup("unit") == "hetzner-firewall-apply-api.service") &&
+        subject.user == "www-data") {
+        return polkit.Result.YES;
+    }
+});

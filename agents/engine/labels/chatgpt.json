@@ -1,0 +1,23 @@
+{
+  "label": "chatgpt",
+  "name": "ChatGPT",
+  "type": "dmg",
+  "app_path": "/Applications/ChatGPT.app",
+  "expected_team_id": "2DC432GLL2",
+  "download": {
+    "method": "static",
+    "url": "https://persistent.oaistatic.com/sidekick/public/ChatGPT_Desktop_public_latest.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

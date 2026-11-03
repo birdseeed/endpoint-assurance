@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <h1>Feedback</h1>
+  <p class="meta">Feedback you have sent to Patched and its current status.</p>
+</div>
+
+{% if feedback_sent %}
+<div class="feedback-success feedback-sent-notice" role="status">
+  <h2>Feedback sent</h2>
+  <p>Thank you. It is listed below with its reference, and its status updates here as Patched works on it.</p>
+</div>
+{% endif %}
+
+{% if feedback_rows %}
+{% include "_feedback_list.html" %}
+{% else %}
+<section class="card feedback-empty">
+  <h2>No feedback sent yet</h2>
+  <p>Use Feedback in the header whenever you want to suggest a feature or a design improvement. For a problem or question, use <a href="/support">Support</a>.</p>
+</section>
+{% endif %}
+{% endblock %}

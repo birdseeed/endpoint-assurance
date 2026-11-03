@@ -1,0 +1,86 @@
+[Unit]
+Description=Patched maintenance facts snapshot — portal-01
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/opt/patched-portal
+ExecStart=/opt/patched-portal/deploy/patched-maintenance-facts.sh
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=patched-maintenance-facts
+
+# Read-only queries (apt/dpkg/pro/systemctl/uname) plus two writes: its own
+# output file, and Ubuntu Pro's own lock/log files. `pro status` writes to
+# /var/lib/ubuntu-advantage, /var/log/ubuntu-advantage.log and
+# /run/ubuntu-advantage even for a read-only status query; under
+# ProtectSystem=strict those are otherwise read-only and `pro status`
+# crashes with an unhandled OSError (caught by the script's `2>/dev/null`,
+# producing empty stdout, which the script correctly-but-wrongly
+# interpreted as "not attached"). Hit in production on the sibling api-01
+# unit, 2026-08-07 — fixed here preemptively before this box hits it too.
+# Do not trim these three ubuntu-advantage paths as "unused" -- they are
+# the fix for that bug.
+# Root is required for pro status / apt-cache / systemctl introspection, so
+# this doesn't drop to a dedicated user like patched-portal.service;
+# ReadWritePaths + ProtectSystem=strict instead bound the specific paths
+# this unit may write to.
+#
+# PAT-1439: replaces the earlier StateDirectory=patched approach (which
+# relied on systemd auto-creating/managing /var/lib/patched) with an
+# explicit ReadWritePaths entry for it, matching prod-01 and api-01
+# byte-for-byte -- this full directive set was proven empirically against a
+# temporary probe unit on all three boxes: Result=success, exit 0, correct
+# output including pro_attached: true, output file 0644 root:root, and
+# `systemd-analyze security` = 2.0 OK on every box. Copy it verbatim rather
+# than re-deriving CapabilityBoundingSet or ReadWritePaths per box.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+# StateDirectory, not a ReadWritePaths entry, for /var/lib/patched
+# (PAT-1439). The two are not equivalent: StateDirectory CREATES the
+# directory at the mode below if it is absent, whereas ReadWritePaths
+# requires it to already exist and fails the whole unit with
+# status=226/NAMESPACE if it does not -- verified on portal-01, not
+# assumed. portal-01's unit already used StateDirectory before this
+# ticket; making all three uniform by dropping it would have traded a
+# self-healing mechanism for a box-state assumption, on a fresh box
+# build or if anything ever removed the directory. So the uniformity
+# goes the other way: all three now use StateDirectory, and
+# ReadWritePaths carries only the ubuntu-advantage paths below.
+# 0755 matters on prod-01 specifically: the dashboard reads
+# maintenance.json as www-data, so the directory must stay traversable.
+StateDirectory=patched
+StateDirectoryMode=0755
+ReadWritePaths=/var/lib/ubuntu-advantage /var/log/ubuntu-advantage.log /run/ubuntu-advantage
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+ProcSubset=pid
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+# Empty, not CAP_DAC_READ_SEARCH (PAT-1439). The floor doc requires this
+# set be derived empirically -- start minimal, widen only on an observed
+# failure -- so it was: an earlier candidate granted CAP_DAC_READ_SEARCH,
+# and dropping it to nothing was then tested on all three boxes and made
+# no difference to the output (same key count, pro_attached still true)
+# while improving the exposure score from 2.0 to 1.8. The script runs as
+# root and every file it reads is root-owned, so owner DAC permits the
+# read with no capability at all. Do not add one back without a run that
+# actually fails without it.
+CapabilityBoundingSet=

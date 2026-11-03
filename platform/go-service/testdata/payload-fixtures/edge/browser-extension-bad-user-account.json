@@ -1,0 +1,80 @@
+{
+  "_comment": "PAT-871 regression fixture. One browser_extensions entry has an empty user_account (schema-valid: the key is present, just an empty string). The whole device snapshot -- device, apps, and the two well-formed extensions -- must still extract; only the malformed entry is skipped.",
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.9.0",
+  "tenant_id": "44444444-4444-4444-4444-444444444444",
+  "collected_at": "2026-07-14T10:00:00Z",
+  "device": {
+    "serial": "C00000000871",
+    "hw_uuid": "88888888-AAAA-BBBB-CCCC-DDDDDDDDDDDD",
+    "hostname": "pat871-test-host",
+    "hw_model": "Mac14,2",
+    "arch": "arm64",
+    "last_boot": "2026-07-14T08:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M2",
+    "cpu_cores": 8,
+    "ram_gb": 8,
+    "disk_total_gb": 256.0,
+    "disk_free_gb": 128.0
+  },
+  "os": {
+    "name": "macOS",
+    "version": "15.0",
+    "build": "24A335"
+  },
+  "compliance": {},
+  "security_tools": [],
+  "system_extensions": [],
+  "background_items": [],
+  "icloud": {
+    "signed_in": "Unknown"
+  },
+  "apps": [
+    {
+      "name": "Safari",
+      "version": "18.4",
+      "bundle_id": "com.apple.Safari"
+    }
+  ],
+  "browser_extensions": [
+    {
+      "browser": "chrome",
+      "profile": "Default",
+      "user_account": "alice",
+      "extension_id": "cjpalhdlnbpafiamejdnhcphjbkeiagm",
+      "name": "uBlock Origin",
+      "version": "1.57.2",
+      "enabled": true,
+      "permissions": ["storage", "tabs"],
+      "host_permissions": ["<all_urls>"],
+      "from_webstore": true
+    },
+    {
+      "browser": "chrome",
+      "profile": "Default",
+      "user_account": "",
+      "extension_id": "gighmmpiobklfepjocnamgkkbiglidom",
+      "name": "Malformed Extension",
+      "version": "5.21.0",
+      "enabled": false,
+      "permissions": ["webRequest"],
+      "host_permissions": ["*://*/*"],
+      "from_webstore": true
+    },
+    {
+      "browser": "firefox",
+      "profile": "default-release",
+      "user_account": "alice",
+      "extension_id": "uBlock0@raymondhill.net",
+      "name": "uBlock Origin",
+      "version": "1.57.0",
+      "enabled": true,
+      "permissions": ["storage"],
+      "host_permissions": ["<all_urls>"],
+      "from_webstore": true
+    }
+  ]
+}

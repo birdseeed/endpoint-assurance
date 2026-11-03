@@ -1,0 +1,33 @@
+{
+  "label": "lcadvancedvpnclient",
+  "name": "LANCOM Advanced VPN Client",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "relative-path-glob",
+    "patterns": [
+      "LANCOM Advanced VPN Client.pkg"
+    ]
+  },
+  "app_path": "/Applications/LANCOM Advanced VPN Client.app",
+  "expected_team_id": "LL3KBL2M3A",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://ftp.lancom.de/LANCOM-Releases/LC-VPN-Client/"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "LANCOM Advanced VPN Client",
+    "ncprwsmac"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

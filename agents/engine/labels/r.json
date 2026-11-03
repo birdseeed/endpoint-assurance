@@ -1,0 +1,24 @@
+{
+  "label": "r",
+  "name": "R",
+  "type": "pkg",
+  "app_path": "/Applications/R.app",
+  "expected_team_id": "VZLD955F6P",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://cloud.r-project.org/bin/macosx/"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

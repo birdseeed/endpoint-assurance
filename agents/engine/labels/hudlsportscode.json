@@ -1,0 +1,24 @@
+{
+  "label": "hudlsportscode",
+  "name": "Hudl Sportscode",
+  "type": "appindmginzip",
+  "app_path": "/Applications/Hudl Sportscode.app",
+  "expected_team_id": "4M6T2C723P",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.hudl.com/downloads/elite"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

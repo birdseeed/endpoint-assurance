@@ -1,0 +1,27 @@
+{
+  "label": "morisawadesktopmanager",
+  "name": "Morisawa Desktop Manager",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "root-unique-pkg"
+  },
+  "app_path": "/Applications/Morisawa Desktop Manager.app",
+  "expected_team_id": "662PVPVA3N",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://morisawafonts.com/resources/dm/mf_updates.mac.json"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

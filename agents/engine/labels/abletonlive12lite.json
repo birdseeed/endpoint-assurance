@@ -1,0 +1,26 @@
+{
+  "label": "abletonlive12lite",
+  "name": "Ableton Live 12 Lite",
+  "type": "dmg",
+  "app_path": "/Applications/Ableton Live 12 Lite.app",
+  "expected_team_id": "MWR434WD94",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.ableton.com/en/release-notes/live-12/"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "Live"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "label": "proctortrack",
+  "name": "Proctortrack",
+  "type": "zip",
+  "app_path": "/Applications/Proctortrack.app",
+  "expected_team_id": "SNHZD6TJE6",
+  "download": {
+    "method": "static",
+    "url": "https://storage.googleapis.com/verificientstatic/ProctortrackApp/Production/Proctortrack.zip"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

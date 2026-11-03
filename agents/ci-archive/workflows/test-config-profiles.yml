@@ -1,0 +1,22 @@
+name: test-config-profiles
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/config_profiles.sh'
+      - 'macos/lib/test-config-profiles.zsh'
+  pull_request:
+    paths:
+      - 'macos/lib/config_profiles.sh'
+      - 'macos/lib/test-config-profiles.zsh'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh (configuration profiles collector tests exercise a real zsh script)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run configuration profiles collector tests
+        run: zsh macos/lib/test-config-profiles.zsh

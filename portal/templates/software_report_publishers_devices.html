@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="crumb"><a href="/reports">Reports</a> / <a href="{{ report_url }}">Software publishers</a> / Devices</p>
+<div class="page-head">
+  <div class="page-head__title">
+    <h1>Software publishers &middot; devices</h1>
+    <a class="btn btn-small" href="{{ pdf_url }}">Download PDF</a> <a class="btn btn-small" href="{{ csv_url }}">Download CSV</a>
+  </div>
+  <p class="meta">{% if product_key or device_id %}Installations matching this filter, one row per device.{% else %}Every installation, one row per device.{% endif %}</p>
+</div>
+
+{% if not basis.complete %}
+<div class="notice">Coverage is partial. {{ basis.statement }}</div>
+{% endif %}
+
+<div class="card card-table">
+  {% if rows %}
+  <div class="table-scroll">
+  <table class="data-table table-stack" id="pub-devices-table">
+    <colgroup>
+      <col><col><col class="col-secondary"><col><col><col>
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Device</th><th>Product</th><th class="col-secondary">Platform</th>
+        <th>Publisher</th><th>Trusted</th><th>Version</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td data-label="Device">
+          {% if r.device_id %}<a class="cell-anywrap" href="/devices/{{ r.device_id }}">{{ r.hostname }}</a>{% else %}{{ r.hostname }}{% endif %}
+          {% if r.device_stale %}<span class="cell-subtle">Stale</span>{% endif %}
+        </td>
+        <td data-label="Product">{{ r.name }}{% if r.identifier %}<span class="cell-subtle mono">{{ r.identifier }}</span>{% endif %}</td>
+        <td class="col-secondary" data-label="Platform">{{ r.platform | platform_display if r.platform else '-' }}</td>
+        <td data-label="Publisher">
+          {% if r.group == 'verified' %}
+          <span class="mono">{{ r.publisher }}</span><span class="cell-subtle">{{ r.identity_basis_label }}</span>
+          {% else %}
+          {{ r.group_label }}<span class="cell-subtle">{{ pub_explanations[r.group] }}</span>
+          {% endif %}
+        </td>
+        <td data-label="Trusted">{% if r.group == 'verified' %}<span class="pill {{ 'pill-ok' if r.trusted else 'pill-muted' }}">{{ 'Trusted' if r.trusted else 'Not trusted' }}</span>{% else %}-{% endif %}</td>
+        <td class="mono" data-label="Version">{{ r.version or '-' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">No devices match this filter.</p>
+  {% endif %}
+</div>
+
+{% if total_pages > 1 %}
+<nav class="pager" aria-label="Device pages">
+  {% if page > 1 %}
+  <a class="btn btn-small" href="{{ prev_url }}">&larr; Previous</a>
+  {% else %}
+  <span class="btn btn-small btn-disabled" aria-disabled="true">&larr; Previous</span>
+  {% endif %}
+  <span class="pager-status">Page {{ page }} of {{ total_pages }}</span>
+  {% if page < total_pages %}
+  <a class="btn btn-small" href="{{ next_url }}">Next &rarr;</a>
+  {% else %}
+  <span class="btn btn-small btn-disabled" aria-disabled="true">Next &rarr;</span>
+  {% endif %}
+</nav>
+{% endif %}
+{% endblock %}

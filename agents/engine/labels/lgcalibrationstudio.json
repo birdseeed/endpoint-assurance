@@ -1,0 +1,23 @@
+{
+  "label": "lgcalibrationstudio",
+  "name": "LG Calibration Studio",
+  "type": "pkginzip",
+  "app_path": "/Applications/LG Calibration Studio.app",
+  "expected_team_id": "5SKT5H4CPQ",
+  "download": {
+    "method": "static",
+    "url": "https://gscs-b2c.lge.com/downloadFile?fileId=$fileID"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

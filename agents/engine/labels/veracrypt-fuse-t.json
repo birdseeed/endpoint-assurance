@@ -1,0 +1,28 @@
+{
+  "label": "veracrypt-fuse-t",
+  "name": "VeraCrypt",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "root-unique-pkg"
+  },
+  "app_path": "/Applications/VeraCrypt.app",
+  "expected_team_id": "HLTN5GLG99",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/veracrypt/VeraCrypt/releases/latest",
+    "asset_pattern": "VeraCrypt_FUSE-T_.*\\.dmg$"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "PAT-1283: source pointed at the releases LIST endpoint, not /latest, crashing the resolver; fixed to /releases/latest and added asset_pattern to select the VeraCrypt_FUSE-T_*.dmg asset over the plain VeraCrypt_*.dmg in the same release. Also corrected expected_team_id from the Installomator-import value Z933746L2S to HLTN5GLG99 (Mounir Joseph IDRASSI), hand-verified via `pkgutil --check-signature` against the live, Apple-notarized VeraCrypt_1.26.29 installer -- Z933746L2S does not match the current signer. Team ID and mirror flags still require full human review before setting allowlisted=true."
+  }
+}

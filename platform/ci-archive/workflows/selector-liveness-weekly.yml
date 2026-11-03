@@ -1,0 +1,139 @@
+name: selector-liveness-weekly
+
+# PAT-1423 item 4: wires api-vps-artefacts/alerting/selector-liveness
+# (PAT-1389) into the weekly schedule its own README already names as the
+# intended follow-up ("Wiring it into a weekly schedule is a deliberate
+# follow-up, not an oversight"). Runs it against the DEPLOYED rules file on
+# patched-api-01 and live Prometheus, so a rule whose selector can never
+# match a series is caught on a schedule instead of only when a human
+# happens to query Prometheus directly and notice -- exactly how PAT-1377's
+# and PAT-1359's dead rules were originally found.
+#
+# PAT-1423 round 3 (non-author review): this originally built the binary on
+# the ubuntu-latest runner and queried Prometheus directly at
+# http://patched-api-01.example-tailnet.ts.net:9090 over Tailscale from there.
+# The version-controlled tailnet policy (api-vps-artefacts/tailscale-acl.json)
+# grants tag:ci -> tag:api only on :22 and :8443 -- nothing grants :9090, so
+# that request would have failed on every single scheduled run, and with
+# Actions dark (PAT-1425) that failure would not have surfaced for a long
+# time: a safety net that never actually runs, the exact shape this whole
+# ticket exists to close.
+#
+# Fixed by running selector-liveness ON api-01 itself, over the SSH channel
+# this workflow already has (tag:ci -> tag:api:22, the same credential the
+# "Stage" step below uses) -- Prometheus is queried over loopback on the
+# box, never over the tailnet. This is preferred over widening the ACL to
+# grant tag:ci -> tag:api:9090: it needs no production network-policy
+# change, it does not expose Prometheus to every CI runner, and it keeps
+# this job on one already-proven credential path. Widening that ACL is
+# Andy's call, not something to add here.
+#
+# Running it on-box also means it reads /etc/prometheus/rules/patched.yml
+# directly -- the literal deployed file, not a copy fetched down first, and
+# one less step that could disagree with what's actually there.
+#
+# Reuses the same org secrets and Tailscale connection pattern as
+# deploy-api-01.yml (TS_OAUTH_CLIENT_ID/TS_OAUTH_SECRET for the tailnet,
+# DEPLOY_SSH_KEY already authorised as root on api-01) -- no new secrets.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # Weekly Monday 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  selector-liveness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: api-vps-artefacts/alerting/selector-liveness/go.mod
+          cache-dependency-path: api-vps-artefacts/alerting/selector-liveness/go.sum
+
+      - name: Build selector-liveness
+        run: |
+          cd api-vps-artefacts/alerting/selector-liveness
+          # Explicit linux/amd64 (matching deploy-api-01.yml's own Go build
+          # steps): ubuntu-latest already builds this natively, but the
+          # binary's target is api-01, not the runner, so this should not
+          # depend on the runner's own arch staying what it is today.
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o selector-liveness .
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          # Ephemeral — node is removed from the tailnet when the job ends.
+          # tag:ci -> tag:api is granted on :22 only (tailscale-acl.json; the :8443
+          # catalogue-publish grant was retired in PAT-2246)
+          # — no :9090 grant exists or should exist here; see header comment.
+
+      - name: Write deploy key
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -m 600 <(printf '%s' "$SSH_KEY") /tmp/api01_key
+
+      - name: Stage selector-liveness on api-01
+        # Bounded retry (non-author review round 2): a transient SSH/network
+        # blip here used to fail the whole weekly job outright, and the next
+        # scheduled chance is seven days away. No continue-on-error: a
+        # genuine failure (bad host, auth, permissions) fails every attempt
+        # identically and must still fail the job loudly once the retry
+        # budget is exhausted, not be waved through.
+        run: |
+          ATTEMPTS=5
+          DELAY_SECONDS=10
+          attempt=1
+          while true; do
+            if ssh -i /tmp/api01_key \
+                 -o StrictHostKeyChecking=accept-new \
+                 -o ConnectTimeout=15 \
+                 root@patched-api-01 \
+                 'mkdir -p /opt/patched-selector-liveness-check' \
+               && scp -i /tmp/api01_key \
+                 -o StrictHostKeyChecking=accept-new \
+                 -o ConnectTimeout=15 \
+                 api-vps-artefacts/alerting/selector-liveness/selector-liveness \
+                 root@patched-api-01:/opt/patched-selector-liveness-check/selector-liveness; then
+              break
+            fi
+            if [[ "$attempt" -ge "$ATTEMPTS" ]]; then
+              echo "::error::staging selector-liveness on api-01 failed after $ATTEMPTS attempts — not a transient blip, failing the job" >&2
+              exit 1
+            fi
+            echo "stage attempt $attempt/$ATTEMPTS failed — retrying in ${DELAY_SECONDS}s" >&2
+            sleep "$DELAY_SECONDS"
+            attempt=$((attempt + 1))
+          done
+
+      - name: Run selector-liveness on api-01 against loopback Prometheus
+        run: |
+          ssh -i /tmp/api01_key \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            'chmod +x /opt/patched-selector-liveness-check/selector-liveness && /opt/patched-selector-liveness-check/selector-liveness -rules /etc/prometheus/rules/patched.yml -prometheus-url http://localhost:9090'
+        # Exit codes (see selector-liveness/README.md): 0 clean, 1 at least
+        # one tier-1 (actionable) finding, 2 the check itself didn't
+        # complete (rule file/expr parse failure, Prometheus unreachable).
+        # Both 1 and 2 must fail this step/job — a checker built to catch
+        # quiet failures must not itself fail quietly — so no `|| true` or
+        # continue-on-error here; ssh propagates the remote command's exit
+        # status as its own, and a non-zero exit is the whole point.
+
+      - name: Clean up staged binary on api-01
+        if: always()
+        run: |
+          ssh -i /tmp/api01_key \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-api-01 \
+            'rm -rf /opt/patched-selector-liveness-check' || echo "::warning::could not clean up /opt/patched-selector-liveness-check on api-01"

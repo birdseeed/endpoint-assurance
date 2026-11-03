@@ -1,0 +1,23 @@
+{
+  "label": "lexarrecoverytool",
+  "name": "Lexar Recovery Tool",
+  "type": "appindmginzip",
+  "app_path": "/Applications/Lexar Recovery Tool.app",
+  "expected_team_id": "Y8HM6WR2DV",
+  "download": {
+    "method": "static",
+    "url": "https://www.lexar.com/wp-content/uploads/product_images/Lexar-Recovery-Tool-Mac.zip"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

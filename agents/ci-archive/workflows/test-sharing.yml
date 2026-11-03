@@ -1,0 +1,24 @@
+name: test-sharing
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/sharing.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/test-sharing.zsh'
+  pull_request:
+    paths:
+      - 'macos/lib/sharing.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/test-sharing.zsh'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh (sharing collector tests exercise a real zsh script)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run sharing collector tests
+        run: zsh macos/lib/test-sharing.zsh

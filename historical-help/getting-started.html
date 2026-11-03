@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Getting started - Patched.im docs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Deploy the Patched collector to Windows and macOS, send the first inventory and review configuration-assurance evidence. No MDM required." />
+  <link rel="icon" href="/favicon.ico?v=20260926-brand-v3" sizes="32x32" />
+  <link rel="icon" href="/favicon.svg?v=20260926-brand-v3" type="image/svg+xml" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=20260926-brand-v3" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=20260926-brand-v3" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20260926-brand-v3" />
+  <link rel="mask-icon" href="/mask-icon.svg?v=20260926-brand-v3" color="#2563eb" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=20260926-brand-v3" />
+</head>
+<body>
+
+  <!-- ── Nav ─────────────────────────────────────────────── -->
+  <header class="nav">
+    <div class="nav__inner">
+      <a class="nav__logo" href="https://patched.im" aria-label="Patched.im home"><img src="/patched-lockup-horizontal.svg" width="132" height="27" alt="Patched" /></a>
+      <nav class="nav__links" aria-label="Primary">
+        <a href="/getting-started.html">Getting started</a>
+        <a href="/faq.html">FAQ</a>
+        <div class="nav__dropdown">
+          <button type="button" class="nav__dropdown-trigger" aria-haspopup="true" aria-expanded="false">Guides <svg class="nav__dropdown-chevron" width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="nav__dropdown-menu" role="menu">
+            <a role="menuitem" href="/agent-updater.html">Endpoint agent</a>
+            <a role="menuitem" href="/protected.html">Configuration assurance</a>
+            <a role="menuitem" href="/read-your-report.html">Reports and evidence</a>
+            <a role="menuitem" href="/remediation-guide.html">Remediation guide</a>
+            <a role="menuitem" href="/using-your-portal.html">Customer portal</a>
+            <a role="menuitem" href="/security.html">Security</a>
+            <a role="menuitem" href="/privacy.html">Data and privacy</a>
+          </div>
+        </div>
+      </nav>
+      <div class="nav__spacer"></div>
+      <div class="nav__cta"><a class="btn btn--primary" href="https://patched.im/pricing">Become a design partner</a></div>
+      <button class="nav__burger" type="button" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+
+  <main class="doc">
+    <div class="wrap">
+      <div class="doc__inner">
+        <a class="doc__back" href="/">&larr; All guides</a>
+
+        <article class="article">
+          <header>
+            <p class="kicker">Guide 01</p>
+            <h1>Getting started</h1>
+            <p class="lead">
+              This guide covers the current path: provision a tenant, deploy the
+              Windows or macOS collector, receive inventory and review the first
+              configuration-assurance evidence.
+            </p>
+          </header>
+
+          <h2>The short version</h2>
+          <p>
+            We deploy a lightweight inventory agent to your endpoints. It collects a
+            hardware, OS and application inventory plus a set of CIS Level&nbsp;1 security
+            signals, and sends them to <code>api.patched.im</code> over an authenticated,
+            signed channel. We score every device against the CIS benchmark and turn it
+            into a report and a live dashboard. <strong>No MDM is required to start.</strong>
+            The agent installs in minutes and runs on its own.
+          </p>
+
+          <h2>Step 1: We provision your tenant</h2>
+          <p>
+            Each customer is a <em>tenant</em>. Enrolling a device starts with a
+            <strong>single-use enrolment token</strong>, valid for around 24 hours,
+            rather than a set of credentials you handle yourself. The agent redeems the
+            token the first time it runs and obtains its own per-device credentials
+            automatically. There's nothing for you to copy, store or type in.
+          </p>
+          <p>
+            Every token starts the same way: generated from the portal's
+            <strong>Install</strong> tab. From there you either upload the artifact it
+            produces to Intune as part of the rollout below, or run that same artifact
+            directly on the device if you're installing without MDM. See
+            <a href="/using-your-portal.html">using your Patched portal</a> for a tour of
+            the Install tab.
+          </p>
+
+          <h2>Step 2: Deploy the agent</h2>
+          <p>There are two ways onto a device, depending on how it's managed.</p>
+
+          <h3>Via Intune (recommended for managed estates)</h3>
+          <p>
+            The agent package is provided by Patched during onboarding and installed
+            through Intune like any other managed app. Enrolment itself is self-serve:
+            generate a single-use token from the portal's <strong>Install</strong> tab,
+            then upload the macOS artifact it produces to Intune as a Platform Script that
+            runs as root and writes the token to the device, or run the Windows artifact
+            as an Intune Win32 app install command. Once it's assigned to a device group,
+            enrolled endpoints pick it up automatically; there's nothing for the end user
+            to do, and no Gatekeeper prompts.
+          </p>
+
+          <h3>Without MDM (direct install)</h3>
+          <p>
+            For endpoints that aren't in Intune (including a first pilot machine), an
+            administrator generates a single-use enrolment token from the portal's
+            <strong>Install</strong> tab and runs the matching artifact by hand: the
+            macOS script, or the Windows <code>msiexec</code> command, each with the
+            token already built in. The same agent, the same data; it simply installs a
+            small background task to collect and upload on a schedule instead of being
+            triggered by Intune.
+          </p>
+          <p>
+            Sign in to the portal at <a href="https://app.patched.im">app.patched.im</a>
+            to generate a token and grab the artifact for your platform directly. See
+            <a href="/using-your-portal.html">using your Patched portal</a> for a tour of
+            the Install tab and what else is in there.
+          </p>
+
+          <div class="callout">
+            <strong>No MDM is required to start.</strong> Intune, Jamf or another
+            management platform can deploy the collector, but Patched does not require
+            customers to replace or standardise their existing endpoint tools.
+          </div>
+
+          <h2>Step 3: First inventory &amp; scan</h2>
+          <p>
+            On its first run the agent assembles a snapshot of the device: hardware
+            identity, OS version, installed applications, pending updates, and the CIS
+            compliance signals (FileVault, firewall, Gatekeeper, screen-lock, and so on).
+            It queues the snapshot locally and uploads it; if the device is offline, the
+            snapshot waits and retries automatically. Uploads run roughly every
+            15&nbsp;minutes, so the dashboard stays close to real time.
+          </p>
+          <p>
+            On our side, each snapshot is scored against the CIS Level&nbsp;1 benchmark.
+            Within a few minutes of the first upload the device appears in your dashboard
+            with a compliance result for every control.
+          </p>
+
+          <h2>Step 4: Read your report</h2>
+          <p>
+            You get the results two ways:
+          </p>
+          <ul>
+            <li><strong>A live dashboard</strong>: your estate's real-time compliance and
+              inventory freshness and configuration posture at a glance, per device and
+              rolled up across the estate.</li>
+            <li><strong>Scheduled compliance reports</strong>: a polished PDF on your
+              cadence, suitable for handing to an auditor or a board. Two shapes: a
+              per-device report listing every failing control and the observed value, and
+              an executive summary that rolls the whole estate into KPIs and the top things
+              to fix.</li>
+          </ul>
+          <p>
+            Each failing control comes with what was expected, what we observed, and how
+            to fix it. For a walk-through of the report itself, see
+            <a href="/read-your-report.html">How to read your report</a>; for a deeper
+            explanation of how scoring works and what a passing control proves, see
+            <a href="/protected.html">What "Compliant" means</a>.
+          </p>
+
+          <h2>What you need from your side</h2>
+          <ul>
+            <li>A way to reach the endpoints: Intune for managed estates, or admin access
+              for a direct install.</li>
+            <li>Outbound HTTPS to <code>api.patched.im</code> from the endpoints (the agent
+              only ever makes outbound connections; nothing listens on the device).</li>
+            <li>If antivirus or EDR blocks the collector, retain the alert and review the
+              exact binary and path with Patched before creating any narrow exception.</li>
+            <li>That's it. No inbound firewall changes, no server to run, no MDM to stand up.</li>
+          </ul>
+
+          <h2>Next steps</h2>
+          <p>
+            Ready to roll out, or have a question about your environment? Email
+            <a href="mailto:hello@patched.im">hello@patched.im</a>. We answer every message.
+            If you are not a customer yet, put your estate forward on the
+            <a href="https://patched.im/pricing">pricing page</a>.
+          </p>
+
+          <nav class="pager">
+            <span></span>
+            <a href="/agent-updater.html">The endpoint agent &rarr;</a>
+          </nav>
+        </article>
+      </div>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__logo"><img src="/patched-lockup-horizontal-white.svg" width="132" height="27" alt="Patched" /></div>
+      <nav class="footer__links" aria-label="Footer"><a href="https://patched.im/cyber-essentials">Cyber Essentials</a><a href="https://patched.im/msp">For MSPs</a><a href="https://patched.im/pricing">Pricing</a><a href="https://patched.im/security.html">Security</a><a href="https://patched.im/about.html">About</a><a href="https://patched.im/blog">Blog</a><a href="https://docs.patched.im">Docs</a><a href="https://status.patched.im">Status</a><a href="https://patched.im/privacy.html">Privacy</a><a href="https://patched.im/cookies.html">Cookies</a><a href="mailto:hello@patched.im">Contact</a></nav>
+      <div class="footer__meta">&copy; <span data-year>2026</span> Patched.im Ltd · Isle of Man · Company No. 139269C</div>
+    </div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

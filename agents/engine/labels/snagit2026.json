@@ -1,0 +1,24 @@
+{
+  "label": "snagit2026",
+  "name": "Snagit",
+  "type": "dmg",
+  "app_path": "/Applications/Snagit.app",
+  "expected_team_id": "7TQL462TU8",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://sparkle.cloud.techsmith.com/api/v1/AppcastManifest/?version=26.0.1&utm_source=product&utm_medium=snagit&utm_campaign=sm2026&ipc_item_name=snagit&ipc_platform=macos"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

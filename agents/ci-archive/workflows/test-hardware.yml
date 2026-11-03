@@ -1,0 +1,22 @@
+name: test-hardware
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/hardware.sh'
+      - 'macos/lib/test-hardware.zsh'
+  pull_request:
+    paths:
+      - 'macos/lib/hardware.sh'
+      - 'macos/lib/test-hardware.zsh'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh (hardware identity collector tests exercise a real zsh script)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run hardware identity collector tests
+        run: zsh macos/lib/test-hardware.zsh

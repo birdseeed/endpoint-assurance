@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.patched.decommission.plist — detached agent-decommission daemon (PAT-1109).
+
+  Ships inside the bundle as a DORMANT template — never listed in
+  install.sh's LAUNCHDAEMONS array, never auto-bootstrapped at install time.
+  The ONLY thing that ever copies this into /Library/LaunchDaemons and
+  bootstraps it is endpoint/patched-fetch-config.sh's PATCHED_DECOMMISSION_GATE
+  block, and only after it has independently re-verified the signed
+  decommission directive at the point of action (config hash-pin back to an
+  Ed25519-verified commit, tenant binding, anti-rollback, mode/expiry
+  sanity — see that block for the full rule set).
+
+  ⚠️  THE MOST DESTRUCTIVE PATH IN THE PRODUCT. This daemon removes the
+  Patched agent from this Mac, irreversibly, optionally including
+  credentials and the local queue (--purge, recorded in
+  decommission-info.json, not read from this plist). There is no channel
+  left to correct a mistake once it runs to completion. Strictly more
+  destructive than the existing app-removal daemon
+  (com.patched.uninstall-check.plist / endpoint/patched-uninstall.sh), which
+  is still gated and carries its own do-not-ship warning for a narrower
+  blast radius (one managed third-party app, never the agent itself).
+
+  CLEARED FOR CUSTOMER ENDPOINTS, 2026-08-14, PAT-1344. This path previously
+  carried a do-not-ship-until-reviewed warning; the review it named had
+  never actually been performed. It has now been run for real — the whole
+  decommission path, macOS and Windows, in front of three independent
+  non-author reviewers, with every finding checked against the code and the
+  one real defect fixed in the same change. Full record in the header of
+  patched-decommission.sh. This is the compensating local review, not an
+  enforced upstream gate: the patched/non-author-review rulesets are
+  disabled estate-wide.
+
+  RunAtLoad only, no StartInterval: it runs once per boot, and finishing its
+  work is what removes it — see patched-decommission.sh's SELF-CLEANUP
+  section, which is deliberately the last thing that script does. If
+  interrupted (sleep, power loss, kill -9), the NEXT boot re-runs it,
+  because every step it performs is idempotent — the endpoint-uninstall.sh
+  and macos-uninstall.sh copies staged alongside it are themselves safe to
+  re-run — and self-cleanup only ever happens after both have completed.
+
+  ProgramArguments' path is a fixed constant, not templated per-tenant: it
+  MUST match PATCHED_DECOMMISSION_GATE's DECOMMISSION_DIR default in
+  endpoint/patched-fetch-config.sh exactly, since the gate stages
+  patched-decommission.sh at that exact path before bootstrapping this
+  plist unmodified.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.patched.decommission</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>/Library/Application Support/Patched/.decommission/patched-decommission.sh</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Root is required for launchctl bootout of other daemons, and for
+       macos-uninstall.sh / endpoint-uninstall.sh's own root checks. -->
+  <key>UserName</key>
+  <string>root</string>
+
+  <key>StandardOutPath</key>
+  <string>/var/log/patched-decommission.log</string>
+  <key>StandardErrorPath</key>
+  <string>/var/log/patched-decommission.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin</string>
+  </dict>
+
+  <!-- Throttle restarts on repeated crashes within the same boot session. -->
+  <key>ThrottleInterval</key>
+  <integer>60</integer>
+</dict>
+</plist>

@@ -1,0 +1,29 @@
+{
+  "label": "garminexpress",
+  "name": "Garmin Express",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "root-unique-pkg"
+  },
+  "app_path": "/Applications/Garmin Express.app",
+  "expected_team_id": "72ES32VZUA",
+  "download": {
+    "method": "static",
+    "url": "https://download.garmin.com/omt/express/GarminExpress.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "Garmin Express",
+    "Garmin Express Service"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

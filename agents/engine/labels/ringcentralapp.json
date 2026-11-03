@@ -1,0 +1,23 @@
+{
+  "label": "ringcentralapp",
+  "name": "RingCentral",
+  "type": "pkg",
+  "app_path": "/Applications/RingCentral.app",
+  "expected_team_id": "M932RC5J66",
+  "download": {
+    "method": "static",
+    "url": "https://app.ringcentral.com/download/RingCentral-arm64.pkg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

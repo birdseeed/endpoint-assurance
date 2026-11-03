@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% from "_macros.html" import kpi_summary, group_card_head, review_cell, approval_select, approval_select_head, filter_bar %}
+{% block content %}
+<div class="page-head">
+  <h1>Homebrew</h1>
+  <p class="meta">Homebrew formulae, casks and taps found on the Macs in your estate.</p>
+</div>
+
+{% if not available %}
+<aside class="notice" aria-label="Homebrew view unavailable">
+  <p><strong>Homebrew data isn't available yet.</strong> That doesn't mean no Mac has Homebrew installed.</p>
+</aside>
+{% else %}
+
+{% if approval_result %}
+<div class="notice approval-result{% if not approval_result.error %} notice-ok{% endif %}" id="approval-result" role="status" tabindex="-1" data-approval-result>
+  {% if approval_result.error %}
+  <p><strong>{{ approval_result.error }}</strong></p>
+  {% if approval_result.error_lines %}<ul class="approval-result__lines">{% for line in approval_result.error_lines %}<li>{{ line }}</li>{% endfor %}</ul>{% endif %}
+  {% else %}
+  <p><strong>{% if approval_result.changed is not none %}{{ approval_result.changed }} of {{ approval_result.requested }} package{{ '' if approval_result.requested == 1 else 's' }} changed to {{ approval_result.state_label }}.{% else %}Marked {{ approval_result.requested }} package{{ '' if approval_result.requested == 1 else 's' }} {{ approval_result.state_label }}.{% endif %}</strong>{% if approval_result.changed is not none and approval_result.changed < approval_result.requested %} The rest were already {{ approval_result.state_label }}.{% endif %}</p>
+  {% endif %}
+  <button type="button" class="approval-result__close" data-approval-result-close aria-label="Dismiss this notice" hidden>Dismiss</button>
+</div>
+{% endif %}
+
+{% call kpi_summary([
+  ('Macs with Homebrew', summary.devices_with_homebrew ~ ' of ' ~ summary.macos_device_count, ''),
+  ('Formulae', summary.formula_count, ''),
+  ('Casks', summary.cask_count, ''),
+  ('Unreviewed', summary.unreviewed_count, ''),
+  ('Unapproved', summary.unapproved_count, 'warn-text' if summary.unapproved_count else ''),
+  ('Third-party taps', summary.third_party_tap_count, 'warn-text' if summary.third_party_tap_count else '')
+]) %}<a class="btn btn-small" href="/homebrew.pdf">Download PDF</a> <a class="btn btn-small" href="/homebrew.csv">Download CSV</a>{% endcall %}
+
+<p class="meta homebrew-collection">
+  Collection: {{ summary.status.complete }} complete, {{ summary.status.partial }} partial, {{ summary.status.not_present }} report{{ '' if summary.status.not_present == 1 else 's' }} no Homebrew found
+  {%- if summary.status.failed %}, {{ summary.status.failed }} could not be read{% endif -%}
+  {%- if summary.status.not_reported %}, {{ summary.status.not_reported }} not yet reported{% endif -%}.
+  {%- if summary.status.not_reported %} A Mac that has not yet reported is a coverage gap, not evidence of an empty estate.{% endif -%}
+</p>
+
+{% if summary.macos_device_count == 0 %}
+<p class="empty">No Macs in this estate yet. This tab will populate once a Mac reports in.</p>
+{% elif summary.no_homebrew_found %}
+<p class="empty">None of the Macs that have reported in have Homebrew installed.</p>
+{% endif %}
+
+{#- PAT-2058: one bulk-selection bar for both the casks and formulae tables
+   below (the platform's write endpoint already takes a mixed batch of
+   homebrew_formula and homebrew_cask items in one call), the same
+   data-bulk-bar/data-bulk-count/data-bulk-submit idiom /software uses.
+   PAT-2255 defect 9: the three rows of segmented tabs (install type,
+   findings, approval) are replaced by the same filter_bar /software uses -
+   one bar over both tables, Type (casks or formulae), Approval, and More
+   filters for install type and findings - with every filter in the URL
+   (main.py's _homebrew_filter_state) and already applied to the rows in
+   this HTML. Sits directly above the first table it applies to (rubric
+   L8). #}
+<section class="approval-tools" aria-label="Filter and mark Homebrew packages">
+{% call filter_bar('/homebrew', 'kind', homebrew_filter_bar.type_options, 'Type',
+   'approval', homebrew_filter_bar.approval_options, 'Approval',
+   'publisher', [], 'Publisher', '',
+   'homebrew-search', '.homebrew-table', 'Search packages',
+   homebrew_filter_bar.chips, homebrew_filter_bar.clear_url,
+   hidden_fields=homebrew_filter_bar.hidden_fields,
+   active_filters=homebrew_filter_bar.active_filters,
+   search_value=homebrew_filter_bar.search) %}
+<label class="filter-dropdown__field">
+  <span class="threshold-label">Install type</span>
+  <select name="deps" class="filter-select" data-row-filter="dep" data-query-param="deps" data-default-value="on_request" data-initial="{{ homebrew_filter_bar.deps }}">
+    <option value="on_request"{% if homebrew_filter_bar.deps != 'all' %} selected{% endif %}>Installed on request</option>
+    <option value="all"{% if homebrew_filter_bar.deps == 'all' %} selected{% endif %}>Including dependencies ({{ homebrew_filter_bar.dependency_count }})</option>
+  </select>
+</label>
+<label class="filter-dropdown__field">
+  <span class="threshold-label">Findings</span>
+  <select name="findings" class="filter-select" data-row-filter="cve" data-query-param="findings" data-default-value="" data-initial="{{ homebrew_filter_bar.findings }}">
+    <option value=""{% if not homebrew_filter_bar.findings %} selected{% endif %}>Any</option>
+    <option value="has"{% if homebrew_filter_bar.findings == 'has' %} selected{% endif %}>With CVE findings ({{ homebrew_filter_bar.with_findings_count }})</option>
+  </select>
+</label>
+{% endcall %}
+{% if can_edit %}
+<form id="approval-form" class="bulk-bar" method="post" action="/software/approvals" data-bulk-bar>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="return_to" value="{{ return_to }}" data-approval-return>
+  <input type="hidden" name="return_anchor" value="" data-approval-anchor>
+  <span class="bulk-bar__count" data-bulk-count aria-live="polite">Select packages to mark several at once.</span>
+  <label class="bulk-bar__reason">
+    <span class="visually-hidden">Reason (optional)</span>
+    <input class="search" type="text" name="reason" maxlength="1000" placeholder="Reason (optional)" autocomplete="off">
+  </label>
+  <span class="bulk-bar__actions">
+    <button type="submit" class="btn btn-small" name="state" value="approved" data-bulk-submit>Approve</button>
+    <button type="submit" class="btn btn-small" name="state" value="unapproved" data-bulk-submit>Unapprove</button>
+    <button type="submit" class="btn btn-small" name="state" value="ignored" data-bulk-submit>Ignore</button>
+    <button type="submit" class="btn btn-small" name="state" value="unreviewed" data-bulk-submit>Reset to unreviewed</button>
+    <button type="button" class="btn btn-small bulk-bar__clear" data-bulk-clear hidden>Clear</button>
+  </span>
+</form>
+{% elif role_unavailable %}
+<p class="toolbar-hint">Approval controls are unavailable right now because your account role could not be checked. Decisions and their history are still shown.</p>
+{% else %}
+<p class="toolbar-hint">Your account can view approval decisions and their history. An administrator on your account can change them.</p>
+{% endif %}
+</section>
+
+<div class="card group-card">
+  {{ group_card_head('Casks', (casks | length) ~ ' of ' ~ casks_total if casks is not none else none, 'Where a cask is linked to an application already in your software inventory, it points there instead of counting the install twice.', 'muted', true) }}
+  {% if casks %}
+  <div class="table-scroll">
+  <table class="data-table homebrew-table homebrew-casks-table table-stack">
+    <thead><tr>
+      {{ approval_select_head(can_edit) }}
+      <th data-sort="text" title="The package name, with the tap it came from beside it.">Product</th><th data-sort="text">Versions seen</th><th data-sort="num">Devices</th><th data-sort="num" title="Not yet assessed: no CVE finding has been matched and the platform does not report an assessment for Homebrew packages, so it is not a clean result.">CVEs</th><th data-sort="text">First seen</th><th>Approval</th>
+    </tr></thead>
+    <tbody>
+      {% for c in casks or [] %}
+      <tr id="{{ c.row_id }}" class="{% if c.hidden_filter %}row-hide-filter{% endif %}{% if c.hidden_search %} row-hide-search{% endif %}" data-filter-kind="cask" data-filter-decision="{{ c.group }}" data-filter-cve="{{ c.cve_filter }}" data-approval-row data-approval-state="{{ c.approval_state or 'unreviewed' }}" data-search="{{ c.search_text }}">
+        {{ approval_select(c, can_edit) }}
+        <td data-label="Product"><span class="product-line"><span class="product-name" title="{{ c.name }}">{% if c.history_url %}<a href="{{ c.history_url }}" data-history-drawer>{{ c.name }}</a>{% else %}{{ c.name }}{% endif %}</span>{% if c.tap %}<span class="product-publisher" title="{{ c.tap }}">{{ c.tap }}</span>{% endif %}{% if c.third_party_tap %}<span class="pill pill-warn">Third-party</span>{% endif %}</span>{% if c.linked_app_name %}<span class="cell-subtle"><a href="/software?search={{ c.linked_app_name | urlencode }}">View {{ c.linked_app_name }} in Software &rarr;</a></span>{% endif %}</td>
+        <td data-label="Versions seen">{{ c.versions | join(', ') if c.versions else 'No version evidence' }}</td>
+        <td data-label="Devices" data-value="{{ c.device_count }}">{{ c.device_count }}</td>
+        <td class="cell-cve" data-label="CVEs" data-value="{{ c.cve_confirmed_count or 0 }}">{% if c.cve_display_label %}<span class="pill {{ c.cve_pill_class }}">{{ c.cve_display_label }}</span>{% endif %}{% if c.cve_possible_label %}<span class="cell-subtle">{{ c.cve_possible_label }}</span>{% endif %}{% if c.cve_cell_label %}<span class="pill {{ c.cve_cell_class }}" title="{{ c.cve_state_title }}">{{ c.cve_cell_label }}</span>{% endif %}</td>
+        <td data-label="First seen" data-value="{{ c.first_seen_at }}"><span class="nowrap">{{ c.first_seen_at | humandate }}</span></td>
+        {{ review_cell(c, can_edit, csrf_token, return_to) }}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+  {% if casks_error %}<p class="empty">Casks are temporarily unavailable from the platform.</p>
+  {% elif casks is not none and not casks %}<p class="empty">No casks found on your estate.</p>
+  {% elif casks is not none and casks_total > (casks | length) %}<p class="meta">Showing {{ casks | length }} of {{ casks_total }} casks. Download the CSV for the rest.</p>{% endif %}
+  {% if cve_index_unavailable and casks %}<p class="meta">CVE counts are temporarily unavailable from the platform.</p>{% endif %}
+  {% if casks %}<p class="empty filtered-empty" data-filter-empty{% if casks_visible %} hidden{% endif %}>No casks match these filters.</p>{% endif %}
+</div>
+
+<div class="card group-card">
+  {{ group_card_head('Formulae', (formulae | length) ~ ' of ' ~ formulae_total if formulae is not none else none, 'Package, versions, devices and whether it was installed on request or pulled in as a dependency.', 'muted', true) }}
+  {% if formulae %}
+  <div class="table-scroll">
+  <table class="data-table homebrew-table homebrew-formulae-table table-stack">
+    <thead><tr>
+      {{ approval_select_head(can_edit) }}
+      <th data-sort="text" title="The package name, with the tap it came from beside it.">Package</th><th data-sort="text">Versions</th><th data-sort="num">Devices</th><th data-sort="num" title="Not yet assessed: no CVE finding has been matched and the platform does not report an assessment for Homebrew packages, so it is not a clean result.">CVEs</th><th>Install type</th><th data-sort="text">First seen</th><th>Approval</th>
+    </tr></thead>
+    <tbody>
+      {% for f in formulae or [] %}
+      <tr id="{{ f.row_id }}" class="{% if f.hidden_filter %}row-hide-filter{% endif %}{% if f.hidden_search %} row-hide-search{% endif %}" data-filter-kind="formula" data-filter-decision="{{ f.group }}" data-filter-dep="{{ f.filter_dep }}" data-filter-cve="{{ f.cve_filter }}" data-approval-row data-approval-state="{{ f.approval_state or 'unreviewed' }}" data-search="{{ f.search_text }}">
+        {{ approval_select(f, can_edit) }}
+        <td data-label="Package"><span class="product-line"><span class="product-name" title="{{ f.name }}">{% if f.history_url %}<a href="{{ f.history_url }}" data-history-drawer>{{ f.name }}</a>{% else %}{{ f.name }}{% endif %}</span>{% if f.tap %}<span class="product-publisher" title="{{ f.tap }}">{{ f.tap }}</span>{% endif %}{% if f.third_party_tap %}<span class="pill pill-warn">Third-party</span>{% endif %}</span></td>
+        <td data-label="Versions">{{ f.versions | join(', ') if f.versions else 'No version evidence' }}</td>
+        <td data-label="Devices" data-value="{{ f.device_count }}">{{ f.device_count }}</td>
+        <td class="cell-cve" data-label="CVEs" data-value="{{ f.cve_confirmed_count or 0 }}">{% if f.cve_display_label %}<span class="pill {{ f.cve_pill_class }}">{{ f.cve_display_label }}</span>{% endif %}{% if f.cve_possible_label %}<span class="cell-subtle">{{ f.cve_possible_label }}</span>{% endif %}{% if f.cve_cell_label %}<span class="pill {{ f.cve_cell_class }}" title="{{ f.cve_state_title }}">{{ f.cve_cell_label }}</span>{% endif %}</td>
+        <td data-label="Install type">{% if f.on_request_device_count %}<span class="pill pill-ok">On request ({{ f.on_request_device_count }})</span>{% endif %}{% if f.dependency_device_count %} <span class="pill pill-muted">Dependency ({{ f.dependency_device_count }})</span>{% endif %}</td>
+        <td data-label="First seen" data-value="{{ f.first_seen_at }}"><span class="nowrap">{{ f.first_seen_at | humandate }}</span></td>
+        {{ review_cell(f, can_edit, csrf_token, return_to) }}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+  {% if formulae_error %}<p class="empty">Formulae are temporarily unavailable from the platform.</p>
+  {% elif formulae is not none and not formulae %}<p class="empty">No formulae found on your estate.</p>
+  {% elif formulae is not none and formulae_total > (formulae | length) %}<p class="meta">Showing {{ formulae | length }} of {{ formulae_total }} formulae. Download the CSV for the rest.</p>{% endif %}
+  {% if cve_index_unavailable and formulae %}<p class="meta">CVE counts are temporarily unavailable from the platform.</p>{% endif %}
+  {% if formulae %}<p class="empty filtered-empty" data-filter-empty{% if formulae_visible %} hidden{% endif %}>No formulae match these filters.</p>{% endif %}
+</div>
+
+<div class="card group-card">
+  {{ group_card_head('Taps beyond core', (taps | length) ~ ' of ' ~ taps_total if taps is not none else none, 'Taps added on top of Homebrew\'s own homebrew/core and homebrew/cask.', 'muted', true) }}
+  {% if taps %}
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>Tap</th><th>Devices</th><th>Remote</th><th>First seen</th></tr></thead>
+    <tbody>
+      {% for t in taps or [] %}
+      <tr>
+        <td>{{ t.name }}{% if t.third_party %} <span class="pill pill-warn">Third-party</span>{% endif %}</td>
+        <td>{{ t.device_count }}</td>
+        <td>{{ t.remote_urls | join(', ') if t.remote_urls else '-' }}</td>
+        <td><span class="nowrap">{{ t.first_seen_at | humandate }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+  {% if taps_error %}<p class="empty">Taps are temporarily unavailable from the platform.</p>
+  {% elif taps is not none and not taps %}<p class="empty">No taps beyond homebrew/core and homebrew/cask on your estate.</p>
+  {% elif taps is not none and taps_total > (taps | length) %}<p class="meta">Showing {{ taps | length }} of {{ taps_total }} taps.</p>{% endif %}
+</div>
+
+<div class="card group-card">
+  {{ group_card_head('Devices', (devices | length) ~ ' of ' ~ devices_total if devices is not none else none, 'Every Mac that has reported a Homebrew block, plus every Mac that has not.', 'muted', true) }}
+  {#- PAT-2137: table-stack is the generic phone-width pattern (see
+      portal.css's own comment) - table-layout: fixed's six fixed-pixel
+      columns (Owner, Formulae, Casks, Taps, Collection, the blank action
+      column) already exceed a 390px card's available width on their own,
+      so Mac and Prefix (both .cell-anywrap for a genuinely long hostname
+      or path at desktop width) computed to a near-zero share and broke
+      their text mid-word ("mac-01" as "mac"/"-01", "/opt/homebrew" as
+      "opt"/"homebrew"). Below the table-stack breakpoint each row becomes
+      a labelled block instead, so .cell-anywrap never has to fight a
+      starved fixed column for room. The trailing action column's <th> is
+      deliberately blank (it holds only the "View Mac ->" link) so its <td>
+      carries no data-label - the on-screen link text already says what it
+      is without a caption above it. #}
+  <div class="table-scroll">
+  <table class="data-table homebrew-devices-table table-stack">
+    <colgroup><col><col><col class="hb-col-owner"><col class="hb-col-num"><col class="hb-col-num"><col class="hb-col-num"><col class="hb-col-collection"><col class="hb-col-action"></colgroup>
+    <thead><tr><th>Mac</th><th>Prefix</th><th>Owner</th><th>Formulae</th><th>Casks</th><th>Taps</th><th>Collection</th><th></th></tr></thead>
+    <tbody>
+      {% for d in devices or [] %}
+      <tr>
+        <td class="cell-anywrap" data-label="Mac">{{ d.hostname }}</td>
+        <td class="cell-anywrap" data-label="Prefix">{{ d.prefixes | map(attribute='path') | join(', ') if d.prefixes else '-' }}</td>
+        <td data-label="Owner">{{ d.owners | join(', ') if d.owners else '-' }}</td>
+        <td data-label="Formulae">{{ d.formula_count }}</td>
+        <td data-label="Casks">{{ d.cask_count }}</td>
+        <td data-label="Taps">{{ d.tap_count }}</td>
+        <td data-label="Collection"><span class="pill {{ 'pill-ok' if d.collection_status in ('complete', 'not_present') else 'pill-bad' if d.collection_status == 'failed' else 'pill-muted' }}">{{ d.collection_status_label }}</span></td>
+        <td class="cell-actions">{% if d.device_id %}<a href="/homebrew/devices/{{ d.device_id }}">View Mac &rarr;</a>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if devices_error %}<p class="empty">Devices are temporarily unavailable from the platform.</p>
+  {% elif devices is not none and not devices %}<p class="empty">No Macs have reported yet.</p>
+  {% elif devices is not none and devices_total > (devices | length) %}<p class="meta">Showing {{ devices | length }} of {{ devices_total }} Macs.</p>{% endif %}
+</div>
+
+<p class="toolbar-hint">Vulnerabilities in Homebrew packages are listed on the Findings page. Every approval change is recorded with who made it and when, and kept in each package's history. Marking a package Unapproved does not remove, block or uninstall it.</p>
+
+<aside class="history-drawer" id="history-drawer" role="dialog" aria-modal="false" aria-labelledby="history-drawer-title" hidden data-history-panel>
+  <div class="history-drawer__head">
+    <h2 id="history-drawer-title">Approval history</h2>
+    <button type="button" class="btn btn-small" data-history-close>Close</button>
+  </div>
+  <div class="history-drawer__body" data-history-body></div>
+</aside>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ static_url('js/portal.js') }}"></script>{% endblock %}

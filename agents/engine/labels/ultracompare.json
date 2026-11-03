@@ -1,0 +1,23 @@
+{
+  "label": "ultracompare",
+  "name": "UltraCompare",
+  "type": "dmg",
+  "app_path": "/Applications/UltraCompare.app",
+  "expected_team_id": "2T4C9Y59FF",
+  "download": {
+    "method": "static",
+    "url": "https://downloads.ultraedit.com/main/uc/mac/UltraCompare.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% if success %}You are on the list{% else %}That did not go through{% endif %} | Patched</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="icon" type="image/svg+xml" href="{{ static_url('favicon.svg') }}">
+<link rel="stylesheet" href="{{ static_url('css/public-brand.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/site.css') }}">
+</head>
+<body>
+<div class="pub-page">
+
+{% include "_site_nav.html" %}
+
+  <main class="scan-main">
+    <div class="scan-wrap" style="text-align:center">
+      {% if success %}
+      <div class="pub-tick">&#10003;</div>
+      <h1 class="pub-page-title">Thanks{% if name %}, {{ name }}{% endif %}. You are on the list.</h1>
+      <p class="pub-lede">Patched is still being built. You will get one email when it is ready to try, and perhaps a question or two before then about what you would want from it.</p>
+      <p style="font-size:14px;color:var(--on-slate-mute);">Changed your mind? Email <a style="text-decoration:underline" href="mailto:hello@patched.im">hello@patched.im</a> and you will be taken off the list.</p>
+      <p style="font-size:14px;color:var(--on-slate-mute);"><a style="text-decoration:underline" href="https://patched.im/">Back to patched.im</a></p>
+      {% else %}
+      <div class="pub-tick" style="opacity:.6">&#x2717;</div>
+      <h1 class="pub-page-title">That did not go through</h1>
+      <p class="pub-lede">{{ reason }}</p>
+      <p style="font-size:14px;color:var(--on-slate-mute);"><a style="text-decoration:underline" href="{{ form_url }}">Go back and try again</a>, or email <a style="text-decoration:underline" href="mailto:hello@patched.im">hello@patched.im</a> and you will be added by hand.</p>
+      {% endif %}
+    </div>
+  </main>
+
+{% include "_site_footer.html" %}
+
+</div>
+<script>document.querySelectorAll('[data-year]').forEach(function(e){e.textContent=new Date().getFullYear();});</script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "label": "steinbergactivationmanager",
+  "name": "Steinberg Activation Manager",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "root-unique-pkg"
+  },
+  "app_path": "/Applications/Steinberg Activation Manager.app",
+  "expected_team_id": "5PMY476BJ6",
+  "download": {
+    "method": "static",
+    "url": "https://www.steinberg.net/sam-mac"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,40 @@
+[Unit]
+Description=Patched public CVE scan service (scan.patched.im)
+After=network.target
+
+[Service]
+Type=simple
+User=scan
+Group=scan
+WorkingDirectory=/opt/patched-scan
+EnvironmentFile=/etc/patched-scan/env
+# The state dir (scan.db, uploads/, reports/, nvd.db) is the ONLY writable
+# location; systemd creates it and exports $STATE_DIRECTORY, which shared.py
+# reads. The NVD dataset lives there too (seeded by bin/refresh-nvd.py).
+StateDirectory=patched-scan
+Environment=PYTHONUNBUFFERED=1
+Environment=NVD_DB_PATH=/var/lib/patched-scan/nvd.db
+ExecStart=/opt/patched-scan/venv/bin/uvicorn app:app --host 127.0.0.1 --port 8001
+Restart=always
+RestartSec=5
+
+# Hardening — same posture as the portal unit, but with a writable StateDirectory.
+# ProtectSystem=strict makes the whole filesystem read-only except the state dir
+# (auto-ReadWrite) and PrivateTmp scratch. The app holds no platform secrets;
+# only mail + Turnstile credentials come in via the env file.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

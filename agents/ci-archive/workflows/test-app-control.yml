@@ -1,0 +1,22 @@
+name: test-app-control
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/app_control.sh'
+      - 'macos/lib/test-app-control.zsh'
+      - '.github/workflows/test-app-control.yml'
+  pull_request:
+    paths:
+      - 'macos/lib/app_control.sh'
+      - 'macos/lib/test-app-control.zsh'
+      - '.github/workflows/test-app-control.yml'
+
+jobs:
+  test:
+    runs-on: macos-latest          # zsh, /usr/bin/python3 and defaults are stock on macOS runners
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run app_control admin-enforcement tests
+        run: zsh macos/lib/test-app-control.zsh

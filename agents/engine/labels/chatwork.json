@@ -1,0 +1,23 @@
+{
+  "label": "chatwork",
+  "name": "Chatwork",
+  "type": "dmg",
+  "app_path": "/Applications/Chatwork.app",
+  "expected_team_id": "H34A3H2Y54",
+  "download": {
+    "method": "static",
+    "url": "https://desktop-app.chatwork.com/installer/Chatwork.dmg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

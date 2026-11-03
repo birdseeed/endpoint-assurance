@@ -1,0 +1,23 @@
+{
+  "label": "sonoss2",
+  "name": "Sonos",
+  "type": "dmg",
+  "app_path": "/Applications/Sonos.app",
+  "expected_team_id": "2G4LW83Q3E",
+  "download": {
+    "method": "static",
+    "url": "https://www.sonos.com/redir/controller_software_mac2"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

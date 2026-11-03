@@ -1,0 +1,11 @@
+{
+  "contract_version": 1,
+  "note": "Canonical vocabulary for agent-config extension_removals[].scope. DUPLICATED VERBATIM in Patched-LTD/updater at contracts/extension-removal-scopes.json — a change here MUST be made in both repos in the same change set. Neither repo's CI can see the other, so this file is the shared reference and this note is the only thing enforcing the pairing. The server must only EMIT members of this set; the agent must ACCEPT every member of it.",
+  "scopes": [
+    "one_profile",
+    "one_user",
+    "all_profiles",
+    "all_devices",
+    "one_observation"
+  ]
+}

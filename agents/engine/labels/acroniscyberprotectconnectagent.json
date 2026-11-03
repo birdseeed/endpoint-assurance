@@ -1,0 +1,25 @@
+{
+  "label": "acroniscyberprotectconnectagent",
+  "name": "Acronis Cyber Protect Connect Agent",
+  "type": "pkg",
+  "app_path": "/Applications/Acronis Cyber Protect Connect Agent.app",
+  "expected_team_id": "ZU2TV78AA6",
+  "download": {
+    "method": "static",
+    "url": "https://go.acronis.com/AcronisCyberProtectConnect_AgentForMac"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [
+    "NONE"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

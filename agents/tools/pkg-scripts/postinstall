@@ -1,0 +1,134 @@
+#!/bin/bash
+# postinstall — load the Patched LaunchDaemons after .pkg installation.
+#
+# pkgbuild installs the bundle to /usr/local/patched-updater/. The plists
+# live there alongside the scripts, so postinstall copies them into
+# /Library/LaunchDaemons/ (where launchd expects them) and bootstraps each one.
+# Idempotent: any existing running instance is booted out first.
+
+set -euo pipefail
+
+# PAT-2420: Installer runs this as root, so PATH must never choose a tool. Same
+# convention as endpoint/install.sh: PATH is reset before anything runs and
+# every external tool is called by its absolute system path.
+# ci/test_privileged_installer_trust.py enforces both.
+export PATH="/usr/bin:/bin:/usr/sbin:/sbin"
+
+BUNDLE=/usr/local/patched-updater
+DAEMON_DIR=/Library/LaunchDaemons
+
+# PAT-2245: purge the components an assurance-only bundle no longer ships,
+# exactly as endpoint/install.sh does on a tarball upgrade. pkgbuild lays the
+# new payload over /usr/local/patched-updater but never removes files missing
+# from it, and before this block the .pkg path purged nothing: a Mac upgraded
+# by .pkg kept the retired com.patched.catalogue-poll LaunchDaemon loaded, its
+# script on disk and its stale cache in the state directory. The arrays and
+# the PATCHED_LEGACY_PURGE block below are byte-identical copies of
+# install.sh's; endpoint/test-catalogue-retirement-cleanup.sh fails if they
+# drift. Runs after the payload is in place, before the daemons are loaded.
+BUNDLE_DEST="$BUNDLE"
+LAUNCHDAEMONS_DIR="$DAEMON_DIR"
+STATE_DIR="/Library/Application Support/Patched"
+LEGACY_LAUNCHDAEMONS=(
+    com.patched.install-check.plist
+    com.patched.uninstall-check.plist
+    com.patched.catalogue-poll.plist
+)
+LEGACY_BUNDLE_FILES=(
+    Installomator.sh
+    patched-install.sh
+    patched-uninstall.sh
+    patched-fetch-catalogue.sh
+    verify-catalogue.py
+    labels-allowlist.txt
+    LICENSE
+    NOTICE
+    # PAT-1505 real-device gap (2026-09-09, mac-staging): these are the
+    # $BUNDLE_DEST *copies* of the three LEGACY_LAUNCHDAEMONS plists above.
+    # The LEGACY_LAUNCHDAEMONS loop already purges them from
+    # $LAUNCHDAEMONS_DIR, but a pre-PAT-1505 bundle also ships a copy of
+    # each plist inside $BUNDLE_DEST itself, and nothing purged that copy —
+    # an upgrade-in-place left it behind even though the loaded daemon was
+    # gone.
+    com.patched.install-check.plist
+    com.patched.uninstall-check.plist
+    com.patched.catalogue-poll.plist
+)
+LEGACY_CATALOGUE_FILES=(
+    catalogue.json
+    catalogue.etag
+    catalogue.indeterminate-since
+)
+LEGACY_CATALOGUE_DIRS=(
+    .patched-catalogue-fetch.lock
+)
+
+echo "postinstall: removing retired components ..."
+# >>> PATCHED_LEGACY_PURGE_START
+# endpoint/test-install-legacy-purge.sh and
+# endpoint/test-catalogue-retirement-cleanup.sh extract exactly this block
+# (sentinel markers, same pattern as PATCHED_INSTALL_MODE above) and drive it
+# against fixture BUNDLE_DEST/LAUNCHDAEMONS_DIR/STATE_DIR dirs with the real
+# LEGACY_* arrays, so a future purge-loop or array edit is caught by name
+# rather than only being found again by a real-device upgrade.
+# tools/pkg-scripts/postinstall carries a byte-identical copy of this block
+# and of the LEGACY_* arrays (PAT-2245: the .pkg upgrade path purged nothing);
+# the second test above fails if the two drift apart.
+#
+# Every step is idempotent, safe when its target is absent, and non-fatal:
+# the new bundle is already installed and verified by the time this runs.
+# Each legacy daemon is booted out by label even when its plist is already
+# gone, because a job can stay loaded after its plist is deleted. rm -f / -rf
+# on a symlink removes the link itself and never follows it; the cache is
+# skipped entirely if STATE_DIR is itself a symlink.
+for plist in "${LEGACY_LAUNCHDAEMONS[@]}"; do
+    dest="$LAUNCHDAEMONS_DIR/$plist"
+    /bin/launchctl bootout "system/${plist%.plist}" 2>/dev/null || true
+    if [[ -e "$dest" || -L "$dest" ]]; then
+        /bin/rm -f "$dest" || echo "  WARNING: could not remove $dest"
+        echo "  Removed ${plist%.plist} (left by a pre-assurance-only install)."
+    fi
+done
+for legacy in "${LEGACY_BUNDLE_FILES[@]}"; do
+    if [[ -e "$BUNDLE_DEST/$legacy" || -L "$BUNDLE_DEST/$legacy" ]]; then
+        /bin/rm -f "$BUNDLE_DEST/$legacy" || echo "  WARNING: could not remove $BUNDLE_DEST/$legacy"
+        echo "  Removed $BUNDLE_DEST/$legacy (left by a pre-assurance-only install)."
+    fi
+done
+if [[ -L "${STATE_DIR:?}" ]]; then
+    echo "  WARNING: $STATE_DIR is a symlink; not purging the retired catalogue cache through it."
+else
+    for cache in "${LEGACY_CATALOGUE_FILES[@]}"; do
+        if [[ -e "$STATE_DIR/$cache" || -L "$STATE_DIR/$cache" ]]; then
+            /bin/rm -f "$STATE_DIR/$cache" || echo "  WARNING: could not remove $STATE_DIR/$cache"
+            echo "  Removed $STATE_DIR/$cache (retired signed app catalogue)."
+        fi
+    done
+    for cache_dir in "${LEGACY_CATALOGUE_DIRS[@]}"; do
+        if [[ -L "$STATE_DIR/$cache_dir" ]]; then
+            /bin/rm -f "$STATE_DIR/$cache_dir" || echo "  WARNING: could not remove $STATE_DIR/$cache_dir"
+            echo "  Removed $STATE_DIR/$cache_dir (retired signed app catalogue)."
+        elif [[ -d "$STATE_DIR/$cache_dir" ]]; then
+            /bin/rm -rf "${STATE_DIR:?}/${cache_dir:?}" || echo "  WARNING: could not remove $STATE_DIR/$cache_dir"
+            echo "  Removed $STATE_DIR/$cache_dir (retired signed app catalogue)."
+        fi
+    done
+fi
+# <<< PATCHED_LEGACY_PURGE_END
+
+for label in com.patched.update com.patched.config-poll; do
+    SRC="$BUNDLE/$label.plist"
+    DEST="$DAEMON_DIR/$label.plist"
+
+    if [[ ! -f "$SRC" ]]; then
+        echo "postinstall: $label.plist not found in bundle, skipping" >&2
+        continue
+    fi
+
+    /usr/bin/install -m 644 -o root -g wheel "$SRC" "$DEST"
+
+    /bin/launchctl bootout  system "$DEST" 2>/dev/null || true
+    /bin/launchctl bootstrap system "$DEST"
+
+    echo "postinstall: loaded $label"
+done

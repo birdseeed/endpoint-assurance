@@ -1,0 +1,23 @@
+{
+  "label": "toonboomstoryboardpro2025",
+  "name": "Storyboard Pro 25",
+  "type": "dmg",
+  "app_path": "/Applications/Storyboard Pro 25.app",
+  "expected_team_id": "U5LPYJSPQ3",
+  "download": {
+    "method": "static",
+    "url": "https://fileshare.toonboom.com/wl/?id=gXDIzUJu4BznZHs9e15WxLJdooDPu6ii&path=${version}%2FSBP25-mac-${build}.dmg&mode=list&download=1"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

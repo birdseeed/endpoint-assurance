@@ -1,0 +1,37 @@
+name: test-ide-extensions
+
+# PAT-2017: the IDE extension collector's contract tests, including the static
+# guard that fails if the collector gains a process launch or a network
+# client, the guard that pins the block on the wire (PAT-2225) while still
+# exercising the off path, and its byte budget.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/ide_extensions.sh'
+      - 'macos/lib/test-ide-extensions.zsh'
+      - 'macos/patched-collect.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/agent_health.sh'
+      - 'macos/lib/tcc-deny-hook.zsh'
+      - '.github/workflows/test-ide-extensions.yml'
+  pull_request:
+    paths:
+      - 'macos/lib/ide_extensions.sh'
+      - 'macos/lib/test-ide-extensions.zsh'
+      - 'macos/patched-collect.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/agent_health.sh'
+      - 'macos/lib/tcc-deny-hook.zsh'
+      - '.github/workflows/test-ide-extensions.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh (the collector and its tests are zsh)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run IDE extension collector tests
+        run: zsh macos/lib/test-ide-extensions.zsh

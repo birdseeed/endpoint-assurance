@@ -1,0 +1,5 @@
+# Test-only dependencies (not installed on example-portal-host). Kept separate
+# from requirements.txt / requirements.lock so pytest and httpx never ship
+# to the production venv (PAT-1893).
+pytest
+httpx

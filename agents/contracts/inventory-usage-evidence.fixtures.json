@@ -1,0 +1,178 @@
+[
+  {
+    "name": "windows_recorded",
+    "payload": {
+      "metering_status": "ok",
+      "apps": [
+        {
+          "name": "Fixture app",
+          "version": "1.0",
+          "usage_evidence": "recorded",
+          "last_used_at": "2026-09-30T12:00:00Z",
+          "launch_count": 8
+        }
+      ],
+      "metering_user_hive_count": 1,
+      "metering_record_count": 1
+    }
+  },
+  {
+    "name": "windows_no_record",
+    "payload": {
+      "metering_status": "ok",
+      "apps": [
+        {
+          "name": "Fixture app",
+          "version": "1.0",
+          "usage_evidence": "no_record",
+          "last_used_at": null,
+          "launch_count": null
+        }
+      ],
+      "metering_user_hive_count": 1,
+      "metering_record_count": 1
+    }
+  },
+  {
+    "name": "windows_unmapped",
+    "payload": {
+      "metering_status": "ok",
+      "apps": [
+        {
+          "name": "Fixture app",
+          "version": "1.0",
+          "usage_evidence": "unmapped",
+          "last_used_at": null,
+          "launch_count": null
+        }
+      ],
+      "metering_user_hive_count": 1,
+      "metering_record_count": 1
+    }
+  },
+  {
+    "name": "windows_unavailable",
+    "payload": {
+      "metering_status": "ok",
+      "apps": [
+        {
+          "name": "Fixture app",
+          "version": "1.0",
+          "usage_evidence": "unavailable",
+          "last_used_at": null,
+          "launch_count": null
+        }
+      ],
+      "metering_user_hive_count": 1,
+      "metering_record_count": 1
+    }
+  },
+  {
+    "name": "macos_recorded",
+    "payload": {
+      "metering_status": "ok",
+      "apps": [
+        {
+          "name": "Fixture app",
+          "version": "1.0",
+          "usage_evidence": "recorded",
+          "last_used_at": "2026-09-30T12:00:00Z",
+          "launch_count": 8
+        }
+      ]
+    }
+  },
+  {
+    "name": "macos_no_record",
+    "payload": {
+      "metering_status": "ok",
+      "apps": [
+        {
+          "name": "Fixture app",
+          "version": "1.0",
+          "usage_evidence": "no_record",
+          "last_used_at": null,
+          "launch_count": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "macos_unavailable",
+    "payload": {
+      "metering_status": "ok",
+      "apps": [
+        {
+          "name": "Fixture app",
+          "version": "1.0",
+          "usage_evidence": "unavailable",
+          "last_used_at": null,
+          "launch_count": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "older_agent_not_reported",
+    "payload": {
+      "apps": [
+        {
+          "name": "Older app",
+          "version": "1.0"
+        }
+      ]
+    }
+  },
+  {
+    "name": "macos_partial_positive",
+    "payload": {
+      "metering_status": "ok",
+      "apps": [
+        {
+          "name": "Partial",
+          "version": "1.0",
+          "usage_evidence": "unavailable",
+          "last_used_at": null,
+          "launch_count": 8
+        }
+      ]
+    }
+  },
+  {
+    "name": "windows_source_unavailable",
+    "payload": {
+      "metering_status": "userassist_unavailable",
+      "metering_user_hive_count": 2,
+      "metering_record_count": 1,
+      "apps": [
+        {
+          "name": "Partial",
+          "version": "1.0",
+          "usage_evidence": "recorded",
+          "last_used_at": "2026-09-30T12:00:00Z",
+          "launch_count": 1
+        },
+        {
+          "name": "Unknown",
+          "version": "1.0",
+          "usage_evidence": "unavailable"
+        }
+      ]
+    }
+  },
+  {
+    "name": "macos_successful_zero",
+    "payload": {
+      "metering_status": "ok",
+      "apps": [
+        {
+          "name": "Zero",
+          "version": "1.0",
+          "usage_evidence": "no_record",
+          "last_used_at": null,
+          "launch_count": 0
+        }
+      ]
+    }
+  }
+]

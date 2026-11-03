@@ -1,0 +1,23 @@
+{
+  "label": "logitechoptionsplusoffline",
+  "name": "Logi Options+",
+  "type": "zip",
+  "app_path": "/Applications/Logi Options+.app",
+  "expected_team_id": "QED4VVPZWA",
+  "download": {
+    "method": "static",
+    "url": "https://download01.logi.com/web/ftp/pub/techsupport/optionsplus/logioptionsplus_installer_offline.zip"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Patched staff console — Findings</title>
+<!-- Design reference for the staff console rebuild. Static mockup, invented data.
+     Source of truth for layout, spacing and colour. Colours and radii are theme.css tokens. -->
+<style>
+    body { margin:0; font-family:system-ui,-apple-system,'Segoe UI',sans-serif; font-size:14px; color:#0f1115; background:#f5f5f3; -webkit-font-smoothing:antialiased; }
+    a { color:#c93f04; text-decoration:none; } a:hover { color:#9f3003; }
+    .lbl { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:#7d8089; }
+    .mono { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; }
+    .num { font-family:system-ui,-apple-system,'Segoe UI',sans-serif; font-weight:700; letter-spacing:-.02em; }
+    .pill { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; padding:2px 6px; border-radius:4px; white-space:nowrap; }
+    .th { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#7d8089; padding:9px 14px; text-align:left; }
+    .td { padding:11px 14px; border-top:1px solid rgba(15,17,21,.07); font-size:13px; vertical-align:middle; }
+    .filter { display:flex; align-items:center; gap:6px; border:1px solid rgba(15,17,21,.12); background:#fff; border-radius:6px; padding:6px 10px; font-size:12px; }
+  </style>
+</head>
+<body>
+<div style="display:flex; flex-direction:column; width:1440px; height:900px; overflow:hidden; background:#f5f5f3;">
+
+  <div style="height:56px; flex-shrink:0; background:#fff; border-bottom:1px solid rgba(15,17,21,.12); display:flex; align-items:center; padding:0 22px; gap:11px;">
+    <span style="font-size:12px; color:#7d8089;">Meridian Trust</span><span style="font-size:12px; color:#7d8089;">/</span>
+    <h1 style="margin:0; font-family:system-ui,-apple-system,'Segoe UI',sans-serif; font-size:18px; font-weight:700; letter-spacing:-.015em;">Findings</h1>
+    <span class="mono" style="font-size:10px; color:#7d8089; background:#f5f5f3; border:1px solid rgba(15,17,21,.07); padding:3px 7px; border-radius:4px;">SAMPLE DATA</span>
+    <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+      <div style="border:1px solid rgba(15,17,21,.12); border-radius:6px; padding:6px 11px; font-size:12px; font-weight:500;">Export evidence pack</div>
+      <div style="background:#c93f04; color:#fff; border-radius:6px; padding:7px 12px; font-size:12px; font-weight:600;">Generate remediation</div>
+    </div>
+  </div>
+
+  <div style="padding:14px 22px; display:flex; flex-direction:column; gap:12px; overflow:hidden;">
+
+    <div style="display:flex; align-items:center; gap:8px;">
+      <div class="filter" style="border-color:#0f1115; font-weight:600;">Open <span class="mono" style="color:#7d8089;">95</span></div>
+      <div class="filter" style="color:#7d8089;">Acknowledged <span class="mono">12</span></div>
+      <div class="filter" style="color:#7d8089;">Risk accepted <span class="mono">4</span></div>
+      <div class="filter" style="color:#7d8089;">Closed <span class="mono">208</span></div>
+      <div style="width:1px; height:22px; background:rgba(15,17,21,.12); margin:0 3px;"></div>
+      <div class="filter">Class: all
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7d8089" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg></div>
+      <div class="filter">Severity: high, medium
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7d8089" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg></div>
+      <div class="filter" style="border-color:#c2410c; color:#c2410c; background:#fff7ed;">Basis: name match only
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c2410c" stroke-width="2.4"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+      <div class="mono" style="margin-left:auto; font-size:11px; color:#7d8089;">SORTED BY DEVICES AFFECTED</div>
+    </div>
+
+    <div style="background:#fff; border:1px solid rgba(15,17,21,.12); border-radius:6px; overflow:hidden;">
+      <table style="width:100%; border-collapse:collapse;">
+        <thead><tr style="background:#f5f5f3;">
+          <th class="th" style="width:32%;">Finding</th>
+          <th class="th">Class</th>
+          <th class="th">Severity</th>
+          <th class="th">Devices</th>
+          <th class="th">Basis</th>
+          <th class="th">First seen</th>
+          <th class="th">Owner</th>
+          <th class="th">State</th>
+        </tr></thead>
+        <tbody>
+          <tr style="background:#fff7ed;">
+            <td class="td" style="border-left:2px solid #c2410c;"><div style="font-weight:600;">Google Chrome, 4 versions behind</div><div class="mono" style="font-size:11px; color:#7d8089; margin-top:2px;">CVE-2026-4418 +6 · 128.0.6613.84 → 132.0.6834.83</div></td>
+            <td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">PATCH</span></td>
+            <td class="td"><span class="pill" style="background:#fef2f2; color:#b91c1c;">HIGH</span></td>
+            <td class="td"><span class="num" style="font-size:15px;">61</span></td>
+            <td class="td"><span class="mono" style="font-size:11px; color:#15803d;">version confirmed</span></td>
+            <td class="td mono" style="font-size:12px; color:#7d8089;">24 Aug</td>
+            <td class="td" style="font-size:12px;">Their team</td>
+            <td class="td"><span class="pill" style="background:#fef2f2; color:#b91c1c;">PAST 14 DAYS</span></td>
+          </tr>
+
+          <tr>
+            <td class="td" colspan="8" style="padding:0; border-top:0; background:#fffdf9;">
+              <div style="padding:14px 16px 16px 16px; border-left:2px solid #c2410c; display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:22px;">
+                <div>
+                  <div class="lbl" style="color:#0f1115;">Why we are saying this</div>
+                  <div style="font-size:12px; line-height:1.55; color:#2a2d33; margin-top:7px;">
+                    Bundle identity <span class="mono" style="background:#f5f5f3; padding:1px 4px; border-radius:3px;">com.google.Chrome</span> and <span class="mono" style="background:#f5f5f3; padding:1px 4px; border-radius:3px;">Google LLC (EQHXZ8M8AV)</span> matched on all 61 devices, so the version is read from the installed bundle rather than inferred from a display name. Vendor current build confirmed against the release feed 4 hours ago.
+                  </div>
+                  <div style="display:flex; gap:16px; margin-top:12px;">
+                    <div><div class="lbl">Oldest install</div><div class="mono" style="font-size:12px; margin-top:3px;">19 days</div></div>
+                    <div><div class="lbl">Spread</div><div class="mono" style="font-size:12px; margin-top:3px;">5 versions</div></div>
+                    <div><div class="lbl">Sites</div><div class="mono" style="font-size:12px; margin-top:3px;">Douglas, Ramsey</div></div>
+                  </div>
+                </div>
+                <div style="background:#fff; border:1px solid rgba(15,17,21,.12); border-radius:6px; padding:13px 14px;">
+                  <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <div class="lbl" style="color:#0f1115;">Remediation they can apply</div>
+                    <span class="pill" style="background:#f5f5f3; color:#7d8089;">INTUNE</span>
+                  </div>
+                  <div style="font-size:12px; color:#2a2d33; margin-top:8px; line-height:1.5;">A settings catalogue profile setting Chrome's update channel and minimum version. It changes update behaviour only, and will prompt users with unsaved tabs on next restart.</div>
+                  <div style="display:flex; gap:7px; margin-top:11px;">
+                    <div style="background:#0f1115; color:#fff; border-radius:6px; padding:7px 11px; font-size:12px; font-weight:600;">Generate profile</div>
+                    <div style="border:1px solid rgba(15,17,21,.12); border-radius:6px; padding:7px 11px; font-size:12px; font-weight:500;">Jamf version</div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="td"><div style="font-weight:600;">Disk encryption off</div><div class="mono" style="font-size:11px; color:#7d8089; margin-top:2px;">CIS L1 · FileVault 22, BitLocker 14</div></td>
+            <td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">CONFIG</span></td>
+            <td class="td"><span class="pill" style="background:#fef2f2; color:#b91c1c;">HIGH</span></td>
+            <td class="td"><span class="num" style="font-size:15px;">36</span></td>
+            <td class="td"><span class="mono" style="font-size:11px; color:#15803d;">version confirmed</span></td>
+            <td class="td mono" style="font-size:12px; color:#7d8089;">12 Aug</td>
+            <td class="td" style="font-size:12px;">Their team</td>
+            <td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">OPEN</span></td>
+          </tr>
+          <tr>
+            <td class="td"><div style="font-weight:600;">Standing local administrator</div><div class="mono" style="font-size:11px; color:#7d8089; margin-top:2px;">30 accounts across 30 devices</div></td>
+            <td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">ACCESS</span></td>
+            <td class="td"><span class="pill" style="background:#fff7ed; color:#c2410c;">MEDIUM</span></td>
+            <td class="td"><span class="num" style="font-size:15px;">30</span></td>
+            <td class="td"><span class="mono" style="font-size:11px; color:#15803d;">version confirmed</span></td>
+            <td class="td mono" style="font-size:12px; color:#7d8089;">12 Aug</td>
+            <td class="td" style="font-size:12px;">Patched</td>
+            <td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">OPEN</span></td>
+          </tr>
+          <tr>
+            <td class="td"><div style="font-weight:600;">Zoom, end of support build</div><div class="mono" style="font-size:11px; color:#7d8089; margin-top:2px;">display name match only, no bundle evidence</div></td>
+            <td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">PATCH</span></td>
+            <td class="td"><span class="pill" style="background:#fff7ed; color:#c2410c;">MEDIUM</span></td>
+            <td class="td"><span class="num" style="font-size:15px;">19</span></td>
+            <td class="td"><span class="mono" style="font-size:11px; color:#c2410c;">name match only</span></td>
+            <td class="td mono" style="font-size:12px; color:#7d8089;">1 Sep</td>
+            <td class="td" style="font-size:12px;">Their team</td>
+            <td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">OPEN</span></td>
+          </tr>
+          <tr>
+            <td class="td"><div style="font-weight:600;">Tailscale, unclassified</div><div class="mono" style="font-size:11px; color:#7d8089; margin-top:2px;">new to the estate 7 Sep · no policy decision</div></td>
+            <td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">SOFTWARE</span></td>
+            <td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">NONE</span></td>
+            <td class="td"><span class="num" style="font-size:15px;">9</span></td>
+            <td class="td"><span class="mono" style="font-size:11px; color:#15803d;">version confirmed</span></td>
+            <td class="td mono" style="font-size:12px; color:#7d8089;">7 Sep</td>
+            <td class="td" style="font-size:12px; color:#c2410c;">Needs a decision</td>
+            <td class="td"><span class="pill" style="background:#fff7ed; color:#c2410c;">UNCLASSIFIED</span></td>
+          </tr>
+          <tr>
+            <td class="td"><div style="font-weight:600;">Screen lock over 15 minutes</div><div class="mono" style="font-size:11px; color:#7d8089; margin-top:2px;">CIS L1 5.8</div></td>
+            <td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">CONFIG</span></td>
+            <td class="td"><span class="pill" style="background:#fff7ed; color:#c2410c;">MEDIUM</span></td>
+            <td class="td"><span class="num" style="font-size:15px;">8</span></td>
+            <td class="td"><span class="mono" style="font-size:11px; color:#15803d;">version confirmed</span></td>
+            <td class="td mono" style="font-size:12px; color:#7d8089;">12 Aug</td>
+            <td class="td" style="font-size:12px;">Their team</td>
+            <td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">ACKNOWLEDGED</span></td>
+          </tr>
+          <tr>
+            <td class="td"><div style="font-weight:600;">Firewall disabled</div><div class="mono" style="font-size:11px; color:#7d8089; margin-top:2px;">CIS L1 4.1 · 2 devices, both since reimage</div></td>
+            <td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">CONFIG</span></td>
+            <td class="td"><span class="pill" style="background:#fef2f2; color:#b91c1c;">HIGH</span></td>
+            <td class="td"><span class="num" style="font-size:15px;">2</span></td>
+            <td class="td"><span class="mono" style="font-size:11px; color:#15803d;">version confirmed</span></td>
+            <td class="td mono" style="font-size:12px; color:#7d8089;">8 Sep</td>
+            <td class="td" style="font-size:12px;">Patched</td>
+            <td class="td"><span class="pill" style="background:#f5f5f3; color:#7d8089;">OPEN</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:12px; background:#fff; border:1px solid rgba(15,17,21,.12); border-radius:6px; padding:12px 15px;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7d8089" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+      <div style="font-size:12px; color:#2a2d33; line-height:1.5;">16 devices could not be inspected in this window and are excluded from every count above. They are not counted as passing. <a href="#">See coverage</a></div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

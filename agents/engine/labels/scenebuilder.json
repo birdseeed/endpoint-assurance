@@ -1,0 +1,24 @@
+{
+  "label": "scenebuilder",
+  "name": "SceneBuilder",
+  "type": "dmg",
+  "app_path": "/Applications/SceneBuilder.app",
+  "expected_team_id": "S7ZR395D8U",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://gluonhq.com/products/scene-builder/"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

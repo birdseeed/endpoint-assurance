@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% from "_macros.html" import kpi_summary, group_card_head, jamf_result_notice %}
+{% block content %}
+<div class="page-head">
+  <h1>Jamf coverage</h1>
+  <p class="meta">Compares the Macs your Jamf Pro manages with the Macs Patched sees, built only from the webhooks your Jamf Pro sends. Patched never holds a Jamf API credential.</p>
+</div>
+
+{{ jamf_result_notice(jamf_result) }}
+
+<div class="card group-card gap-card" id="jamf-connector-card">
+  {{ group_card_head('Connector', connector.label, none, connector.pill_class | replace('pill-', '')) }}
+  <div class="gap-card__body">
+    <p>{{ connector.message or 'Jamf is not connected yet.' }}</p>
+    <p class="meta">
+      {% if connector.first_event_at %}First Jamf event {{ connector.first_event_at | humandate(true) }} UTC. {% endif %}
+      {% if connector.last_event_at %}Last Jamf event {{ connector.last_event_at | humandate(true) }} UTC{% if connector.hours_since_last_event is not none %} ({% if connector.hours_since_last_event == 0 %}less than an hour ago{% else %}{{ connector.hours_since_last_event }} hour{{ '' if connector.hours_since_last_event == 1 else 's' }} ago{% endif %}){% endif %}.{% endif %}
+    </p>
+    {% if connector.jamf_instance and connector.jamf_instance.url %}
+    <p class="meta">Instance: <span class="mono">{{ connector.jamf_instance.url }}</span>{% if connector.jamf_instance.mismatch %} - the latest events claim a different instance from the first ones.{% endif %}</p>
+    {% endif %}
+    {% if connector.status == 'not_configured' %}
+      {% if can_edit %}
+      <p><a class="btn btn-small" href="/devices/jamf/setup">Set up Jamf &rarr;</a></p>
+      {% elif role_unavailable %}
+      <p class="meta">Setup controls are unavailable right now because your account role could not be checked.</p>
+      {% else %}
+      <p class="meta">An administrator on your account can set up the Jamf connector.</p>
+      {% endif %}
+    {% else %}
+    <p><a class="btn btn-small" href="/devices/jamf/setup">Manage Jamf setup &rarr;</a></p>
+    {% endif %}
+  </div>
+</div>
+
+<p class="toolbar-hint" id="jamf-basis"><strong>{{ basis.statement }}</strong> {{ basis.no_backfill }} {{ basis.no_delete_event }} {{ basis.scope }} {{ basis.seed }}</p>
+
+{% call kpi_summary([
+  ('Jamf devices reported by webhook', counts.jamf_devices_total or 0, ''),
+  ('Webhook-reported, not seen by Patched', counts.gap or 0, 'warn-text' if counts.gap else ''),
+  ('Seen by Patched, no matching webhook', counts.not_reported_by_jamf or 0, ''),
+  ('Matched in both', counts.covered or 0, '')
+], 'Retired devices and non-macOS devices are excluded from every figure above, the same as everywhere else in the portal.') %}<a class="btn btn-small" href="/devices/jamf/coverage.pdf">Download PDF</a> <a class="btn btn-small" href="/devices/jamf/coverage.csv">Download CSV</a>{% endcall %}
+
+<div class="card group-card gap-card">
+  {{ group_card_head('Managed by Jamf, not seen by Patched', gap.total ~ ' Mac' ~ ('' if gap.total == 1 else 's'), 'Jamf Pro has reported these Macs; Patched has never seen a matching device.', 'muted') }}
+  <div class="gap-card__body">
+    {% if gap.rows %}
+    <div class="table-scroll">
+    <table class="data-table table-stack">
+      <thead><tr><th>Device name</th><th>Serial</th><th>Model</th><th>OS version</th><th>Jamf state</th><th>Last Jamf event</th><th>Note</th></tr></thead>
+      <tbody>
+        {% for r in gap.rows %}
+        <tr>
+          <td data-label="Device name">{{ r.device_name or '-' }}</td>
+          <td class="mono" data-label="Serial">{{ r.serial or '-' }}</td>
+          <td data-label="Model">{{ r.model or '-' }}</td>
+          <td data-label="OS version">{{ r.os_version or '-' }}</td>
+          <td data-label="Jamf state">{{ r.jamf_state_label }}</td>
+          <td class="mono" data-label="Last Jamf event">{% if r.last_jamf_event_at %}{{ r.last_jamf_event_at | humandate_nowrap(true) }}{% else %}-{% endif %}</td>
+          <td data-label="Note">{{ r.note or '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if gap.prev_url or gap.next_url %}
+    <nav class="inventory-pagination" aria-label="Managed by Jamf pages">
+      <span class="meta">{{ gap.shown_from }} to {{ gap.shown_to }} of {{ gap.total }}.</span>
+      <span>{% if gap.prev_url %}<a class="btn btn-small" href="{{ gap.prev_url }}">Previous</a>{% endif %}{% if gap.next_url %}<a class="btn btn-small" href="{{ gap.next_url }}">Next</a>{% endif %}</span>
+    </nav>
+    {% endif %}
+    {% else %}
+    <p class="empty">None. Every Mac Jamf has reported has also been seen by Patched (or none has been reported yet).</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card group-card gap-card">
+  {{ group_card_head('Seen by Patched, not reported by Jamf', not_reported.total ~ ' Mac' ~ ('' if not_reported.total == 1 else 's'), 'This is not a claim these Macs are unmanaged. Jamf sends no delete event and no backfill, so Jamf silence is never authority on its own - see the state the Patched agent reports for each one below.', 'muted') }}
+  <div class="gap-card__body">
+    {% if not_reported.rows %}
+    <div class="table-scroll">
+    <table class="data-table table-stack">
+      <thead><tr><th>Hostname</th><th>Serial</th><th>OS version</th><th>Last seen</th><th>Agent-reported MDM state</th><th>Note</th></tr></thead>
+      <tbody>
+        {% for r in not_reported.rows %}
+        <tr>
+          <td data-label="Hostname"><a href="/devices/{{ r.device_id }}">{{ r.hostname or '-' }}</a></td>
+          <td class="mono" data-label="Serial">{{ r.serial or '-' }}</td>
+          <td data-label="OS version">{{ r.os_version or '-' }}</td>
+          <td class="mono" data-label="Last seen">{% if r.last_seen %}{{ r.last_seen | humandate_nowrap(true) }}{% else %}-{% endif %}</td>
+          <td data-label="Agent-reported MDM state"><span class="pill {{ r.mdm.pill_class }}">{{ r.mdm.label }}</span></td>
+          <td data-label="Note">{{ r.note or '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if not_reported.prev_url or not_reported.next_url %}
+    <nav class="inventory-pagination" aria-label="Seen by Patched, not reported by Jamf pages">
+      <span class="meta">{{ not_reported.shown_from }} to {{ not_reported.shown_to }} of {{ not_reported.total }}.</span>
+      <span>{% if not_reported.prev_url %}<a class="btn btn-small" href="{{ not_reported.prev_url }}">Previous</a>{% endif %}{% if not_reported.next_url %}<a class="btn btn-small" href="{{ not_reported.next_url }}">Next</a>{% endif %}</span>
+    </nav>
+    {% endif %}
+    {% else %}
+    <p class="empty">None. Every macOS device Patched sees is also reported by Jamf (or none has been reported yet).</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card group-card gap-card">
+  {{ group_card_head('Both', covered.total ~ ' Mac' ~ ('' if covered.total == 1 else 's'), 'Reported by Jamf and seen by Patched.', 'muted') }}
+  <div class="gap-card__body">
+    {% if covered.rows %}
+    <div class="table-scroll">
+    <table class="data-table table-stack">
+      <thead><tr><th>Hostname</th><th>Serial</th><th>Last seen</th><th>Jamf device name</th><th>Last Jamf event</th><th>Match basis</th><th>Note</th></tr></thead>
+      <tbody>
+        {% for r in covered.rows %}
+        <tr>
+          <td data-label="Hostname"><a href="/devices/{{ r.device_id }}">{{ r.hostname or '-' }}</a></td>
+          <td class="mono" data-label="Serial">{{ r.serial or '-' }}</td>
+          <td class="mono" data-label="Last seen">{% if r.last_seen %}{{ r.last_seen | humandate_nowrap(true) }}{% else %}-{% endif %}</td>
+          <td data-label="Jamf device name">{{ r.jamf_device_name or '-' }}</td>
+          <td class="mono" data-label="Last Jamf event">{% if r.last_jamf_event_at %}{{ r.last_jamf_event_at | humandate_nowrap(true) }}{% else %}-{% endif %}</td>
+          <td data-label="Match basis">{{ 'Serial' if r.match_basis == 'serial' else 'Hardware UUID' }}</td>
+          <td data-label="Note">{{ r.note or '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if covered.prev_url or covered.next_url %}
+    <nav class="inventory-pagination" aria-label="Both pages">
+      <span class="meta">{{ covered.shown_from }} to {{ covered.shown_to }} of {{ covered.total }}.</span>
+      <span>{% if covered.prev_url %}<a class="btn btn-small" href="{{ covered.prev_url }}">Previous</a>{% endif %}{% if covered.next_url %}<a class="btn btn-small" href="{{ covered.next_url }}">Next</a>{% endif %}</span>
+    </nav>
+    {% endif %}
+    {% else %}
+    <p class="empty">None yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

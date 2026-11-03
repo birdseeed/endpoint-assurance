@@ -1,0 +1,24 @@
+{
+  "label": "kommodoscreenrecorder",
+  "name": "Kommodo Screen Recorder",
+  "type": "pkg",
+  "app_path": "/Applications/Kommodo Screen Recorder.app",
+  "expected_team_id": "3M6U87VP9P",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://api.prod.komododecks.com/api/v2/releases/arm64/latest-mac.yml"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

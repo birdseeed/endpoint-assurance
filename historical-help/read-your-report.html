@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>How to read your report - Patched.im docs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="How to read a Patched report: collection freshness, configuration assurance, CVE correlations, top failing controls and supporting evidence." />
+  <link rel="icon" href="/favicon.ico?v=20260926-brand-v3" sizes="32x32" />
+  <link rel="icon" href="/favicon.svg?v=20260926-brand-v3" type="image/svg+xml" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=20260926-brand-v3" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=20260926-brand-v3" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20260926-brand-v3" />
+  <link rel="mask-icon" href="/mask-icon.svg?v=20260926-brand-v3" color="#2563eb" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=20260926-brand-v3" />
+</head>
+<body>
+
+  <!-- ── Nav ─────────────────────────────────────────────── -->
+  <header class="nav">
+    <div class="nav__inner">
+      <a class="nav__logo" href="https://patched.im" aria-label="Patched.im home"><img src="/patched-lockup-horizontal.svg" width="132" height="27" alt="Patched" /></a>
+      <nav class="nav__links" aria-label="Primary">
+        <a href="/getting-started.html">Getting started</a>
+        <a href="/faq.html">FAQ</a>
+        <div class="nav__dropdown">
+          <button type="button" class="nav__dropdown-trigger" aria-haspopup="true" aria-expanded="false">Guides <svg class="nav__dropdown-chevron" width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="nav__dropdown-menu" role="menu">
+            <a role="menuitem" href="/agent-updater.html">Endpoint agent</a>
+            <a role="menuitem" href="/protected.html">Configuration assurance</a>
+            <a role="menuitem" href="/read-your-report.html">Reports and evidence</a>
+            <a role="menuitem" href="/remediation-guide.html">Remediation guide</a>
+            <a role="menuitem" href="/using-your-portal.html">Customer portal</a>
+            <a role="menuitem" href="/security.html">Security</a>
+            <a role="menuitem" href="/privacy.html">Data and privacy</a>
+          </div>
+        </div>
+      </nav>
+      <div class="nav__spacer"></div>
+      <div class="nav__cta"><a class="btn btn--primary" href="https://patched.im/pricing">Become a design partner</a></div>
+      <button class="nav__burger" type="button" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+
+  <main class="doc">
+    <div class="wrap">
+      <div class="doc__inner">
+        <a class="doc__back" href="/">&larr; All guides</a>
+
+        <article class="article">
+          <header>
+            <p class="kicker">Guide 08</p>
+            <h1>How to read your report</h1>
+            <p class="lead">
+              Generate a report from the portal whenever you want one, and you get a
+              short email and a longer PDF. This is a walk-through of both: what each
+              number means, how to read the trend, and what to actually do about it.
+              No CIS jargon without an explanation attached.
+            </p>
+          </header>
+
+          <h2>The two documents</h2>
+          <p>
+            The <strong>email</strong> is a 150&ndash;200 word summary: your score, the
+            three things worth acting on right now, and a link to the full PDF. It's
+            written for whoever makes the call on your estate (owner, office manager,
+            whoever), not for whoever fixes it.
+          </p>
+          <p>
+            The <strong>PDF</strong> is the detail: every open finding, every CVE, and a
+            per-device breakdown. It's the thing to forward to your IT contact or keep on
+            file for an auditor.
+          </p>
+
+          <h2>The headline number</h2>
+          <p>
+            The number at the top is your <strong>CIS compliance score</strong>: the
+            share of CIS Level&nbsp;1 controls (encryption, firewall, screen lock, and
+            the rest of the baseline) configured correctly across your estate right
+            now. It's a percentage out of 100. Higher is better.
+          </p>
+          <table>
+            <tr><th>Signal</th><th>What it shows</th></tr>
+            <tr><td><strong>CIS compliance score</strong></td><td>The share of CIS Level&nbsp;1 controls passing across your devices. This is the headline number.</td></tr>
+            <tr><td><strong>CVE correlations</strong></td><td>Potential exposures linked to observed software identity and version evidence, with severity and confidence context.</td></tr>
+            <tr><td><strong>OS currency</strong></td><td>How many devices report current, pending or stale operating-system update evidence.</td></tr>
+          </table>
+          <p>
+            These stay separate rather than being blended into one figure, so a clean
+            CVE count can't quietly cover for a weak CIS score, or the other way round.
+            Each number tells you something different, and you see all of them
+            together, not averaged away.
+          </p>
+          <div class="callout">
+            The point of the compliance score is to give you a single thing to watch
+            improve month to month. It isn't a pass/fail grade; it's a direction of
+            travel.
+          </div>
+
+          <h2>The trend</h2>
+          <p>
+            Next to the compliance score you'll see a change from the previous week,
+            shown as <code>+7</code> or <code>&minus;4</code>. A drop is always
+            framed as what's left to recover, not as a verdict: the point is to
+            know where you stand, not to feel bad about it. The PDF adds a longer view
+            of the same trend so you can see whether things are heading the right way
+            over a longer stretch, not just since last week.
+          </p>
+          <p>
+            <strong>Your first report is different.</strong> With no history yet, there's
+            no trend to show. Instead you'll see &ldquo;baseline established&rdquo;: that
+            first report is the complete picture of your estate today, and the reference
+            point everything after it improves against.
+          </p>
+
+          <h2>Top failing controls</h2>
+          <p>
+            Below the score sits a short table: the five CIS controls failing on the most
+            devices across your estate, ranked by how many devices they affect (not by
+            severity alone: a medium-severity setting that's wrong on nearly every device
+            usually matters more day to day than a critical one wrong on a single
+            machine). Each row shows:
+          </p>
+          <ul>
+            <li>What the control is, in plain English (e.g. &ldquo;FileVault
+              Encryption&rdquo;, not a rule code)</li>
+            <li>How many devices are affected, as a count and a percentage of your
+              estate</li>
+            <li>A severity badge: Critical, High, Medium or Low</li>
+            <li>One sentence on how to fix it</li>
+          </ul>
+          <p>
+            The email's &ldquo;three things to act on&rdquo; draws on this table plus the
+            CVE correlations and configuration gaps below, picked for whichever issues clear the most
+            findings across your estate: if you only read one part of the report, read
+            that. For the general remediation steps behind the most common findings, see
+            the <a href="/remediation-guide.html">remediation guide</a>.
+          </p>
+
+          <h2>What the PDF adds</h2>
+          <p>
+            The email stays aggregate, a summary rather than a spreadsheet. The attached
+            PDF goes further:
+          </p>
+          <ul>
+            <li><strong>CVE correlations</strong>: software and version evidence linked
+              to known vulnerabilities, with severity and available match confidence.</li>
+            <li><strong>Operating-system currency</strong>: current and pending update
+              evidence, its collection time, and devices too stale for a confident
+              conclusion.</li>
+            <li><strong>Recommendations</strong>: a short numbered list of the
+              highest-impact actions, ranked by how many findings each one clears.</li>
+            <li><strong>Per-device appendix</strong>: one row per device: hostname,
+              OS, its own score, and its top failing controls. This is the page to hand to
+              whoever does the actual fixing.</li>
+          </ul>
+
+          <h2>What a typical action looks like</h2>
+          <p>
+            Most findings resolve to one of two things: turn a setting on, or update a
+            piece of software. The report doesn't just tell you something's wrong; each
+            entry comes with the fix attached, so nobody has to go and research CIS
+            Level&nbsp;1 to act on it. If your fix touches every device the same way (for
+            example, enabling automatic updates), it's usually worth doing it estate-wide
+            through your IT contact or MDM rather than device by device.
+          </p>
+          <p>
+            For what a passing or failing result actually proves, and how CIS Level&nbsp;1
+            maps to frameworks like ISO&nbsp;27001 and Cyber Essentials, see
+            <a href="/protected.html">What &ldquo;Compliant&rdquo; means</a>.
+          </p>
+
+          <nav class="pager">
+            <a href="/privacy.html">&larr; Data and privacy</a>
+            <a href="/remediation-guide.html">Remediation guide &rarr;</a>
+          </nav>
+        </article>
+      </div>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__logo"><img src="/patched-lockup-horizontal-white.svg" width="132" height="27" alt="Patched" /></div>
+      <nav class="footer__links" aria-label="Footer"><a href="https://patched.im/cyber-essentials">Cyber Essentials</a><a href="https://patched.im/msp">For MSPs</a><a href="https://patched.im/pricing">Pricing</a><a href="https://patched.im/security.html">Security</a><a href="https://patched.im/about.html">About</a><a href="https://patched.im/blog">Blog</a><a href="https://docs.patched.im">Docs</a><a href="https://status.patched.im">Status</a><a href="https://patched.im/privacy.html">Privacy</a><a href="https://patched.im/cookies.html">Cookies</a><a href="mailto:hello@patched.im">Contact</a></nav>
+      <div class="footer__meta">&copy; <span data-year>2026</span> Patched.im Ltd · Isle of Man · Company No. 139269C</div>
+    </div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

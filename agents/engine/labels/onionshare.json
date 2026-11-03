@@ -1,0 +1,24 @@
+{
+  "label": "onionshare",
+  "name": "OnionShare",
+  "type": "dmg",
+  "app_path": "/Applications/OnionShare.app",
+  "expected_team_id": "N9B95FDWH4",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://onionshare.org"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

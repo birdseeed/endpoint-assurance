@@ -1,0 +1,13 @@
+[Unit]
+Description=Daily Restic backup — patched-portal-01 (scan state + config) to Cloudflare R2
+
+[Timer]
+# 04:00 UTC daily — after the api-01 (03:00 UTC) and prod-01 (02:00 UTC) legs,
+# so all three boxes' nightly windows stay clearly separated.
+OnCalendar=*-*-* 04:00:00
+RandomizedDelaySec=900
+# Re-run missed backups on next boot (e.g. after maintenance window)
+Persistent=true
+
+[Install]
+WantedBy=timers.target

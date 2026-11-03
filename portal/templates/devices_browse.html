@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "_macros.html" import device_table %}
+{% block content %}
+<p class="crumb"><a href="/devices">&larr; Devices</a></p>
+<div class="page-head">
+  <h1>{{ browse_title }}</h1>
+  <p class="meta">{{ devices | length }} device{{ '' if devices | length == 1 else 's' }} &middot; {{ browse_desc }}</p>
+</div>
+
+<div class="toolbar toolbar-devices">
+  {% if devices %}<input type="search" id="device-search" class="search" data-table-search="#device-table" placeholder="Search hostname, platform or OS version" aria-label="Search devices">{% endif %}
+</div>
+
+<div class="card card-table">
+  {{ device_table(devices) }}
+  {% if not devices %}<p class="empty">No devices are in this group right now.</p>{% endif %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ static_url('js/portal.js') }}"></script>{% endblock %}

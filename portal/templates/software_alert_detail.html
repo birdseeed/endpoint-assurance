@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "_macros.html" import software_type_tag %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ alert.product.name }}</h1>
+  <p class="meta">{{ software_type_tag(alert.product.kind) }}{% if alert.product.platform %} &middot; {{ alert.product.platform }}{% endif %} &middot; <a href="{{ return_to }}">Back to Alerts</a></p>
+</div>
+
+{% if alert_result %}
+<div class="notice{% if not alert_result.error %} notice-ok{% endif %}" id="alert-result" role="status" tabindex="-1">
+  {% if alert_result.error %}
+  <p><strong>{{ alert_result.error }}</strong></p>
+  {% elif alert_result.already_acknowledged %}
+  <p><strong>That alert was already acknowledged.</strong> Nothing changed.</p>
+  {% elif alert_result.changed %}
+  <p><strong>Alert acknowledged.</strong></p>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="card history-card">
+  <p><span class="pill {{ 'pill-bad' if alert.status == 'open' else ('pill-warn' if alert.status == 'acknowledged' else 'pill-ok') }}">{{ alert.status_label }}</span></p>
+  <dl class="kv">
+    <dt>Device</dt><dd>{% if alert.device.device_id %}<a href="/devices/{{ alert.device.device_id }}">{{ alert.device.hostname }}</a>{% else %}{{ alert.device.hostname }}{% endif %}</dd>
+    <dt>Raised</dt><dd class="mono">{{ (alert.raised_at | humandate(true)) ~ ' UTC' if alert.raised_at else 'Not recorded' }}</dd>
+    <dt>How it was raised</dt><dd>{{ alert.trigger_label }}</dd>
+    {% if alert.acknowledged_at %}
+    <dt>Acknowledged</dt><dd class="mono">{{ alert.acknowledged_at | humandate(true) }} UTC</dd>
+    <dt>Acknowledged by</dt><dd class="cell-anywrap">{{ alert.acknowledged_by or 'Not recorded' }}</dd>
+    {% endif %}
+    {% if alert.resolved_at %}
+    <dt>Resolved</dt><dd class="mono">{{ alert.resolved_at | humandate(true) }} UTC</dd>
+    <dt>Resolved reason</dt><dd>{{ alert.resolved_reason or 'Not recorded' }}</dd>
+    {% endif %}
+    {% if alert.reopened_count %}
+    <dt>Re-opened</dt><dd>{{ alert.reopened_count }} time{{ '' if alert.reopened_count == 1 else 's' }}{% if alert.last_reopened_at %}, most recently <span class="mono">{{ alert.last_reopened_at | humandate(true) }} UTC</span>{% endif %}</dd>
+    {% endif %}
+  </dl>
+
+  {% if can_edit and alert.can_acknowledge %}
+  <form method="post" action="/software/alerts/{{ alert.id }}/acknowledge" class="alert-ack-form alert-ack-form--detail">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="return_to" value="/software/alerts/{{ alert.id }}">
+    <label for="alert-ack-note">Note (optional)</label>
+    <input class="search alert-ack-form__note" type="text" id="alert-ack-note" name="note" maxlength="1000" placeholder="Optional note" autocomplete="off">
+    <button type="submit" class="btn btn-small">Acknowledge</button>
+  </form>
+  {% elif not can_edit %}
+  {% if role_unavailable %}
+  <p class="toolbar-hint">The Acknowledge control is unavailable right now because your account role could not be checked.</p>
+  {% else %}
+  <p class="toolbar-hint">Your account can view this alert and its history. An administrator on your account can acknowledge it.</p>
+  {% endif %}
+  {% endif %}
+</div>
+
+<div class="card history-card">
+  <h2>History</h2>
+  {% if not history %}
+  <p class="empty">No history has been recorded for this alert yet.</p>
+  {% else %}
+  <ol class="history__list">
+    {% for h in history %}
+    <li class="history__item">
+      <p class="history__change"><span class="pill pill-muted">{{ h.from_label }}</span> <span aria-hidden="true">&rarr;</span><span class="visually-hidden"> to </span> <span class="pill {{ 'pill-bad' if h.to_label == 'Open' else ('pill-warn' if h.to_label == 'Acknowledged' else 'pill-ok') }}">{{ h.to_label }}</span></p>
+      <p class="history__meta"><span class="mono">{{ h.at | humandate(true) }} UTC</span> <span class="cell-anywrap">by {{ h.actor_label }}</span></p>
+      {% if h.reason %}<p class="history__reason">Reason: {{ h.reason }}</p>{% endif %}
+      {% if h.note %}<p class="history__reason">Note: {{ h.note }}</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+</div>
+{% endblock %}

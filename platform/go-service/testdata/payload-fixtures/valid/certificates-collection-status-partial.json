@@ -1,0 +1,46 @@
+{
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.9.0",
+  "tenant_id": "66666666-6666-6666-6666-666666666666",
+  "collected_at": "2026-12-01T00:00:00Z",
+  "device": {
+    "serial": "C00000000006",
+    "hw_uuid": "66666666-AAAA-BBBB-CCCC-DDDDDDDDDDDD",
+    "hostname": "certs-collection-status-host",
+    "computer_name": "Certs Collection Status Test",
+    "hw_model": "Mac14,6",
+    "arch": "arm64",
+    "last_boot": "2026-12-01T00:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M3 Pro",
+    "cpu_cores": 12,
+    "ram_gb": 18,
+    "disk_total_gb": 512.0,
+    "disk_free_gb": 256.0
+  },
+  "os": {
+    "name": "macOS",
+    "version": "15.4.1",
+    "build": "24E263"
+  },
+  "compliance": {},
+  "security_tools": [],
+  "system_extensions": [],
+  "background_items": [],
+  "icloud": { "signed_in": "Yes" },
+  "apps": [],
+  "collection_status": {
+    "certificates": "partial"
+  },
+  "certificates": [
+    {
+      "subject_cn": "example.com",
+      "issuer_cn": "DigiCert Global Root CA",
+      "sha1": "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3",
+      "not_after": "2027-01-15T00:00:00Z",
+      "days_until_expiry": 588
+    }
+  ]
+}

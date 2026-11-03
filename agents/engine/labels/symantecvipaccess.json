@@ -1,0 +1,31 @@
+{
+  "label": "symantecvipaccess",
+  "name": "VIP Access",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "relative-path-glob",
+    "patterns": [
+      "VIP Access.pkg"
+    ]
+  },
+  "app_path": "/Applications/VIP Access.app",
+  "expected_team_id": "9PTGMPNXZ2",
+  "download": {
+    "method": "static",
+    "url": "https://storage.googleapis.com/sedvip-prd-idcenter-downloads/VIPAccessSecurityCode.dmg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [
+    "VIP Access"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

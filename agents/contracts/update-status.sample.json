@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-22T09:14:03Z",
+  "device": {
+    "hw_uuid": "5F9A2B1C-3D4E-5F6A-7B8C-9D0E1F2A3B4C",
+    "computer_name": "Sample MacBook Pro"
+  },
+  "last_run": {
+    "started_at": "2026-11-22T09:13:40Z",
+    "finished_at": "2026-11-22T09:14:03Z",
+    "trigger": "scheduled",
+    "installomator_tag": "patched-v20261120"
+  },
+  "next_scheduled_run": "2026-11-23T03:00:00Z",
+  "overall_state": "updates_available",
+  "counts": {
+    "total": 6,
+    "up_to_date": 4,
+    "updates_available": 2,
+    "errors": 0
+  },
+  "apps": [
+    {
+      "label": "googlechrome",
+      "name": "Google Chrome",
+      "installed_version": "125.0.6422.60",
+      "available_version": "125.0.6422.112",
+      "state": "update_available",
+      "last_action": "already_current",
+      "last_action_at": "2026-11-21T03:01:12Z",
+      "failure_reason": null,
+      "verified_signer": "EQHXZ8M8AV",
+      "message": null,
+      "also_managed_by": "homebrew",
+      "manager_drift": true
+    },
+    {
+      "label": "slack",
+      "name": "Slack",
+      "installed_version": "4.38.121",
+      "available_version": "4.39.90",
+      "state": "update_available",
+      "last_action": "already_current",
+      "last_action_at": "2026-11-21T03:01:30Z",
+      "failure_reason": null,
+      "verified_signer": "BQR82RBBHL",
+      "message": null,
+      "also_managed_by": null,
+      "manager_drift": false
+    },
+    {
+      "label": "zoom",
+      "name": "Zoom",
+      "installed_version": "6.0.10",
+      "available_version": "6.0.10",
+      "state": "up_to_date",
+      "last_action": "installed",
+      "last_action_at": "2026-11-21T03:02:05Z",
+      "failure_reason": null,
+      "verified_signer": "BJ4HAAB9B3",
+      "message": null,
+      "also_managed_by": null,
+      "manager_drift": false
+    },
+    {
+      "label": "1password",
+      "name": "1Password",
+      "installed_version": "8.10.36",
+      "available_version": "8.10.36",
+      "state": "up_to_date",
+      "last_action": "already_current",
+      "last_action_at": "2026-11-21T03:02:20Z",
+      "failure_reason": null,
+      "verified_signer": "2BUA8C4S2C",
+      "message": null,
+      "also_managed_by": null,
+      "manager_drift": false
+    },
+    {
+      "label": "firefox",
+      "name": "Mozilla Firefox",
+      "installed_version": "126.0",
+      "available_version": "126.0",
+      "state": "up_to_date",
+      "last_action": "already_current",
+      "last_action_at": "2026-11-21T03:02:44Z",
+      "failure_reason": null,
+      "verified_signer": "43AQ936H96",
+      "message": null,
+      "also_managed_by": null,
+      "manager_drift": false
+    },
+    {
+      "label": "notion",
+      "name": "Notion",
+      "installed_version": "3.9.0",
+      "available_version": "3.9.0",
+      "state": "up_to_date",
+      "last_action": "already_current",
+      "last_action_at": "2026-11-21T03:03:01Z",
+      "failure_reason": null,
+      "verified_signer": "LBQJ96FQ8D",
+      "message": null,
+      "also_managed_by": null,
+      "manager_drift": false
+    }
+  ],
+  "coexistence": {
+    "managers_present": ["homebrew"],
+    "also_managed_count": 1
+  },
+  "os_update": {
+    "installed_os": "14.5",
+    "latest_os": "14.6.1",
+    "target_os": "14.6.1",
+    "state": "update_required",
+    "severity": "medium",
+    "security_relevant": true,
+    "actively_exploited": false,
+    "deadline": "2026-12-25T00:00:00Z",
+    "deferrals_remaining": 4,
+    "release_age_days": 18,
+    "checked_at": "2026-11-22T09:14:03Z"
+  }
+}

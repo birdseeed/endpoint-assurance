@@ -1,0 +1,261 @@
+name: PAT-492 gate auto-fix
+
+# Fires on every commit-status event. When the patched-reviewer App sets
+# `patched/non-author-review` to failure, this workflow:
+#   1. Finds the open PR whose head SHA matches the failing SHA.
+#   2. Bails if it has already run once on this branch (loop guard).
+#   3. Extracts the reviewer's comment, runs Claude with those findings,
+#      commits any changes, and pushes — which re-triggers CI and the gate.
+# If the gate still fails after the autofix commit, the [autofix] marker in
+# the commit message prevents a second autofix run, leaving it for humans.
+#
+# Security hardening:
+# - Only runs on PRs from the same repo (fork check, step 1).
+# - ANTHROPIC_API_KEY is scoped only to the Claude step — not exported globally.
+# - Claude is instructed not to modify .github/ (enforced in prompt).
+# - Anti-loop: exits if HEAD commit on the failing SHA already contains [autofix].
+# - Anti-loop: exits if patched-reviewer has already commented 2+ times on the PR.
+# - npm install -g is used for Claude Code because no SHA-pinned alternative
+#   exists for CLI tools distributed via npm.
+#
+# Required repo secret: ANTHROPIC_API_KEY
+
+on:
+  status: {}
+
+permissions:
+  contents: write
+  pull-requests: read
+  statuses: read
+
+jobs:
+  autofix:
+    runs-on: ubuntu-latest
+    if: |
+      github.event.state == 'failure' &&
+      github.event.context == 'patched/non-author-review'
+
+    steps:
+      # ── Anti-loop guard ──────────────────────────────────────────────────
+      # If the failing commit message already contains [autofix], the gate
+      # reviewed a fixup and still found issues. Leave it for human resolution.
+      - name: Check for [autofix] marker in HEAD commit
+        id: loop_check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FAILING_SHA: ${{ github.event.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # gh api --jq is a built-in feature of the gh CLI (no system jq needed).
+          MSG=$(gh api "repos/${REPO}/commits/${FAILING_SHA}" \
+            --jq '.commit.message' 2>/dev/null || echo "")
+          if echo "$MSG" | grep -qF '[autofix]'; then
+            echo "HEAD commit already contains [autofix] — gate reviewed a fixup and still found issues. Stopping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── Find the open PR for this SHA ────────────────────────────────────
+      - name: Find open PR for failing SHA
+        if: steps.loop_check.outputs.skip == 'false'
+        id: find_pr
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const sha = context.payload.sha;
+            const repo = context.payload.repository;
+
+            // Security: only act on PRs from the same repo (never forks).
+            const { data: prs } = await github.rest.pulls.list({
+              owner: repo.owner.login,
+              repo: repo.name,
+              state: 'open',
+              per_page: 100,
+            });
+
+            const pr = prs.find(p =>
+              p.head.sha === sha &&
+              p.head.repo &&
+              p.head.repo.full_name === repo.full_name
+            );
+
+            if (!pr) {
+              console.log(`No open same-repo PR found for SHA ${sha} — skipping.`);
+              core.setOutput('found', 'false');
+              return;
+            }
+
+            console.log(`Found PR #${pr.number}: ${pr.title}`);
+            core.setOutput('found', 'true');
+            core.setOutput('pr_number', String(pr.number));
+            core.setOutput('pr_branch', pr.head.ref);
+            core.setOutput('pr_sha', pr.head.sha);
+
+      # ── Count patched-reviewer comments (loop guard) ──────────────────────
+      # If patched-reviewer has already commented 2+ times, the gate has run
+      # at least twice on this branch — stop and let a human resolve it.
+      - name: Count prior patched-reviewer comments
+        if: steps.loop_check.outputs.skip == 'false' && steps.find_pr.outputs.found == 'true'
+        id: comment_count
+        env:
+          PR_NUMBER: ${{ steps.find_pr.outputs.pr_number }}
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const repo = context.payload.repository;
+            // PR number passed via env to avoid expression-in-script injection risk.
+            const prNumber = parseInt(process.env.PR_NUMBER);
+
+            let page = 1;
+            let reviewerCount = 0;
+            let reviewText = '';
+
+            // Paginate through all PR comments to count patched-reviewer posts
+            // and extract the most recent review comment body.
+            while (true) {
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: repo.owner.login,
+                repo: repo.name,
+                issue_number: prNumber,
+                per_page: 100,
+                page,
+              });
+              if (comments.length === 0) break;
+              for (const c of comments) {
+                if (c.user && c.user.login === 'patched-reviewer[bot]') {
+                  reviewerCount++;
+                  reviewText = c.body; // keep the last one
+                }
+              }
+              if (comments.length < 100) break;
+              page++;
+            }
+
+            console.log(`patched-reviewer comment count: ${reviewerCount}`);
+
+            if (reviewerCount >= 2) {
+              console.log('patched-reviewer has commented 2+ times — gate ran twice. Leaving for human.');
+              core.setOutput('stop', 'true');
+              return;
+            }
+
+            core.setOutput('stop', 'false');
+            // Trim to 8000 chars to stay well within env-var and commit limits
+            core.setOutput('review_text', reviewText.slice(0, 8000));
+
+      # ── Checkout PR branch ────────────────────────────────────────────────
+      - name: Checkout PR branch
+        if: |
+          steps.loop_check.outputs.skip == 'false' &&
+          steps.find_pr.outputs.found == 'true' &&
+          steps.comment_count.outputs.stop == 'false'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.find_pr.outputs.pr_branch }}
+          fetch-depth: 0
+          persist-credentials: true
+          token: ${{ github.token }}
+
+      # ── Install Claude Code ───────────────────────────────────────────────
+      # npm install -g is used because no SHA-pinned distribution exists for
+      # the Claude Code CLI — this is the canonical install path per Anthropic.
+      - name: Install Claude Code
+        if: |
+          steps.loop_check.outputs.skip == 'false' &&
+          steps.find_pr.outputs.found == 'true' &&
+          steps.comment_count.outputs.stop == 'false'
+        run: npm install -g @anthropic-ai/claude-code@latest
+
+      # ── Run Claude with the review findings ──────────────────────────────
+      - name: Run Claude autofix
+        if: |
+          steps.loop_check.outputs.skip == 'false' &&
+          steps.find_pr.outputs.found == 'true' &&
+          steps.comment_count.outputs.stop == 'false'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          REVIEW_TEXT: ${{ steps.comment_count.outputs.review_text }}
+        run: |
+          set -euo pipefail
+
+          # Write the prompt to a temp file so that $REVIEW_TEXT content cannot
+          # break out of the string (no eval, no heredoc interpolation hazard).
+          PROMPT_FILE=$(mktemp /tmp/autofix-prompt.XXXXXX)
+          trap 'rm -f "$PROMPT_FILE"' EXIT
+
+          cat > "$PROMPT_FILE" <<'STATIC_PREFIX'
+          You are fixing issues found by the GitHub-Non-Author-Review security review gate.
+
+          ## Review criteria (what the gate checks)
+
+          The gate uses .github/github-non-author-review-criteria.md as its source of truth.
+          Key areas: endpoint trust (signature/TeamID verification, fail-closed
+          paths, privilege boundaries, supply chain), platform/API security (auth,
+          cross-tenant isolation, secret handling, schema conformance, SQL safety),
+          cross-platform contract neutrality, and ticket fit.
+
+          ## Review findings
+
+          STATIC_PREFIX
+
+          # Append the review text safely — no shell interpretation of its contents.
+          printf '%s\n' "${REVIEW_TEXT}" >> "$PROMPT_FILE"
+
+          cat >> "$PROMPT_FILE" <<'STATIC_SUFFIX'
+
+          ## Your job
+
+          Fix ONLY the issues listed above. Do not refactor, add features, or change
+          anything not mentioned in the findings. When a finding says something is
+          broken, fix the root cause — do not paper over it. When a finding says
+          something is missing, add it. Do not open PRs. Do not run tests. Do not
+          commit — your changes will be committed by the workflow after you exit.
+          Exit when the fixes are done.
+
+          ## Constraints
+
+          - Work only in the current directory.
+          - Do not modify .github/ workflows or any file under .github/.
+          - Do not push or create PRs.
+          - Follow all rules in CLAUDE.md:
+            - macOS shell footguns: no jq, use /usr/bin/python3, no eval of fetched data.
+            - Never use path/cdpath/fpath/manpath/infopath as loop/local variable names in zsh.
+            - set -u only (not set -euo pipefail) in macOS app-inventory loops.
+            - Hardcode /usr/bin/python3 (never rely on PATH python3 under sudo).
+          - For any shell changes: run zsh -n on zsh scripts; run shellcheck on bash scripts.
+          - Do not touch files unrelated to the listed findings.
+          STATIC_SUFFIX
+
+          claude --dangerously-skip-permissions "$(cat "$PROMPT_FILE")"
+
+      # ── Commit and push fixes ─────────────────────────────────────────────
+      - name: Commit and push fixes
+        if: |
+          steps.loop_check.outputs.skip == 'false' &&
+          steps.find_pr.outputs.found == 'true' &&
+          steps.comment_count.outputs.stop == 'false'
+        env:
+          REVIEW_TEXT: ${{ steps.comment_count.outputs.review_text }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "patched-autofix[bot]"
+          git config user.email "autofix@patched.im"
+
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit — gate may have already passed or findings were informational only."
+            exit 0
+          fi
+
+          # Build a short summary for the commit message body (first 5 lines of review)
+          REVIEW_SUMMARY=$(echo "$REVIEW_TEXT" | head -5)
+
+          git commit -m "fix: address GitHub-Non-Author-Review gate findings [autofix]
+
+          $REVIEW_SUMMARY"
+
+          git push

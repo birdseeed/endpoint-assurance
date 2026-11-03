@@ -1,0 +1,864 @@
+{% macro assurance_badge(value, true_label, true_class, false_label, false_class, unknown, evidence_name, stale=false) %}
+{#
+  PAT-1864: current state is only a claim when the device reported recently
+  and the platform supplied an actual JSON boolean. Keep this in one macro so
+  roster and detail cannot disagree about unknown or stale evidence. A JSON
+  true is not automatically healthy: patch_pending is true when action is
+  needed, so callers supply the labels and classes for each exact state.
+#}
+{%- if stale -%}
+<span class="pill pill-warn">{{ evidence_name }} evidence stale</span>
+{%- elif value is true -%}
+<span class="pill {{ true_class }}">{{ true_label }}</span>
+{%- elif value is false -%}
+<span class="pill {{ false_class }}">{{ false_label }}</span>
+{%- else -%}
+<span class="pill pill-muted">{{ unknown }}</span>
+{%- endif -%}
+{% endmacro %}
+
+{#
+  PAT-1842: CVE match confidence is version-match certainty, not identity
+  evidence. Keep the platform's four presentation states in one macro so
+  tenant-wide findings and the grouped device view cannot silently disagree.
+#}
+{% macro cve_confidence_badge(confidence) %}
+{%- if confidence == 'version_vendor_confirmed' -%}
+<span class="pill pill-ok" title="Confidence is how certain we are that this installed version is affected. Vendor-confirmed means a vendor advisory confirms it. It does not indicate severity, exploitability or remediation certainty.">Vendor-confirmed</span>
+{%- elif confidence == 'version_confirmed' -%}
+<span class="pill pill-ok" title="Confidence is how certain we are that this installed version is affected. Confirmed means it falls within a known-vulnerable version range. It does not indicate severity, exploitability or remediation certainty.">Confirmed</span>
+{%- elif confidence == 'version_unverified' -%}
+<span class="pill pill-muted" title="Confidence is how certain we are that this installed version is affected. Possible means its version could not be checked against a known-vulnerable range. It does not indicate severity, exploitability or remediation certainty.">Possible</span>
+{%- else -%}
+<span class="pill pill-muted" title="Confidence is how certain we are that this installed version is affected. Unrecognised means the match-confidence value is missing or not recognised. It does not indicate severity, exploitability or remediation certainty.">Unrecognised</span>
+{%- endif -%}
+{% endmacro %}
+
+{#
+  PAT-2254: an item may carry an optional fourth element, an href. The whole
+  tile then renders as the same `a.kpi__item` link the device count strip
+  (PAT-2141) already uses, so a count can open the list it counts. Items
+  without one render exactly as before.
+#}
+{% macro kpi_summary(items, note=None) %}
+<div class="card kpi">
+  {% for item in items %}
+  {% if not loop.first %}<div class="kpi__divider" aria-hidden="true"></div>{% endif %}
+  {% if item | length > 3 and item[3] %}<a class="kpi__item" href="{{ item[3] }}">{% else %}<div class="kpi__item">{% endif %}
+    <div class="kpi__label">{{ item[0] }}</div>
+    <div class="kpi__value{% if item | length > 2 and item[2] %} {{ item[2] }}{% endif %}">{{ item[1] }}</div>
+  {% if item | length > 3 and item[3] %}</a>{% else %}</div>{% endif %}
+  {% endfor %}
+  {% if note %}<p class="kpi__note">{{ note }}</p>{% endif %}
+  {% if caller is defined %}<div class="kpi__actions">{{ caller() }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{#
+  PAT-1957: an option may carry an optional fifth element, a tone ('bad' or
+  'warn'), which colours that tab with the existing alert or warning tokens.
+  Callers that pass four-element options render exactly as before. Colour is
+  never the only signal: the count stays in the visible label and a visually
+  hidden state word is appended so the accessible name carries it too.
+#}
+{% macro segmented_control(name, selected, options, query_param, label, default_value='', server_navigation=false) %}
+<nav class="view-tabs" aria-label="{{ label }}" {% if name %}data-row-filter="{{ name }}" {% endif %}data-query-param="{{ query_param }}" data-initial="{{ selected }}" data-default-value="{{ default_value }}"{% if server_navigation %} data-server-navigation{% endif %}>
+  {% for option in options %}
+  {%- set tone = option[4] if option | length > 4 else none -%}
+  <a href="{{ option[3] }}" data-filter-tab="{{ option[0] }}"{% if selected == option[0] %} class="tab-active" aria-current="true"{% endif %}{% if tone %} data-tone="{{ tone }}"{% endif %}>{{ option[1] }}{% if option[2] is not none %} ({{ option[2] }}){% endif %}{% if tone %}<span class="visually-hidden">, {{ 'alert' if tone == 'bad' else 'warning' }}</span>{% endif %}</a>
+  {% endfor %}
+</nav>
+{% endmacro %}
+
+{% macro group_card_head(title, count_label=None, description=None, edge='muted', heading=false) %}
+<div class="group-card__head card-edge-{{ edge }}">
+  {% if heading %}<h2>{{ title }}</h2>{% else %}<span class="group-card__title">{{ title }}</span>{% endif %}
+  {% if count_label %}<span class="pill pill-{{ edge if edge in ('ok', 'warn', 'bad') else 'muted' }}">{{ count_label }}</span>{% endif %}
+  {% if description %}<span class="group-card__desc">{{ description }}</span>{% endif %}
+  {#- PAT-2212: an optional right-aligned actions slot (header buttons,
+      upload-details line) - callers that pass no block render exactly as
+      before, matching kpi_summary's own caller()/kpi__actions shape. -#}
+  {% if caller is defined %}<div class="group-card__head-actions">{{ caller() }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{#
+  PAT-2010: the one first-seen-notification toggle row, shared by /ai-tooling
+  (both settings) and the New Software report's own settings card (the
+  new_software setting only) so there is one POST /ai-tooling/notifications
+  form shape rather than two independently maintained copies. `return_to` is
+  echoed back as a hidden field; main.py's _notification_return_to holds an
+  exact-match allowlist server-side ("/ai-tooling" or "/reports/new-software"
+  only) - this macro never decides where a save lands, it only states where
+  the page it rendered on wants to return to.
+#}
+{% macro notification_toggle_row(setting, label, detail_key, notifications, can_edit, csrf_token, return_to) %}
+<div class="settings-row">
+  <div><strong>{{ label }}</strong><span class="cell-subtle">{{ notification_channel_note(notifications[detail_key]) }}</span></div>
+  {% if can_edit %}
+  <form method="post" action="/ai-tooling/notifications">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="setting" value="{{ setting }}">
+    <input type="hidden" name="return_to" value="{{ return_to }}">
+    <label class="field-check"><input type="checkbox" name="enabled" {{ 'checked' if notifications[setting] }}><span>Enabled</span></label>
+    <button type="submit" class="btn btn-small">Save</button>
+  </form>
+  {% else %}<span class="pill {{ 'pill-ok' if notifications[setting] else 'pill-muted' }}">{{ 'Enabled' if notifications[setting] else 'Off' }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+{#
+  PAT-2213: the "N configured channels" line, split out of
+  notification_toggle_row so the combined notifications card below can
+  share it. When there are no channels at all, "0 configured channels"
+  gave no route to configure one and read like an empty stat rather than a
+  gap - grepped this repo for a customer-facing channel-setup route first
+  (none exists: the portal is read-only/stateless apart from the bounded
+  proxied writes root AGENTS.md's trust model lists, and channel
+  configuration isn't one of them), so this states the gap plainly instead
+  of linking anywhere, and never implies Patched will set one up for the
+  customer (rubric C1).
+#}
+{% macro notification_channel_note(detail) -%}
+Daily digest at {{ '%02d:00' | format(detail.digest_hour_utc) }} UTC &middot; {% if detail.channels == 0 %}no alert channels are set up for your account yet{% else %}{{ detail.channels }} configured channel{{ '' if detail.channels == 1 else 's' }}{% endif -%}
+{% endmacro %}
+
+{#
+  PAT-2213: one checkbox row for the AI Tooling page's combined
+  notifications card - no form and no Save button of its own (the caller
+  wraps every row in one shared <form> with one Save), replacing the old
+  notification_toggle_row's per-row form+button ("two saves for one form",
+  Andy's complaint on this ticket). field_name is the checkbox's own name
+  (main.py's ai_tooling_notifications route reads `enabled_<short key>`);
+  setting is the raw key notifications[] and can_edit gate on, same as
+  notification_toggle_row.
+#}
+{% macro notification_checkbox_field(field_name, setting, label, detail_key, notifications, can_edit) %}
+<div class="settings-row">
+  <div><strong>{{ label }}</strong><span class="cell-subtle">{{ notification_channel_note(notifications[detail_key]) }}</span></div>
+  {% if can_edit %}
+  <label class="field-check"><input type="checkbox" name="{{ field_name }}" {{ 'checked' if notifications[setting] }}><span>Enabled</span></label>
+  {% else %}<span class="pill {{ 'pill-ok' if notifications[setting] else 'pill-muted' }}">{{ 'Enabled' if notifications[setting] else 'Off' }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+{#
+  PAT-2135: a device's retirement pills - "Retired" (with when/who in the
+  title) and, when it has reported again since, a warning "Reported after
+  retirement" pill, since that needs the customer's attention (it never
+  reads as a clean "Retired" state on its own). rv is a _retirement_view
+  dict (main.py); renders nothing for an active device.
+#}
+{% macro retirement_pills(rv) %}
+{%- if rv and rv.retired -%}
+<span class="pill pill-muted" title="Retired{% if rv.retired_at %} {{ rv.retired_at | humandate(true) }} UTC{% endif %}{% if rv.retired_by %} by {{ rv.retired_by }}{% endif %}{% if rv.reason %} - {{ rv.reason }}{% endif %}">Retired{% if rv.retired_at %} {{ rv.retired_at | humandate }}{% endif %}</span>
+{%- if rv.reported_after_retirement -%}
+<span class="pill pill-warn" title="This device has reported again since it was retired. Only the customer can return it to active.">Reported after retirement</span>
+{%- endif -%}
+{%- endif -%}
+{% endmacro %}
+
+{#
+  PAT-2135: the compact per-row retire/unretire action, replacing the old
+  "Ask us to check"/"Tell us it's gone" mailto links (PAT-1642). A
+  <details> panel is the confirm step (click to reveal, then submit) with
+  an optional reason - works with no JS. can_edit gates the controls only;
+  the pills above still render for a viewer, so retirement state is never
+  hidden from anyone, only the write control is.
+#}
+{% macro retire_action_cell(d, can_edit, csrf_token, return_to) %}
+{{ retirement_pills(d.retirement_view) }}
+{%- if can_edit -%}
+{%- if d.retirement_view and d.retirement_view.retired -%}
+<details class="retire-panel">
+  <summary class="ask-link" aria-label="Return {{ d.hostname }} to active">Return to active &rarr;</summary>
+  <form class="retire-form" method="post" action="/devices/retirement">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="device_id" value="{{ d.device_id }}">
+    <input type="hidden" name="return_to" value="{{ return_to }}">
+    <input type="hidden" name="retired" value="false">
+    <label class="visually-hidden" for="unretire-reason-{{ d.device_id }}">Reason (optional)</label>
+    <input class="search retire-form__note" type="text" id="unretire-reason-{{ d.device_id }}" name="reason" maxlength="500" placeholder="Reason (optional)" autocomplete="off">
+    <button type="submit" class="btn btn-small">Return to active</button>
+  </form>
+</details>
+{%- else -%}
+<details class="retire-panel">
+  <summary class="ask-link" aria-label="Retire {{ d.hostname }}">Retire device &rarr;</summary>
+  <form class="retire-form" method="post" action="/devices/retirement">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="device_id" value="{{ d.device_id }}">
+    <input type="hidden" name="return_to" value="{{ return_to }}">
+    <input type="hidden" name="retired" value="true">
+    <label class="visually-hidden" for="retire-reason-{{ d.device_id }}">Reason (optional)</label>
+    <input class="search retire-form__note" type="text" id="retire-reason-{{ d.device_id }}" name="reason" maxlength="500" placeholder="Reason (optional)" autocomplete="off">
+    <button type="submit" class="btn btn-small">Retire device</button>
+  </form>
+</details>
+{%- endif -%}
+{%- endif -%}
+{% endmacro %}
+
+{#
+  PAT-2135: the one post-write notice both /devices and the device page
+  render after a retire/unretire, a device-list upload or a list clear -
+  main.py's _device_redirect/_device_flash_view. No dismiss control (unlike
+  approval-result's JS-enhanced one) - this stays readable with no JS.
+#}
+{% macro device_result_notice(device_result) %}
+{% if device_result %}
+<div class="notice{% if not device_result.error %} notice-ok{% endif %}" id="device-result" role="status" tabindex="-1">
+  <p><strong>{{ device_result.error or device_result.notice }}</strong></p>
+</div>
+{% endif %}
+{% endmacro %}
+
+{#
+  PAT-2145: the one post-write notice both /devices/jamf and
+  /devices/jamf/setup render after a settings change, a token revoke or a
+  device purge - main.py's _jamf_redirect/_jamf_flash_view. Never used for
+  the token-creation response itself, which renders inline, once, and never
+  travels through this redirect-and-flash path at all.
+#}
+{% macro jamf_result_notice(jamf_result) %}
+{% if jamf_result %}
+<div class="notice{% if not jamf_result.error %} notice-ok{% endif %}" id="jamf-result" role="status" tabindex="-1">
+  <p><strong>{{ jamf_result.error or jamf_result.notice }}</strong></p>
+</div>
+{% endif %}
+{% endmacro %}
+
+{#
+  PAT-2251: the one post-write notice /install renders after an estate
+  enrolment key revoke - main.py's _install_redirect/_install_flash_view.
+  Never used for the key creation response itself, which renders inline,
+  once, and never travels through this redirect-and-flash path at all.
+#}
+{% macro install_result_notice(install_result) %}
+{% if install_result %}
+<div class="notice{% if not install_result.error %} notice-ok{% endif %}" id="install-result" role="status" tabindex="-1">
+  <p><strong>{{ install_result.error or install_result.notice }}</strong></p>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro device_list_upload_form(csrf_token) %}
+<form method="post" action="/devices/device-list" enctype="multipart/form-data" class="device-list-upload-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <label class="visually-hidden" for="device-list-file">Device list CSV file</label>
+  <input type="file" id="device-list-file" name="device_list_file" accept=".csv" required>
+  <button type="submit" class="btn btn-small">Upload device list</button>
+</form>
+{% endmacro %}
+
+{% macro device_table(devices, actions=False, stale_days=None, filter_by_group=False, exact_last_seen=False, can_edit=False, csrf_token=None, return_to=None, selected_group=None) %}
+{#- PAT-2297: missing/nonboolean update evidence is platform-neutral. The
+    platform owns verdict freshness; device reporting staleness remains an
+    independent caveat and takes priority over the missing-state note. -#}
+{#- PAT-2324: `ns.has_server` records that at least one row is a server, so
+    the one footnote about servers' CIS score renders once for the table. A
+    row's class and OS name come from `d | device_type` (main.device_type_view);
+    with device_class and os_caption absent it gives nothing and the row
+    renders exactly as it did before. -#}
+{%- set ns = namespace(update_unreported=false, has_server=false) -%}
+{#- PAT-1954: the scroll region is keyboard focusable (and named) so a keyboard user can pan the wide table. -#}
+<div class="table-scroll" role="region" aria-label="Devices table" tabindex="0">
+<table class="data-table device-table table-stack" id="device-table">
+  <colgroup>
+    <col class="device-col-hostname"><col class="device-col-platform"><col class="device-col-os">
+    <col class="device-col-seen"><col class="device-col-score"><col class="device-col-encryption">
+    <col class="device-col-updates">{% if actions %}<col class="device-col-actions">{% endif %}
+  </colgroup>
+  <thead>
+    <tr>
+      <th data-sort="text">Hostname</th>
+      <th data-sort="text">Platform</th>
+      <th data-sort="text" class="device-col-os">OS version</th>
+      <th data-sort="date">Last seen</th>
+      <th data-sort="num">CIS / checks</th>
+      <th data-sort="text">Encryption</th>
+      <th data-sort="text">Updates</th>
+      {% if actions %}<th></th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for d in devices %}
+    {%- set update_unreported = not d.is_stale and d.patch_pending is not boolean -%}
+    {%- if update_unreported %}{% set ns.update_unreported = true %}{% endif %}
+    {#- Long stale-evidence pills wrap only at spaces. -#}
+    {%- set long_enc = d.is_stale -%}
+    {%- set long_upd = d.is_stale -%}
+    {%- set dt = d | device_type -%}
+    {%- if dt.is_server %}{% set ns.has_server = true %}{% endif %}
+    <tr{% if filter_by_group %} data-filter-view="{{ d.group }}"{% if selected_group and d.group != selected_group %} class="row-hide-filter"{% endif %}{% endif %}{% if dt.kind %} data-device-class="{{ dt.kind }}"{% endif %}>
+      <td data-label="Hostname"><a class="cell-anywrap" href="/devices/{{ d.device_id }}{% if stale_days is not none %}?stale_days={{ stale_days }}{% endif %}">{{ d.hostname }}</a></td>
+      <td data-label="Platform">{{ dt.platform_label or d.platform }}</td>
+      {# PAT-2336: os_version is the platform's exact reported value. Keep it
+         primary at every width; a missing value never becomes a release guess. #}
+      <td data-label="OS version" class="cell-os-named" title="{{ d.os_caption or '' }}{% if d.os_caption %} &middot; {% endif %}{{ d.os_version or 'Not reported' }}">{% if dt.os_name %}<span class="os-name">{{ dt.os_name }}</span>{% endif %}<span class="os-build">{{ d.os_version or 'Not reported' }}</span></td>
+      <td data-label="Last seen" data-value="{{ d.last_seen }}">
+        <span class="last-seen"{% if d.last_seen and not exact_last_seen %} title="{{ d.last_seen | humandate(true) }} UTC"{% endif %}>{% if d.days_stale is none %}Never reported{% elif exact_last_seen %}{{ d.last_seen | humandate(true) }} UTC{% elif d.days_stale == 0 %}Today{% elif d.days_stale == 1 %}Yesterday{% else %}{{ d.days_stale }} days ago{% endif %}</span>
+      </td>
+      {#- PAT-2256: the score is a percentage and says so. It carries no
+          red/amber/green tone: nothing on the page explains a threshold, so a
+          bare red 38 read as an alarm the page could not justify. -#}
+      {#- PAT-2324: there is no CIS benchmark for servers yet (the platform
+          scores a server only against class-agnostic rules), so a server's
+          cell is never a percentage. The compact cell reads "n/a" above
+          its failing baseline count, with the full wording as its title,
+          and the note under the table says it once. It sorts as no score. -#}
+      {% if dt.is_server -%}
+      <td data-label="CIS / checks" data-value=""><span class="score score-none" title="No server benchmark" aria-label="No server benchmark">n/a</span><span class="device-checks">{{ d.findings_open }} failing</span></td>
+      {%- else -%}
+      <td data-label="CIS / checks" data-value="{{ d.cis_score }}">
+        <span class="score">{{ ((d.cis_score | round | int) ~ '%') if d.cis_score is not none else 'Not assessed' }}</span>
+        <span class="device-checks">{{ d.findings_open }} failing</span>
+      </td>
+      {%- endif %}
+      <td data-label="Encryption"{% if long_enc %} class="pill-long-enc"{% endif %}>{{ assurance_badge(d.encryption_ok, 'Encrypted', 'pill-ok', 'Not encrypted', 'pill-bad', 'Not assessed', 'Encryption', d.is_stale) }}</td>
+      <td data-label="Updates"{% if long_upd %} class="pill-long-upd"{% endif %}>{% if update_unreported %}<span class="note-muted" title="This device hasn't reported a recent update state.">Not reported</span>{% else %}{{ assurance_badge(d.patch_pending, 'Updates pending', 'pill-warn', 'Up to date', 'pill-ok', "This device hasn't reported a recent update state.", 'Update', d.is_stale) }}{% endif %}</td>
+      {% if actions %}
+      <td class="cell-actions">
+        {{ retire_action_cell(d, can_edit, csrf_token, return_to) }}
+      </td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if ns.update_unreported %}
+<p class="table-note" data-update-state-note>This device hasn't reported a recent update state.</p>
+{% endif %}
+{% if ns.has_server %}
+<p class="table-note" data-server-score-note>Servers are not scored against a CIS benchmark yet. Their failing checks come from Patched's baseline checks.</p>
+{% endif %}
+{% endmacro %}
+
+{% macro software_type_tag(kind) %}
+{%- if kind == 'extension' -%}
+<span class="type-tag type-tag--ext"><svg class="type-tag__icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path fill="currentColor" d="M9.5 1a1.5 1.5 0 0 0-1.5 1.5V4H4a1 1 0 0 0-1 1v3.5h1.5a1.5 1.5 0 1 1 0 3H3V15a1 1 0 0 0 1 1h3.5v-1.5a1.5 1.5 0 1 1 3 0V16H14a1 1 0 0 0 1-1v-3.5h-1.5a1.5 1.5 0 1 1 0-3H15V5a1 1 0 0 0-1-1h-3.5V2.5A1.5 1.5 0 0 0 9.5 1Z"/></svg>Extension</span>
+{%- else -%}
+<span class="type-tag type-tag--app"><svg class="type-tag__icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><rect x="1.5" y="1.5" width="13" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="1.5" y="1.5" width="13" height="4" rx="1.5" fill="currentColor"/><circle cx="3.6" cy="3.5" r="0.6" fill="var(--snow)"/></svg>Application</span>
+{%- endif -%}
+{% endmacro %}
+
+{#
+  PAT-2008: the one place a software row's approval controls render, for
+  every group and for the inventory table alike, so the locked-row rule is
+  never re-typed per table. A row with no approval_item (name-only evidence,
+  no device evidence, operator mandatory, no identifier the portal can send)
+  shows why it cannot be marked and no controls at all. Controls render only
+  for the admin role (can_edit); a viewer sees state and history. Every
+  button submits the one approval form (form="approval-form"), whose CSRF
+  token and return path it shares; the value is server-built JSON, escaped
+  by autoescape like every other attribute.
+#}
+{% macro approval_select(p, can_edit) %}
+{%- if can_edit %}<td class="cell-select">{% if p.approval_item %}<input type="checkbox" class="approval-select" form="approval-form" name="item" value="{{ p.approval_item_json }}" aria-label="Select {{ p.name }}"{% if p.protected %} data-protected="1"{% endif %}>{% endif %}</td>{% endif -%}
+{% endmacro %}
+
+{#
+  PAT-2163 (orchestrator follow-up): "Select all shown" moves from a
+  standalone checkbox above the table into this header cell - the same
+  data-select-visible control static/js/portal.js already binds, wherever
+  it lives in the DOM (its own querySelector, not scoped to any one
+  container), so no JS changed for this move.
+#}
+{% macro approval_select_head(can_edit) %}
+{%- if can_edit %}<th class="cell-select"><label class="cell-select__all"><input type="checkbox" data-select-visible aria-label="Select all shown"><span class="visually-hidden">Select all shown</span></label></th>{% endif -%}
+{% endmacro %}
+
+{#
+  PAT-2120: the one Approval treatment for the merged /software table -
+  a one-line state select + Apply (PAT-2008 round 2), the bulk checkbox,
+  the current state pill and a History link, all in one cell. This is the
+  inventory table's original pattern (proven clipping-free by PAT-2119's
+  own e2e guard); the decision tables' separate per-action button list
+  (approval_cell below) is retired from this page in its favour so a
+  product has exactly one Approval control shape, never two. csrf_token
+  and return_to are passed explicitly rather than importing this file
+  "with context", matching every other macro's style here.
+
+  PAT-2156: data_label is optional and additive - the device Software view
+  passes its column header ("Approval") so this same cell also works inside
+  a .table-stack table at 390px (rubric L12); /software's own call site
+  leaves it unset (its table uses the table-scroll idiom instead) and is
+  unaffected.
+#}
+{% macro approval_form_cell(p, can_edit, csrf_token, return_to, data_label=none) %}
+<td class="cell-approval"{% if data_label %} data-label="{{ data_label }}"{% endif %}>
+  {%- if can_edit and not p.approval_lock %}
+  <form class="approval-row-form" method="post" action="/software/approvals" data-approval-row-form{% if p.protected %} data-protected="1"{% endif %}>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="return_to" value="{{ return_to }}" data-approval-return>
+    <input type="hidden" name="item" value="{{ p.approval_item_json }}">
+    <select name="state" class="approval-row-form__state" aria-label="New approval state for {{ p.name }}" data-approval-row-state>
+      <option value="" selected>Set state…</option>
+      {%- for action in p.approval_actions %}
+      <option value="{{ action.state }}">{{ action.label }}</option>
+      {%- endfor %}
+    </select>
+    <button type="submit" class="approval__btn" data-approval-row-apply>Apply</button>
+  </form>
+  {%- endif %}
+  {#- PAT-2163 (orchestrator follow-up): the row's own select-checkbox
+     moved into its dedicated column (approval_select above, the table's
+     cell-select td/th) so it renders once, not here and again there. #}
+  <span class="approval-row-meta">
+    {%- if p.approval_state_label %}<span class="pill pill-muted">{{ p.approval_state_label }}</span>{% endif %}
+    {%- if p.history_url %}<a class="approval__history" href="{{ p.history_url }}" data-history-drawer>History</a>{% endif %}
+  </span>
+  {%- if p.approval_lock %}<span class="approval__lock">{{ p.approval_lock }}</span>{%- endif %}
+</td>
+{% endmacro %}
+
+{#
+  PAT-2255: the Approval cell for the two review surfaces (/software and
+  /homebrew) - the product's one approval state (p.state_label, keyed by
+  the same group the row filters on, with who decided and why in its
+  title), then the Set state select and Apply on the same line, so a row is
+  one line tall. A locked row shows why on one truncated line (full text in
+  the title) instead of the controls. return_anchor names the next row in
+  the customer's current view: after the write the server redirects back to
+  the same filtered URL with that row as the fragment (no JS), and
+  static/js/portal.js recomputes it at submit time from what is visible
+  now. History moved to the product name, which opens the product detail
+  (history plus Identifiers). The other pages keep approval_form_cell above.
+#}
+{% macro review_cell(p, can_edit, csrf_token, return_to) %}
+<td class="cell-approval cell-review" data-label="Approval">
+  <span class="review-line">
+    <span class="pill pill-state {{ p.state_class }}"{% if p.state_title %} title="{{ p.state_title }}"{% endif %}>{{ p.state_label }}</span>
+    {%- if can_edit and not p.approval_lock and p.approval_item_json %}
+    <form class="approval-row-form review-form" method="post" action="/software/approvals" data-approval-row-form{% if p.protected %} data-protected="1"{% endif %}>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="return_to" value="{{ return_to }}" data-approval-return>
+      <input type="hidden" name="return_anchor" value="{{ p.next_row_id }}" data-approval-anchor>
+      <input type="hidden" name="item" value="{{ p.approval_item_json }}">
+      <select name="state" class="approval-row-form__state" aria-label="New approval state for {{ p.name }}" data-approval-row-state>
+        <option value="" selected>Set state…</option>
+        {%- for action in p.approval_actions %}
+        <option value="{{ action.state }}">{{ action.label }}</option>
+        {%- endfor %}
+      </select>
+      <button type="submit" class="approval__btn" data-approval-row-apply>Apply</button>
+    </form>
+    {%- elif p.approval_lock %}
+    <span class="approval__lock cell-truncate" title="{{ p.approval_lock }}">{{ p.approval_lock }}</span>
+    {%- endif %}
+  </span>
+</td>
+{% endmacro %}
+
+{% macro approval_cell(p, can_edit) %}
+<div class="approval">
+  {%- if p.approval_lock %}
+  <span class="approval__lock">{{ p.approval_lock }}</span>
+  {%- elif can_edit %}
+  {%- for action in p.approval_actions %}
+  <button type="submit" class="approval__btn" form="approval-form" name="row_action" value="{{ action.value }}" data-approval-state="{{ action.state }}"{% if action.protected %} data-protected="1"{% endif %}>{{ action.label }}</button>
+  {%- endfor %}
+  {%- endif %}
+  {%- if p.history_url %}
+  <a class="approval__history" href="{{ p.history_url }}" data-history-drawer>History</a>
+  {%- endif %}
+</div>
+{% endmacro %}
+
+{#
+  PAT-1821: a protected-software disposition badge, next to the row it
+  matched. A strict, empty-string-safe single call site so the badge
+  markup (and its title text) is never re-typed per group - see
+  main.py's _protected_software_index for why the match behind p.protected
+  is exact-only, never a substring guess.
+#}
+{% macro protected_badge(p) %}
+{%- if p.protected -%}
+<span class="pill pill-ok" title="Protected by your {{ p.protected_label }}">{{ p.protected_label }}</span>
+{%- endif -%}
+{% endmacro %}
+
+{#
+  PAT-1832: macOS codesign signing state (PAT-1799) - applications only,
+  never rendered for an extension row (p.signing_state is only ever set by
+  main.py's _software_row when kind == "application", so this macro
+  naturally renders nothing for an extension). signed_by null means
+  genuinely unknown (also the permanent shape of every Windows row today,
+  PAT-1828) and must read as "Unknown", never as "Unsigned". team_id/
+  signed_by are kept in the tooltip when known - real forensic identity a
+  specialist or auditor may want, not discarded once the badge state is
+  decided.
+#}
+{% macro signing_badge(p) %}
+{%- if p.signing_state -%}
+{#- PAT-2092: title always carries the full label (some, like "Signed,
+   notarization unknown", are too long for the Signing column at a nowrap
+   width that fits the rest of the row - see .software-col-signing's own
+   comment - and are shown truncated with an ellipsis) plus signed_by/
+   team_id when known, rather than only when signed_by is set. -#}
+<span class="pill {{ p.signing_pill_class }}" title="{{ p.signing_label }}{% if p.signed_by %} ({{ p.signed_by }}{% if p.team_id %}, Team ID {{ p.team_id }}{% endif %}){% endif %}">{{ p.signing_label }}</span>
+{%- endif -%}
+{% endmacro %}
+
+{#
+  PAT-1839: decision provenance (who decided, when, and why) for a software
+  row. A single call site so every group (waiting/not_wanted/approved/
+  unrecognised) renders it the same way, rather than re-typing the
+  has_decision check per table. Undecided renders plainly, never as an empty
+  disclosure - a row can genuinely carry no decision record at all, and that
+  is not the same as a rendering gap.
+#}
+{#
+  PAT-1879: render one finding's PAT-1969 verification-lifecycle state - the
+  current status pill, a closing-evidence note when verified_fixed, and the
+  full immutable event history in a native disclosure (keyboard operable,
+  no JavaScript, same idiom as decision_provenance above and the CVE-list
+  overflow on device_detail.html). entry is None when the platform has no
+  lifecycle row yet for this finding (for example, evidence collected before
+  migration 0156 backfilled it) - that renders a plain "no evidence yet"
+  pill rather than silently leaving the column blank, which would read as a
+  rendering gap rather than a genuine absence of lifecycle data.
+#}
+{#- PAT-2298: every date in this cell sits in a nowrap span, so a narrow
+    Verification column (the 250px desktop budget, or a phone) breaks the
+    sentence around "04 Dec 2026 09:00" and never through it. The reason
+    text stays free to wrap: it is prose the platform supplies. -#}
+{% macro lifecycle_cell(entry) %}
+{%- if not entry -%}
+<span class="pill pill-muted">No lifecycle evidence yet</span>
+{%- else -%}
+<div class="lifecycle">
+  <span class="pill {{ entry.pill_class }}"{% if entry.pill_title %} title="{{ entry.pill_title }}"{% endif %}>{{ entry.status_label }}</span>
+  {%- if entry.status == 'verified_fixed' and entry.closing_event %}
+  <p class="lifecycle__closure">Closed by {{ entry.closing_event.actor_label }}{% if entry.closing_event.actor %} ({{ entry.closing_event.source_type | replace('_', ' ') }}){% endif %}, observed {{ entry.closing_event.observed_at | humandate_nowrap(true) }} (UTC).{% if not entry.status_authoritative %} Not confirmed as authoritative evidence.{% endif %}</p>
+  {%- endif %}
+  {%- if entry.events %}
+  <details class="lifecycle__history">
+    <summary>{{ entry.events | length }} lifecycle event{{ '' if entry.events | length == 1 else 's' }}{% if entry.recurrence_count %} &middot; recurred {{ entry.recurrence_count }} time{{ '' if entry.recurrence_count == 1 else 's' }}{% endif %}</summary>
+    <ol class="lifecycle__timeline">
+      {% for ev in entry.events %}
+      <li class="lifecycle__timeline-item{% if entry.closing_event and ev.id == entry.closing_event.id %} lifecycle__timeline-item--closing{% endif %}">
+        <span class="pill {{ ev.pill_class }}">{{ ev.status_label }}</span>
+        <span class="mono">{{ ev.recorded_at | humandate_nowrap(true) }} (UTC){% if ev.observed_at %} &middot; observed {{ ev.observed_at | humandate_nowrap(true) }}{% endif %}</span>
+        <span>{{ ev.actor_label }}</span>
+        {%- if ev.reason %}<span class="lifecycle__reason">{{ ev.reason }}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+  </details>
+  {%- endif %}
+</div>
+{%- endif -%}
+{% endmacro %}
+
+{#
+  PAT-2163: a compact, reusable filter bar - a single-select Type <select>,
+  a single-select Publisher <select>, a multi-select Approval checkbox
+  <details>/<summary> popover (an Intune-style dropdown, not another row of
+  tab boxes), an optional "More filters" <details> popover for whatever
+  secondary filter a caller supplies via {% call %} (only "On at least N
+  devices" today), and the page's own search box - laid out as one row,
+  wrapping across a couple of short rows on a phone. Every control is a
+  real <form method="get"> field, so a JS-less browser applies a change
+  through the Approval or More-filters popover's own Apply button (the
+  form's only <button type="submit">s) with a normal GET; static/js/
+  portal.js intercepts the Type/Publisher selects' change and both Apply
+  clicks to apply instantly against the rows already on the page instead
+  (PAT-1798's client-side filter architecture - no navigation, no flicker)
+  and only replaces the URL. The <form> is display: contents (portal.css)
+  so its fields and the sibling search input lay out as one flex row
+  without the search box - which carries no name, so it is never part of
+  the GET submission - risking an accidental implicit submit on Enter.
+
+  Publisher's own filtering (like minimum-devices, in the caller's More
+  filters block) is not part of the Type/Approval data-row-filter/
+  data-selected system above - both feed static/js/portal.js's existing
+  approvalFilterExcludes/initApprovals machinery instead (PAT-2008), which
+  this macro's data-approval-filters root attribute wires up exactly as it
+  already did before this ticket moved these controls into the bar; only
+  their markup moved, not their behaviour.
+
+  type_options / approval_options / publisher_options: lists of {value,
+  label, count, selected[, hide]}; a caller sets hide once per option
+  (main.py's _software_filter_bar_view - "hide zero-count options, but
+  never the one currently selected" is a decision made once in Python, not
+  re-derived in every template that uses this macro). Publisher carries no
+  count (never has - see that function's own comment) so its option dicts
+  need no hide field. chips: list of {label, remove_url} - each removes
+  exactly one active filter value; clear_url is None to hide "Clear all".
+
+  Built once so a future page with the same kind-of/decision-of-filter
+  shape (the device Software view, PAT-2156; /alerts) can adopt it without
+  re-typing this markup or the dropdown-close JS - not adopted anywhere
+  but /software by this ticket.
+#}
+
+{#
+  PAT-2213: one checkbox <details> multi-select dropdown, sharing this
+  file's .filter-dropdown/.filter-select CSS and static/js/portal.js's
+  generalised row-filter JS with filter_bar's own Approval dropdown above,
+  also used by filter_bar's multi_filters mode (PAT-2243). AI Tooling
+  needs three of these (Type, Approval, Assessment) side by side, and its
+  zero-count options are muted, never hidden (Andy ruling on this ticket),
+  which is the opposite of filter_bar's own Approval/Type "hide a
+  zero-count option unless it's selected" rule for /software - two
+  genuinely different per-page rules, not one shared one, so this takes
+  its own `muted` flag per option rather than overloading `hide`.
+
+  name: the form field name (and CSV query param). row_filter: the
+  data-row-filter value static/js/portal.js's applyFilters() matches
+  against each row's data-filter-<row_filter> attribute - deliberately
+  distinct from `name`/query_param on some pages (filter_bar's own
+  Approval dropdown uses data-row-filter="decision" while its field name
+  and query param are "approval"). query_param: the URL query string key.
+  options: list of {value, label, count, selected, muted}.
+#}
+{% macro filter_multiselect(name, row_filter, query_param, label, options) %}
+{%- set active = options | selectattr('selected') | list %}
+<details class="filter-dropdown" data-filter-dropdown data-row-filter="{{ row_filter }}"
+          data-query-param="{{ query_param }}" data-default-value=""
+          data-initial="{{ active | map(attribute='value') | join(',') }}">
+  <summary class="filter-select filter-dropdown__summary">
+    {{ label }}<span class="filter-dropdown__count" data-filter-dropdown-count{% if not active %} hidden{% endif %}>{{ active | length }}</span>
+  </summary>
+  <div class="filter-dropdown__panel">
+    {%- for option in options %}
+    <label class="filter-dropdown__option{% if option.muted %} filter-dropdown__option--muted{% endif %}">
+      <input type="checkbox" name="{{ name }}" value="{{ option.value }}"{% if option.selected %} checked{% endif %}>
+      <span>{{ option.label }} ({{ option.count }})</span>
+    </label>
+    {%- endfor %}
+    <div class="filter-dropdown__actions">
+      <button type="submit" class="btn btn-small" data-filter-dropdown-apply>Apply</button>
+    </div>
+  </div>
+</details>
+{% endmacro %}
+
+{#
+  PAT-2213: removable active-filter chips for standalone bars, including
+  Local admins. AI Tooling now uses filter_bar itself (PAT-2243). chips: list of
+  {label, remove_url}; clear_url is None to hide "Clear all".
+#}
+{% macro filter_chips(chips, clear_url) %}
+{%- if chips %}
+<div class="filter-chips" aria-label="Active filters">
+  {%- for chip in chips %}
+  <a class="filter-chip" href="{{ chip.remove_url }}">{{ chip.label }}<span class="filter-chip__remove" aria-hidden="true">&times;</span><span class="visually-hidden">, remove this filter</span></a>
+  {%- endfor %}
+  {%- if clear_url %}<a class="filter-chip filter-chip--clear" href="{{ clear_url }}">Clear all</a>{% endif %}
+</div>
+{%- endif %}
+{% endmacro %}
+
+{#
+  PAT-2255: filter_bar is now shared by both review surfaces, /software and
+  /homebrew. publisher_options may be empty (Homebrew has no publisher), in
+  which case the Publisher control is left out. hidden_row_filters carries
+  the membership filters that have no dropdown of their own (/software's
+  review queue, first-seen window and urgency) as hidden inputs: the no-JS
+  form keeps them on Apply, and static/js/portal.js's applyFilters() reads
+  them like any other [data-row-filter] control. hidden_fields keeps other
+  URL state (the current search) across a no-JS Apply. active_filters names
+  the filters in force, for tests and the walker; search_value fills the
+  search box from the URL. A chip with `static` set has no dropdown behind
+  it, so the JS chip rebuild keeps it as rendered.
+  PAT-2243: multi_filters opts AI Tooling into named checkbox dropdowns
+  with muted zero-count choices, a form-associated GET search input and
+  Search submit button. The default Software/Homebrew layout is unchanged.
+#}
+{% macro filter_bar(action, type_name, type_options, type_label, approval_name, approval_options, approval_label, publisher_name, publisher_options, publisher_label, publisher_help, search_id, search_selector, search_placeholder, chips, clear_url, more_label='More filters', hidden_row_filters=[], hidden_fields=[], active_filters=[], search_value='', multi_filters=[]) %}
+<div class="filter-bar" data-filter-bar data-approval-filters data-active-filters="{{ active_filters | join(',') }}">
+  <div class="filter-bar__row">
+    <form class="filter-bar__form" method="get" action="{{ action }}"{% if multi_filters %} id="{{ search_id }}-form"{% endif %}>
+      {%- for f in hidden_row_filters %}
+      <input type="hidden" name="{{ f.name }}" value="{{ f.value }}" data-row-filter="{{ f.row_filter }}" data-initial="{{ f.initial }}">
+      {%- endfor %}
+      {%- for f in hidden_fields %}
+      <input type="hidden" name="{{ f.name }}" value="{{ f.value }}">
+      {%- endfor %}
+      {% if multi_filters %}
+      {% for f in multi_filters %}
+      {{ filter_multiselect(f.name, f.row_filter, f.name, f.label, f.options) }}
+      {% endfor %}
+      {% else %}
+      <div class="filter-field">
+        <label class="visually-hidden" for="{{ search_id }}-type">{{ type_label }}</label>
+        <select id="{{ search_id }}-type" name="{{ type_name }}" class="filter-select"
+                data-row-filter="kind" data-query-param="{{ type_name }}" data-default-value=""
+                data-initial="{% for o in type_options %}{% if o.selected and o.value %}{{ o.value }}{% endif %}{% endfor %}">
+          {%- for option in type_options %}
+          {%- if not option.hide %}
+          <option value="{{ option.value }}"{% if option.selected %} selected{% endif %}>{{ option.label }} ({{ option.count }})</option>
+          {%- endif %}
+          {%- endfor %}
+        </select>
+      </div>
+      {%- if publisher_options %}
+      <div class="filter-field">
+        <label class="visually-hidden" for="{{ search_id }}-publisher">{{ publisher_label }}</label>
+        <select id="{{ search_id }}-publisher" name="{{ publisher_name }}" class="filter-select"
+                data-filter-publisher{% if publisher_help %} title="{{ publisher_help }}"{% endif %}>
+          {%- for option in publisher_options %}
+          <option value="{{ option.value }}"{% if option.selected %} selected{% endif %}>{{ option.label }}</option>
+          {%- endfor %}
+        </select>
+      </div>
+      {%- endif %}
+      {%- set active_approvals = approval_options | selectattr('selected') | list %}
+      <details class="filter-dropdown" data-filter-dropdown data-row-filter="decision"
+                data-query-param="{{ approval_name }}" data-default-value=""
+                data-initial="{{ active_approvals | map(attribute='value') | join(',') }}">
+        <summary class="filter-select filter-dropdown__summary">
+          {{ approval_label }}<span class="filter-dropdown__count" data-filter-dropdown-count{% if not active_approvals %} hidden{% endif %}>{{ active_approvals | length }}</span>
+        </summary>
+        <div class="filter-dropdown__panel">
+          {%- for option in approval_options %}
+          {%- if not option.hide %}
+          <label class="filter-dropdown__option">
+            <input type="checkbox" name="{{ approval_name }}" value="{{ option.value }}"{% if option.selected %} checked{% endif %}>
+            <span>{{ option.label }} ({{ option.count }})</span>
+          </label>
+          {%- endif %}
+          {%- endfor %}
+          <div class="filter-dropdown__actions">
+            <button type="submit" class="btn btn-small" data-filter-dropdown-apply>Apply</button>
+          </div>
+        </div>
+      </details>
+      {%- if caller is defined %}
+      <details class="filter-dropdown" data-filter-dropdown data-more-filters>
+        <summary class="filter-select filter-dropdown__summary">{{ more_label }}</summary>
+        <div class="filter-dropdown__panel">
+          {{ caller() }}
+          <div class="filter-dropdown__actions">
+            <button type="submit" class="btn btn-small" data-filter-dropdown-apply>Apply</button>
+          </div>
+        </div>
+      </details>
+      {%- endif %}
+      {% endif %}
+    </form>
+    <input type="search" id="{{ search_id }}" class="search filter-bar__search" data-table-search="{{ search_selector }}" data-query-param="search"{% if multi_filters %} name="search" form="{{ search_id }}-form" maxlength="200" data-search-filter-chip{% endif %} placeholder="{{ search_placeholder }}" aria-label="{{ search_placeholder }}"{% if search_value %} value="{{ search_value }}"{% endif %}>
+    {% if multi_filters %}<button type="submit" class="btn btn-small" form="{{ search_id }}-form">Search</button>{% endif %}
+  </div>
+  {%- if chips %}
+  <div class="filter-chips" aria-label="Active filters">
+    {%- for chip in chips %}
+    <a class="filter-chip" href="{{ chip.remove_url }}"{% if chip.static %} data-chip-static data-chip-param="{{ chip.param }}" data-chip-value="{{ chip.value }}"{% endif %}>{{ chip.label }}<span class="filter-chip__remove" aria-hidden="true">&times;</span><span class="visually-hidden">, remove this filter</span></a>
+    {%- endfor %}
+    {%- if clear_url %}<a class="filter-chip filter-chip--clear" href="{{ clear_url }}">Clear all</a>{% endif %}
+  </div>
+  {%- endif %}
+</div>
+{% endmacro %}
+
+{% macro decision_provenance(p) %}
+{%- if not p.has_decision -%}
+Undecided
+{%- else -%}
+<details class="decision">
+  <summary>Decided {{ p.decided_at | humandate }}</summary>
+  <div class="decision__body">
+    <p class="cell-anywrap">{% if p.decided_by %}By {{ p.decided_by }}{% else %}Who decided was not recorded{% endif %}</p>
+    {% if p.justification %}<p>Justification: {{ p.justification }}</p>{% endif %}
+  </div>
+</details>
+{%- endif -%}
+{% endmacro %}
+
+{#
+  PAT-2164: the shared head every /devices/{id}[/tab] route renders - device
+  name, meta line and the counted horizontal tab bar - in one place so the six routes (main.py) can never
+  render it differently from each other. `tabs` is main.py's
+  _device_tab_definitions() output: one dict per tab with key/label/url/
+  count_display/current. A tab's count_display is None (no number shown,
+  never a 0 - root AGENTS.md: absence requires authority) whenever that
+  tab's own count is not currently a real number (a "Checking"/"Not
+  assessed"/"Not available" state, or a software total that could not be
+  read). Those labels remain explicit in the tabs after PAT-2339.
+
+  Phone (390px, rubric L12): the tab bar reuses the exact .devices-toolbar/
+  .view-tabs horizontal-scroll idiom /devices' own Silent/Quiet/Normal tabs
+  already use - one scrolling container, not a second navigation idiom - so
+  it scrolls inside itself rather than widening the page (see
+  static/css/portal.css's PAT-2164 block for why a scrolling bar was chosen
+  over a <select>, and portal.js for the active-tab-into-view enhancement).
+#}
+{% macro device_page_head(device, tabs, cve_tile, issues_tile) %}
+{% set dt = device | device_type %}
+<p class="crumb"><a href="/devices">Devices</a> / {{ device.hostname or device.device_id }}</p>
+<div class="page-head device-page-head">
+  <h1>{{ device.hostname or device.device_id }}</h1>
+  <p class="meta">{{ dt.platform_label or device.platform }} &middot; <span class="nowrap">{{ device.os_version }}</span> &middot; last seen {{ device.last_seen | humandate_nowrap(true) }} (UTC)</p>
+</div>
+
+<div class="devices-toolbar device-tab-bar">
+  <nav class="view-tabs" aria-label="Device sections">
+    {% for t in tabs %}
+    {% set tile = issues_tile if t.key == 'compliance' else cve_tile if t.key == 'vulnerabilities' else none %}
+    <a href="{{ t.url }}" data-device-section="{{ t.key }}"{% if t.current %} class="tab-active" aria-current="page" data-device-tab-current{% endif %}>
+      <span class="device-tab-label{% if tile %} {{ tile.tone }}{% endif %}">{{ t.label }}{% if t.count_display is not none %} ({{ t.count_display }}){% elif tile %} ({{ tile.value }}){% elif t.key == 'software' %} (Unavailable){% endif %}</span>
+      {% if tile and tile.stale %}<small class="device-tab-caveat">Evidence stale</small>{% endif %}
+    </a>
+    {% endfor %}
+  </nav>
+</div>
+{#- Enhancement only (works without it - the bar is touch-scrollable on its
+    own): scrolls the active tab into view inside its own horizontally-
+    scrolling container. Kept here rather than in static/js/portal.js,
+    which another worktree is editing concurrently for PAT-2156/software
+    work this ticket must not collide with. -#}
+<script>
+(function () {
+  try {
+    var active = document.querySelector(".device-tab-bar .tab-active");
+    if (active && active.scrollIntoView) {
+      active.scrollIntoView({ block: "nearest", inline: "center" });
+    }
+  } catch (e) {}
+})();
+</script>
+{% endmacro %}
+
+{#
+  PAT-2164: "Collection issues" (agent_health_degraded, PAT-2099) renders on
+  both the Overview tab (so a real collection problem is visible the moment
+  the device page loads) and the Evidence tab (alongside the rest of the
+  evidence facts, per this ticket's own tab-content mapping) - one macro, so
+  the two can never drift out of sync with each other.
+#}
+{% macro device_collection_issues(degraded_health, compact=false) %}
+{% if degraded_health %}
+{% if compact %}
+<section class="device-collection-alert" aria-labelledby="collection-issues-title">
+  <h2 id="collection-issues-title">Collection issues</h2>
+  {% for row in degraded_health %}
+  <div class="device-collection-alert__issue">
+    <p>{{ row.message }}{% if row.guide_url %} <a href="{{ row.guide_url }}" target="_blank" rel="noopener noreferrer">Full Disk Access guide</a>{% endif %}</p>
+    <details><summary>Issue dates</summary><p>First seen: {% if row.first_seen %}<time datetime="{{ row.first_seen }}" title="{{ row.first_seen }}">{{ row.first_seen | humandate_nowrap(true) }} (UTC)</time>{% else %}Unknown{% endif %} &middot; Last seen: {% if row.last_seen %}<time datetime="{{ row.last_seen }}" title="{{ row.last_seen }}">{{ row.last_seen | humandate_nowrap(true) }} (UTC)</time>{% else %}Unknown{% endif %}</p></details>
+  </div>
+  {% endfor %}
+</section>
+{% else %}
+<section class="card" aria-labelledby="collection-issues-title">
+  <h2 id="collection-issues-title">Collection issues</h2>
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead><tr><th>Issue</th><th>First seen</th><th>Last seen</th></tr></thead>
+      <tbody>
+        {% for row in degraded_health %}
+        <tr>
+          <td>{{ row.message }}{% if row.guide_url %} <a href="{{ row.guide_url }}" target="_blank" rel="noopener noreferrer">Full Disk Access guide</a>{% endif %}</td>
+          <td class="mono">{% if row.first_seen %}{{ row.first_seen | humandate_nowrap(true) }}{% else %}-{% endif %}</td>
+          <td class="mono">{% if row.last_seen %}{{ row.last_seen | humandate_nowrap(true) }}{% else %}-{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endif %}
+{% endmacro %}

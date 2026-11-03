@@ -1,0 +1,212 @@
+name: validate-labels
+
+# Gates the label manifest and the endpoint allowlist. Runs on every PR that
+# touches a label record, the schema, the allowlist, or either validator.
+# A label with an empty Team ID or a non-https URL fails the build, so
+# threat T4 cannot reach `main`. The allowlist gate (validate-allowlist) makes
+# T4 unrepresentable specifically for allowlisted labels shipped to endpoints.
+
+on:
+  pull_request:
+    paths:
+      - 'engine/labels/**'
+      - 'engine/Installomator.sh'
+      - 'engine/fragments/arguments.sh'
+      - 'engine/fragments/functions.sh'
+      - 'engine/fragments/labels/**'
+      - 'engine/fragments/main.sh'
+      - 'contracts/label.schema.json'
+      - 'ci/installomator_pkg_contract.py'
+      - 'ci/test_installomator_pkg_contract.py'
+      - 'ci/test-pkgindmg-runtime.zsh'
+      - 'ci/fixtures/pkgindmg-locator-cases.json'
+      - 'ci/test_validate_labels.py'
+      - 'ci/validate-labels.py'
+      - 'ci/test_validate_labels.py'
+      - 'ci/installomator_execution_contract.py'
+      - 'ci/test_installomator_execution_contract.py'
+      - 'ci/validate-allowlist.py'
+      - 'endpoint/labels-allowlist.txt'
+      # PAT-1403 (round 3, Finding 3): ci/test_installomator_execution_contract.py
+      # pins endpoint/patched-update.sh's exact 7-field `read` line and the
+      # absence of a `blockingProcesses=` override call in both endpoint
+      # scripts (test_blocking_processes_override_never_invoked_by_real_endpoint_callers),
+      # and ci/test_validate_labels.py pins the same read line
+      # (test_real_endpoint_consumer_read_line_names_seven_fields) — but a PR
+      # changing ONLY these files wouldn't have triggered this workflow at
+      # all, so the guards added specifically to catch drift in them never
+      # actually fired on the change that would break them.
+      - 'endpoint/patched-update.sh'
+      - 'endpoint/patched-install.sh'
+      - 'tools/build-bundle.sh'
+  push:
+    branches: [main]
+    paths:
+      - 'engine/labels/**'
+      - 'engine/Installomator.sh'
+      - 'engine/fragments/arguments.sh'
+      - 'engine/fragments/functions.sh'
+      - 'engine/fragments/labels/**'
+      - 'engine/fragments/main.sh'
+      - 'contracts/label.schema.json'
+      - 'ci/installomator_pkg_contract.py'
+      - 'ci/test_installomator_pkg_contract.py'
+      - 'ci/test-pkgindmg-runtime.zsh'
+      - 'ci/fixtures/pkgindmg-locator-cases.json'
+      - 'ci/test_validate_labels.py'
+      - 'ci/validate-labels.py'
+      - 'ci/test_validate_labels.py'
+      - 'ci/installomator_execution_contract.py'
+      - 'ci/test_installomator_execution_contract.py'
+      - 'ci/validate-allowlist.py'
+      - 'endpoint/labels-allowlist.txt'
+      # PAT-1403 (round 3, Finding 3): ci/test_installomator_execution_contract.py
+      # pins endpoint/patched-update.sh's exact 7-field `read` line and the
+      # absence of a `blockingProcesses=` override call in both endpoint
+      # scripts (test_blocking_processes_override_never_invoked_by_real_endpoint_callers),
+      # and ci/test_validate_labels.py pins the same read line
+      # (test_real_endpoint_consumer_read_line_names_seven_fields) — but a PR
+      # changing ONLY these files wouldn't have triggered this workflow at
+      # all, so the guards added specifically to catch drift in them never
+      # actually fired on the change that would break them.
+      - 'endpoint/patched-update.sh'
+      - 'endpoint/patched-install.sh'
+      - 'tools/build-bundle.sh'
+
+# Least privilege: this workflow only reads the checked-out tree and runs
+# validators. It deliberately does NOT expose the repository token to the
+# PR-controlled validator scripts (see the Windows step below).
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v4.2.2 release commit.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      # actions/setup-python v5.6.0 release commit.
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Validate label manifest
+        run: python3 ci/validate-labels.py
+
+      # PAT-1403: ci/test_installomator_execution_contract.py added 8 tests
+      # (first-pass/reapply argument-parsing proofs) that execute the real
+      # engine/Installomator.sh argument-handling blocks under `zsh -f -c`
+      # via subprocess — see the "no-zsh-skip-guard convention" notes on
+      # _run_first_pass/_run_reapply_block in that file. zsh is not
+      # preinstalled on the ubuntu-latest image (unlike a macOS endpoint,
+      # where it ships by default), so all 8 failed closed with
+      # FileNotFoundError: 'zsh' the first time this job ran them (PR #510).
+      # These tests assert on zsh-specific behavior (argumentsArray/typeset
+      # semantics), not on anything OS-specific beyond the interpreter
+      # itself, so installing the real zsh binary here — rather than moving
+      # this job to macos-latest at ~10x the per-minute cost — is the
+      # correct fix; only pkgindmg-endpoint-runtime below, which genuinely
+      # needs native macOS glob/filesystem semantics, belongs on
+      # macos-latest.
+      - name: Install zsh (execution-contract tests exercise real zsh argument-parsing semantics)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+
+      - name: Test label, pkgindmg and managed-execution endpoint-engine contracts
+        run: |
+          python3 ci/test_installomator_pkg_contract.py
+          python3 ci/test_installomator_execution_contract.py
+
+      - name: Test the label CI gate itself
+        # PAT-1403 (round 2, bonus finding): ci/test_validate_labels.py was
+        # never actually invoked by this workflow — it wasn't in the paths
+        # trigger list above (fixed) and no step ran it either, so a
+        # regression in ci/validate-labels.py's own tests (URL-sanity
+        # checks, the emitted-allowlist column-count regression guard,
+        # etc.) could land on main without CI ever noticing.
+        run: python3 ci/test_validate_labels.py
+
+      # PAT-1505 inverts this step. It used to prove the endpoint bundle CARRIED
+      # the reconciled engine and allowlist. The bundle is now assurance-only:
+      # the deployment engine, the derived allowlist and the three actuation
+      # LaunchDaemons are deliberately not built into it, so the old assertion
+      # would fail closed on a change that is working as intended.
+      #
+      # It is kept, inverted, rather than deleted. The engine sources stay in
+      # the tree for PAT-1481, which means a future edit can re-add a copy step
+      # to tools/build-bundle.sh without anything noticing — this is the check
+      # that would notice. Deleting it would leave that regression silent, which
+      # is the failure shape PAT-1505 exists to close.
+      - name: Prove the endpoint bundle carries no deployment engine (PAT-1505)
+        run: |
+          bash tools/build-bundle.sh
+          rc=0
+          for f in Installomator.sh patched-install.sh patched-uninstall.sh \
+                   labels-allowlist.txt LICENSE NOTICE \
+                   com.patched.install-check.plist \
+                   com.patched.uninstall-check.plist; do
+            if [ -e "dist/patched-updater/$f" ]; then
+              echo "::error::$f is back in the endpoint bundle. The shipped bundle is assurance-only (PAT-1505); the deployment engine must stay in the repository but out of dist/."
+              rc=1
+            fi
+          done
+          exit $rc
+
+      # The engine sources must still be present and unmodified in the tree.
+      # "Not shipped" is not "deleted": PAT-1481 may bring a narrow, separately
+      # scoped and separately pentested macOS executor back as an opt-in add-on,
+      # and it needs these sources to exist.
+      - name: Prove the quarantined engine sources are still in the repository
+        run: |
+          rc=0
+          # PAT-2245 deleted the catalogue poller, its verifier and its
+          # LaunchDaemon outright, so they are no longer listed here.
+          for f in engine/Installomator.sh endpoint/patched-install.sh \
+                   endpoint/patched-uninstall.sh endpoint/labels-allowlist.txt \
+                   endpoint/com.patched.install-check.plist \
+                   endpoint/com.patched.uninstall-check.plist; do
+            if [ ! -f "$f" ]; then
+              echo "::error::$f is missing. PAT-1505 excluded it from the shipped bundle; it must remain in the repository for PAT-1481."
+              rc=1
+            fi
+          done
+          exit $rc
+
+      - name: Check the derived allowlist is in sync
+        run: |
+          python3 ci/validate-labels.py --emit-allowlist /tmp/allowlist.generated
+          if ! diff -q endpoint/labels-allowlist.txt /tmp/allowlist.generated >/dev/null; then
+            echo "::error::endpoint/labels-allowlist.txt is out of sync with the label manifest."
+            echo "Regenerate it: python3 ci/validate-labels.py --emit-allowlist endpoint/labels-allowlist.txt"
+            diff endpoint/labels-allowlist.txt /tmp/allowlist.generated || true
+            exit 1
+          fi
+
+      - name: Validate allowlist invariants (closes T4 for endpoint labels)
+        run: python3 ci/validate-allowlist.py
+
+      # PAT-2304 (2026-09-30): the Windows allowlist validation step and the
+      # changed-files step that scoped it are retired along with
+      # windows/windows-allowlist.json itself. The allowlist mapped labels to
+      # winget installers for the Windows install path, which is patching
+      # (retired, Andy 2026-09-28). The label manifest checks above still run.
+
+  pkgindmg-endpoint-runtime:
+    # The resolver ships to macOS endpoints and relies on native zsh glob
+    # semantics. Linux zsh is not an acceptance environment for this test.
+    runs-on: macos-latest
+    steps:
+      # actions/checkout v4.2.2 release commit.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      # actions/setup-python v5.6.0 release commit. The zsh harness uses this
+      # only to decode the shared JSON fixture corpus.
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+
+      - name: Execute pkgindmg endpoint dispatcher
+        run: zsh ci/test-pkgindmg-runtime.zsh

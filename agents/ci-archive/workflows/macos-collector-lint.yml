@@ -1,0 +1,110 @@
+name: macos-collector-lint
+
+# Lints the macOS collector under macos/ — shellcheck for bash scripts,
+# `zsh -n` (parse-only) for the zsh entrypoints and the sourced lib/ modules.
+#
+# Caveat: shellcheck only knows POSIX/bash. It does NOT catch zsh-specific
+# footguns — e.g. using `path` (or `cdpath`, `fpath`, `manpath`, `infopath`)
+# as a loop variable in zsh silently corrupts $PATH because zsh ties those
+# lowercase array names to their uppercase scalar via `typeset -T`. We hit
+# that exact bug. Lint is necessary but not sufficient; the
+# collector still needs a real-machine smoke run before deploy.
+#
+# Mirrors the patched.im shell-lint.yml the collector shipped with before
+# the PAT-384 consolidation, extended to also parse-check the lib/ modules.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/**'
+      - '.github/workflows/macos-collector-lint.yml'
+  pull_request:
+    paths:
+      - 'macos/**'
+      - '.github/workflows/macos-collector-lint.yml'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: shellcheck (bash scripts)
+        run: |
+          shopt -s nullglob
+          # Top-level collector scripts; classify by shebang. The lib/ modules
+          # are sourced (no shebang) and are zsh — handled in the zsh step.
+          to_lint=()
+          for f in macos/*.sh; do
+            shebang=$(head -1 "$f")
+            case "$shebang" in
+              *zsh*) echo "skip (zsh, shellcheck SC1071): $f" ;;
+              *bash*|*"/sh"*|*dash*|*ksh*) to_lint+=("$f") ;;
+              *) echo "skip (no/unrecognised shebang '$shebang'): $f" ;;
+            esac
+          done
+          if [ ${#to_lint[@]} -eq 0 ]; then
+            echo "No shellcheck-compatible scripts to lint."
+            exit 0
+          fi
+          echo "Linting: ${to_lint[*]}"
+          shellcheck --shell=bash "${to_lint[@]}"
+
+      - name: Install zsh
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends zsh
+
+      - name: zsh -n (syntax check) on zsh entrypoints + lib modules
+        run: |
+          # ShellCheck cannot parse zsh, so we get parser-level coverage via
+          # `zsh -n` (no-execute). Covers the two zsh-shebang entrypoints AND
+          # every sourced lib/ module (no shebang, but zsh syntax). Catches
+          # missing `fi`, unclosed quotes, mismatched braces — NOT the
+          # `path`-array footgun or other runtime-only zsh issues.
+          shopt -s nullglob
+          checked=0
+          # zsh entrypoints (zsh shebang)
+          for f in macos/*.sh; do
+            case "$(head -1 "$f")" in
+              *zsh*) echo "zsh -n: $f"; zsh -n "$f"; checked=$((checked + 1)) ;;
+            esac
+          done
+          # sourced lib modules (no shebang)
+          for f in macos/lib/*.sh; do
+            echo "zsh -n: $f"; zsh -n "$f"; checked=$((checked + 1))
+          done
+          echo "zsh -n checked $checked script(s)."
+
+      - name: Build single-file bundles (asserts bundle completeness)
+        run: |
+          # build-bundle.sh inlines every macos/lib/*.sh module referenced by
+          # patched-collect.sh/patched-upload.sh into a single-file bundle, so
+          # a release install needs no lib/ directory at runtime. It now
+          # fails loudly (non-zero exit, named library) if a referenced
+          # library is missing, unreadable, or empty, and separately asserts
+          # every expected library actually made it into the bundle. Running
+          # it on every PR that touches macos/** catches a broken bundle
+          # before merge, not just at macos-agent-v* release time.
+          cd macos
+          bash build-bundle.sh --agent-version 0.0.0
+          test -s dist/patched-collect.sh
+          test -s dist/patched-upload.sh
+          # Parse-check the generated files, not just their size. The bundler
+          # rewrites guarded source blocks, so a transformation bug can produce
+          # a large, plausible file that no shell will run. The source scripts
+          # are linted elsewhere in this workflow; the bundle is a different
+          # artifact and is the one that ships.
+          zsh -n dist/patched-collect.sh
+          zsh -n dist/patched-upload.sh
+
+      - name: Verify collector release-version stamping
+        run: zsh macos/test-build-bundle-agent-version.zsh
+
+      - name: Verify OS-update inventory payload merge
+        run: zsh macos/test-os-update-payload.zsh
+
+      # PAT-1974: drives dscl through a shell shadow, so every failure route
+      # (and the never-fabricate-a-zero rule behind local_admin_count) runs on
+      # this Linux runner. The one case needing a real Mac announces its skip.
+      - name: Verify local-admin roster and count contract
+        run: zsh macos/test-local-admins.zsh

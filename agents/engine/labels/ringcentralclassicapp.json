@@ -1,0 +1,23 @@
+{
+  "label": "ringcentralclassicapp",
+  "name": "Glip",
+  "type": "dmg",
+  "app_path": "/Applications/Glip.app",
+  "expected_team_id": "M932RC5J66",
+  "download": {
+    "method": "static",
+    "url": "https://downloads.ringcentral.com/glip/rc/GlipForMac"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

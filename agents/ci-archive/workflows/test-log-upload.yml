@@ -1,0 +1,28 @@
+name: test-log-upload
+
+on:
+  pull_request:
+    paths:
+      - 'endpoint/patched-log-upload.sh'
+      - 'endpoint/test-log-upload.zsh'
+      - 'endpoint/agent_config_tenant.py'
+      - 'contracts/agent-config.schema.json'
+  push:
+    branches: [main]
+    paths:
+      - 'endpoint/patched-log-upload.sh'
+      - 'endpoint/test-log-upload.zsh'
+      - 'endpoint/agent_config_tenant.py'
+      - 'contracts/agent-config.schema.json'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install zsh (log-upload tests exercise a real zsh script)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+
+      - name: Run log-upload tests
+        run: zsh endpoint/test-log-upload.zsh

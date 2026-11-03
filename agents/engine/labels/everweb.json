@@ -1,0 +1,23 @@
+{
+  "label": "everweb",
+  "name": "EverWeb",
+  "type": "dmg",
+  "app_path": "/Applications/EverWeb.app",
+  "expected_team_id": "A95T4TFRZ2",
+  "download": {
+    "method": "static",
+    "url": "https://www.ragesw.com/downloads/everweb/everweb.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

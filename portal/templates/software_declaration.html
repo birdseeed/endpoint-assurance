@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ declaration.name }}</h1>
+  <p class="meta">Approved before any endpoint reported it. {{ meaning }} <a class="ask-link" href="/software">Back to Software</a></p>
+</div>
+
+{% if flash %}
+<div class="notice{% if not flash.error %} notice-ok{% endif %}" role="status">
+  <p><strong>{{ flash.error or flash.notice }}</strong></p>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Details</h2>
+  <dl class="product-identifiers__list">
+    <div class="product-identifiers__row"><dt>Publisher</dt><dd>{{ declaration.publisher or 'Not recorded' }}</dd></div>
+    <div class="product-identifiers__row"><dt>Platform</dt><dd>{{ declaration.platform_label or 'Not recorded' }}</dd></div>
+    <div class="product-identifiers__row"><dt>Status</dt><dd><span class="pill pill-muted">Declared</span> <span class="pill pill-muted">{{ declaration.observation_label }}</span></dd></div>
+    <div class="product-identifiers__row"><dt>Identity</dt><dd>{{ declaration.identity_label }}</dd></div>
+    <div class="product-identifiers__row"><dt>Installs</dt><dd>{{ declaration.observed_count }}</dd></div>
+    <div class="product-identifiers__row"><dt>Minimum approved version</dt><dd>{{ declaration.min_version or 'Any version' }}</dd></div>
+    <div class="product-identifiers__row"><dt>Review date</dt><dd>{{ declaration.review_date or 'Not set' }}</dd></div>
+    <div class="product-identifiers__row"><dt>Reason</dt><dd class="cell-anywrap">{{ declaration.justification or 'Not recorded' }}</dd></div>
+    {%- if declaration.approved_by %}
+    <div class="product-identifiers__row"><dt>Approved by</dt><dd class="cell-anywrap">{{ declaration.approved_by }}</dd></div>
+    {%- endif %}
+    {%- if declaration.approved_at %}
+    <div class="product-identifiers__row"><dt>Approved at</dt><dd><span class="mono">{{ declaration.approved_at | humandate(true) }} UTC</span></dd></div>
+    {%- endif %}
+  </dl>
+</div>
+
+{% if match_offered is sameas false %}
+<div class="card">
+  <h2>Not yet matched to a known product</h2>
+  <p class="meta">Your approval of {{ declaration.name }} stands as recorded. It can be matched to a known product once Patched has one for it.</p>
+</div>
+{% elif match_offered %}
+<div class="card">
+  <h2>Match to a known product</h2>
+  <p class="meta">Matching links this approval to a known product Patched can recognise. It stays unmatched until you do, and Patched may decline a match it cannot confirm.</p>
+  <form method="get" action="/software/declarations/{{ declaration.id }}" class="sched-form">
+    <div class="sched-fields">
+      <label class="field">
+        <span class="field-label">Search known products</span>
+        <input type="text" name="query" maxlength="100" value="{{ query }}">
+      </label>
+    </div>
+    <button type="submit" class="btn btn-small">Search</button>
+  </form>
+  {% if products is none %}
+  <p class="meta meta--note">The product lookup is not available right now. Try again in a minute.</p>
+  {% elif not products %}
+  <p class="meta meta--note">No known products matched this search for {{ declaration.platform_label or 'this platform' }}.</p>
+  {% else %}
+  <form method="post" action="/software/declarations/{{ declaration.id }}/resolve" class="sched-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <fieldset class="declaration-choices">
+      <legend class="field-label">Known product</legend>
+      {% for p in products %}
+      <label class="declaration-choice">
+        <input type="radio" name="alias_id" value="{{ p.alias_id }}" required>
+        <span>{{ p.name }}{% if p.publisher %}, {{ p.publisher }}{% endif %}{% if p.platform_label %} ({{ p.platform_label }}){% endif %}</span>
+      </label>
+      {% endfor %}
+    </fieldset>
+    <label class="field">
+      <span class="field-label">Reason for the match</span>
+      <input type="text" name="justification" maxlength="{{ justification_max }}" required autocomplete="off">
+    </label>
+    <button type="submit" class="btn btn-primary">Match to this product</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="card history-card">
+  <h2>History</h2>
+  {% if history_error %}
+  <p class="empty">History could not be loaded just now. Try again in a minute.</p>
+  {% elif not history %}
+  <p class="empty">No changes have been recorded for this approval.</p>
+  {% else %}
+  <ol class="history__list">
+    {% for h in history %}
+    <li class="history__item">
+      <p class="history__change"><span class="pill pill-muted">{{ h.action }}</span></p>
+      <p class="history__meta">{% if h.decided_at %}<span class="mono">{{ h.decided_at | humandate(true) }} UTC</span> {% endif %}<span class="cell-anywrap">by {{ h.actor }}</span></p>
+      {% if h.reason %}<p class="history__reason">Reason: {{ h.reason }}</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+</div>
+{% endblock %}

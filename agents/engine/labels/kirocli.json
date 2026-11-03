@@ -1,0 +1,23 @@
+{
+  "label": "kirocli",
+  "name": "Kiro CLI",
+  "type": "dmg",
+  "app_path": "/Applications/Kiro CLI.app",
+  "expected_team_id": "94KV3E626L",
+  "download": {
+    "method": "static",
+    "url": "https://desktop-release.q.us-east-1.amazonaws.com/latest/Kiro%20CLI.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

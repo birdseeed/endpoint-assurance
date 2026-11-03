@@ -1,0 +1,24 @@
+{
+  "label": "macoslaps",
+  "name": "macOSLAPS",
+  "type": "pkg",
+  "app_path": "/Applications/macOSLAPS.app",
+  "expected_team_id": "9UYK4F9BSM",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/joshua-d-miller/macOSLAPS/releases/latest"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

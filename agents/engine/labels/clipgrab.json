@@ -1,0 +1,24 @@
+{
+  "label": "clipgrab",
+  "name": "ClipGrab",
+  "type": "dmg",
+  "app_path": "/Applications/ClipGrab.app",
+  "expected_team_id": "E8BJ3ZV5W8",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://clipgrab.org"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

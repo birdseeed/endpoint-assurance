@@ -1,0 +1,23 @@
+{
+  "label": "ticktick",
+  "name": "TickTick",
+  "type": "dmg",
+  "app_path": "/Applications/TickTick.app",
+  "expected_team_id": "75TY9UT8AY",
+  "download": {
+    "method": "static",
+    "url": "https://ticktick.com/down/getApp/download?type=mac"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

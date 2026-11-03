@@ -1,0 +1,27 @@
+{
+  "label": "arcbrowser",
+  "name": "Arc",
+  "type": "dmg",
+  "app_path": "/Applications/Arc.app",
+  "expected_team_id": "S6N382Y83G",
+  "download": {
+    "method": "static",
+    "url": "https://releases.arc.net/release/Arc-latest.dmg"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "mirror_eula_approved": false,
+    "vendor_only": true,
+    "vendor_only_reason": "auth-gated-cdn",
+    "reviewed_by": "pat-664",
+    "reviewed_at": "2026-07-04",
+    "notes": "PAT-664: permanently vendor_only=true. Arc CDN (releases.arc.net) requires session authentication; no public stable programmatic download path exists. Mirror pipeline will skip this label.",
+    "ring_policy": "immediate"
+  }
+}

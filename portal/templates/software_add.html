@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <h1>Add approved software</h1>
+  <p class="meta">Approve software before any endpoint reports it. {{ meaning }} <a class="ask-link" href="/software">Back to Software</a></p>
+</div>
+
+{% if error %}
+<div class="notice" role="alert"><p><strong>{{ error }}</strong></p></div>
+{% endif %}
+
+{% if lookup_offered %}
+<div class="card">
+  <h2>Look up a known product</h2>
+  <p class="meta">Search Patched's list of known products to use its exact name and publisher. This is optional.</p>
+  <form method="get" action="/software/add" class="sched-form">
+    <div class="sched-fields">
+      <label class="field">
+        <span class="field-label">Product name</span>
+        <input type="text" name="query" maxlength="100" value="{{ query }}" placeholder="Name">
+      </label>
+      <label class="field">
+        <span class="field-label">Platform</span>
+        <select name="platform">
+          <option value="">Any</option>
+          {% for value, label in platforms %}<option value="{{ value }}"{% if search_platform == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+    </div>
+    <button type="submit" class="btn btn-small">Search</button>
+  </form>
+  {% if searched %}
+    {% if products is none %}
+    <p class="meta meta--note">The product lookup is not available right now. You can still add the software by name below.</p>
+    {% elif not products %}
+    <p class="meta meta--note">No known products matched. You can still add the software by name below.</p>
+    {% else %}
+    <ul class="declaration-products">
+      {% for p in products %}
+      <li><strong>{{ p.name }}</strong>{% if p.publisher %}, {{ p.publisher }}{% endif %}{% if p.platform_label %} ({{ p.platform_label }}){% endif %}
+        <a class="declaration-use" href="/software/add?{{ {'query': query, 'platform': search_platform, 'alias_id': p.alias_id} | urlencode }}">Use this product</a></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Approval details</h2>
+  <form method="post" action="/software/add" class="sched-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% if chosen %}
+    <input type="hidden" name="alias_id" value="{{ chosen.alias_id }}">
+    <p class="meta">Using the known product <strong>{{ chosen.name }}</strong>. <a href="/software/add">Start again without it</a></p>
+    {% endif %}
+    <div class="sched-fields">
+      <label class="field">
+        <span class="field-label">Software name</span>
+        <input type="text" name="name" maxlength="{{ name_max }}" required value="{{ values.name }}">
+      </label>
+      <label class="field">
+        <span class="field-label">Publisher</span>
+        <input type="text" name="publisher" maxlength="{{ name_max }}" required value="{{ values.publisher }}">
+      </label>
+      <label class="field">
+        <span class="field-label">Platform</span>
+        <select name="platform" required>
+          {% for value, label in platforms %}<option value="{{ value }}"{% if values.platform == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="field">
+        <span class="field-label">Minimum approved version</span>
+        <input type="text" name="min_version" maxlength="{{ version_max }}" value="{{ values.min_version }}" placeholder="Optional">
+      </label>
+      <label class="field">
+        <span class="field-label">Review date, year-month-day</span>
+        <input type="text" name="review_date" maxlength="10" value="{{ values.review_date }}" placeholder="Optional">
+      </label>
+    </div>
+    <label class="field">
+      <span class="field-label">Reason for approving it</span>
+      <input type="text" name="justification" maxlength="{{ justification_max }}" required value="{{ values.justification }}" autocomplete="off">
+    </label>
+    <p class="toolbar-hint">Your decision is recorded with your name and the time, and kept in its history.</p>
+    <button type="submit" class="btn btn-primary">Add approved software</button>
+  </form>
+</div>
+{% endblock %}

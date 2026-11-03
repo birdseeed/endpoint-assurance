@@ -1,0 +1,23 @@
+{
+  "label": "sqlpropostgres",
+  "name": "SQLPro for Postgres",
+  "type": "zip",
+  "app_path": "/Applications/SQLPro for Postgres.app",
+  "expected_team_id": "LKJB72232C",
+  "download": {
+    "method": "static",
+    "url": "https://macpostgresclient.com/download.php"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>FAQ - Patched.im docs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Frequently asked questions about Patched: privacy and data residency, supported platforms, MDM requirements, security, and getting started." />
+  <link rel="icon" href="/favicon.ico?v=20260926-brand-v3" sizes="32x32" />
+  <link rel="icon" href="/favicon.svg?v=20260926-brand-v3" type="image/svg+xml" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=20260926-brand-v3" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=20260926-brand-v3" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20260926-brand-v3" />
+  <link rel="mask-icon" href="/mask-icon.svg?v=20260926-brand-v3" color="#2563eb" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=20260926-brand-v3" />
+</head>
+<body>
+
+  <!-- ── Nav ─────────────────────────────────────────────── -->
+  <header class="nav">
+    <div class="nav__inner">
+      <a class="nav__logo" href="https://patched.im" aria-label="Patched.im home"><img src="/patched-lockup-horizontal.svg" width="132" height="27" alt="Patched" /></a>
+      <nav class="nav__links" aria-label="Primary">
+        <a href="/getting-started.html">Getting started</a>
+        <a href="/faq.html">FAQ</a>
+        <div class="nav__dropdown">
+          <button type="button" class="nav__dropdown-trigger" aria-haspopup="true" aria-expanded="false">Guides <svg class="nav__dropdown-chevron" width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="nav__dropdown-menu" role="menu">
+            <a role="menuitem" href="/agent-updater.html">Endpoint agent</a>
+            <a role="menuitem" href="/protected.html">Configuration assurance</a>
+            <a role="menuitem" href="/read-your-report.html">Reports and evidence</a>
+            <a role="menuitem" href="/remediation-guide.html">Remediation guide</a>
+            <a role="menuitem" href="/using-your-portal.html">Customer portal</a>
+            <a role="menuitem" href="/security.html">Security</a>
+            <a role="menuitem" href="/privacy.html">Data and privacy</a>
+          </div>
+        </div>
+      </nav>
+      <div class="nav__spacer"></div>
+      <div class="nav__cta"><a class="btn btn--primary" href="https://patched.im/pricing">Become a design partner</a></div>
+      <button class="nav__burger" type="button" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+
+  <main class="doc">
+    <div class="wrap">
+      <div class="doc__inner">
+        <a class="doc__back" href="/">&larr; All guides</a>
+
+        <article class="article">
+          <header>
+            <p class="kicker">Guide 04</p>
+            <h1>FAQ</h1>
+            <p class="lead">
+              The questions buyers and IT teams ask most often, before and during a
+              rollout. Don't see yours? Email
+              <a href="mailto:hello@patched.im">hello@patched.im</a>.
+            </p>
+          </header>
+
+          <h2>Privacy &amp; data</h2>
+
+          <h3>What data does the agent collect?</h3>
+          <p>
+            Device and posture data: hardware identity and specs, OS version, installed
+            applications and their versions, pending and historical updates, certificate
+            expiry, and the CIS security signals (encryption, firewall, screen-lock, and so
+            on). Everything maps to a reporting or compliance purpose. See
+            <a href="/agent-updater.html">The endpoint agent</a> for the full list.
+          </p>
+
+          <h3>Does it read personal files, browsing or keystrokes?</h3>
+          <p>
+            No. The agent does not capture documents, messages, browsing history,
+            keystrokes or screen contents. It is not employee-surveillance tooling, and our
+            acceptable-use terms prohibit using it that way. Controls that could touch
+            user-specific data are flagged and are not switched on without a documented
+            reason and your agreement.
+          </p>
+
+          <h3>Where is my data stored?</h3>
+          <p>
+            On Patched-operated infrastructure hosted in the
+            <strong>EU (Finland and Germany)</strong>, in a PostgreSQL database, with
+            encrypted nightly backups. Patched is built and run from the
+            Isle&nbsp;of&nbsp;Man by Patched.im Ltd, company number 139269C. We can
+            walk you through the data-flow and retention specifics for a security
+            review.
+          </p>
+
+          <h3>How is the data protected in transit?</h3>
+          <p>
+            Every upload runs over HTTPS and is independently authenticated (a per-tenant
+            bearer token) and integrity-signed (HMAC-SHA256 over the exact payload), with
+            timestamp and one-time-nonce checks to prevent replay. A request that fails any
+            check is rejected before any data is read.
+          </p>
+
+          <h2>Platforms &amp; requirements</h2>
+
+          <h3>Which platforms are supported?</h3>
+          <p>
+            macOS and Windows. Both run the same shape of inventory collection and are
+            scored against their respective CIS Level&nbsp;1 benchmark, so a mixed estate
+            sits on one consistent posture.
+          </p>
+
+          <h3>Do I need an MDM like Intune or Jamf?</h3>
+          <p>
+            No. Intune or Jamf can deploy the collector if you already use them, but a
+            credible Patched inventory does not require an MDM. Your existing management
+            platform remains the authority for deployment and remediation.
+          </p>
+
+          <h3>How do I deploy it across the estate?</h3>
+          <p>
+            Through Intune, using the enrolment artifact generated from the portal's
+            Install tab, or by running that same artifact directly on unmanaged machines.
+            The deployment route and permissions are reviewed during onboarding. Both
+            paths are covered in <a href="/getting-started.html">Getting started</a>.
+          </p>
+
+          <h3>What does the agent need on the network?</h3>
+          <p>
+            All agent traffic is outbound HTTPS (port&nbsp;443) only. Nothing on the
+            device listens for inbound connections: no inbound firewall rules, no ports
+            to open.
+          </p>
+          <table>
+            <tr><th>Destination</th><th>Purpose</th><th>When</th></tr>
+            <tr>
+              <td><code>api.patched.im</code></td>
+              <td>Agent API: config, inventory, posture, events, log upload</td>
+              <td>Always (every ~15 min)</td>
+            </tr>
+          </table>
+          <p>
+            The agent honours system proxy
+            settings (WinHTTP / PAC on Windows; <code>networksetup</code> on macOS), a
+            manually configured proxy, or a direct connection, all via the signed agent
+            configuration.
+          </p>
+
+          <h3>Do I need to configure my antivirus or EDR?</h3>
+          <p>
+            Do not add blanket exclusions by default. If an AV or EDR product blocks the
+            collector, capture the alert and contact Patched so the exact signed binary,
+            path and required access can be reviewed with the endpoint-security owner.
+          </p>
+
+          <h2>Compliance &amp; reporting</h2>
+
+          <h3>What exactly does "compliant" mean?</h3>
+          <p>
+            That the device passed the CIS Level&nbsp;1 controls that apply to it, scored
+            against your policy, with controls we couldn't verify handled conservatively.
+            The full explanation (including how it maps to NIST, ISO&nbsp;27001 and Cyber
+            Essentials) is in <a href="/protected.html">What "Compliant" means</a>.
+          </p>
+
+          <h3>How often is the data refreshed?</h3>
+          <p>
+            The agent uploads roughly every 15 minutes and re-scans on a schedule, so the
+            dashboard reflects close-to-current posture rather than a monthly snapshot.
+            Scheduled PDF reports go out on whatever cadence you choose.
+          </p>
+
+          <h3>Can I get reports for an auditor or board?</h3>
+          <p>
+            Yes: a per-device report listing every failing control with the observed value
+            and remediation, and an executive summary that rolls the estate up into KPIs
+            and a prioritised to-do list. Both are designed to be handed straight to an
+            assessor.
+          </p>
+
+          <h3>What if a device is switched off for a week?</h3>
+          <p>
+            Nothing breaks. The device simply stops uploading while it's off, and its
+            dashboard entry and per-device appendix row show the last check-in date so
+            you can see how stale that device's data is. As soon as it's switched on
+            again and back online, the agent resumes uploading on its normal schedule
+            and its posture reflects the latest snapshot from then on. A laptop offline
+            for annual leave or sitting unused in a drawer just won't contribute a fresh
+            reading until it reconnects.
+          </p>
+
+          <h2>Commercial</h2>
+
+          <h3>What does it cost?</h3>
+          <p>
+            There is no published price list yet. Patched is taking on a small number of
+            design partners before it goes on general sale, and their terms are agreed
+            directly. See <a href="https://patched.im/pricing">pricing</a> for what a
+            design partner gets and what we ask in return, or email
+            <a href="mailto:hello@patched.im">hello@patched.im</a>. Partner terms for
+            managed service providers are separate and also agreed directly.
+          </p>
+
+          <h3>How do I try it?</h3>
+          <p>
+            Put your estate forward on the <a href="https://patched.im/pricing">pricing
+            page</a>, or email <a href="mailto:hello@patched.im">hello@patched.im</a> with
+            the rough size of your estate, the Windows and Mac mix and what manages it
+            today. We answer every message.
+          </p>
+
+          <h3>How do I cancel?</h3>
+          <p>
+            Offboarding and commercial notice follow the terms agreed for the customer.
+            Patched supplies the device and data-removal steps and preserves required
+            audit evidence only for the agreed retention period.
+          </p>
+
+          <h3>Can I export my data?</h3>
+          <p>
+            Yes. On request we'll provide your full inventory, compliance history, and
+            report archive as CSV/JSON, or as the PDF reports you've already been sent.
+            This is also covered under the DPA's data subject rights: export or deletion
+            within 30 days of your written instruction. See
+            <a href="/privacy.html">Data &amp; privacy</a> for the detail.
+          </p>
+
+          <nav class="pager">
+            <a href="/protected.html">&larr; Configuration assurance</a>
+            <a href="/security.html">Security architecture &rarr;</a>
+          </nav>
+        </article>
+      </div>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__logo"><img src="/patched-lockup-horizontal-white.svg" width="132" height="27" alt="Patched" /></div>
+      <nav class="footer__links" aria-label="Footer"><a href="https://patched.im/cyber-essentials">Cyber Essentials</a><a href="https://patched.im/msp">For MSPs</a><a href="https://patched.im/pricing">Pricing</a><a href="https://patched.im/security.html">Security</a><a href="https://patched.im/about.html">About</a><a href="https://patched.im/blog">Blog</a><a href="https://docs.patched.im">Docs</a><a href="https://status.patched.im">Status</a><a href="https://patched.im/privacy.html">Privacy</a><a href="https://patched.im/cookies.html">Cookies</a><a href="mailto:hello@patched.im">Contact</a></nav>
+      <div class="footer__meta">&copy; <span data-year>2026</span> Patched.im Ltd · Isle of Man · Company No. 139269C</div>
+    </div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

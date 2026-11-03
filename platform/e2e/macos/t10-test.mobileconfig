@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>PayloadType</key>
+			<string>com.apple.applicationaccess</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>PayloadIdentifier</key>
+			<string>im.patched.t10.restrictions</string>
+			<key>PayloadUUID</key>
+			<string>42c61d01-f6d3-48c6-b2b3-e3b7b9508cf7</string>
+			<key>PayloadDisplayName</key>
+			<string>T10 Layer B Restrictions</string>
+			<key>allowAirDrop</key>
+			<false/>
+		</dict>
+	</array>
+	<key>PayloadDisplayName</key>
+	<string>T10 Layer B</string>
+	<key>PayloadIdentifier</key>
+	<string>im.patched.t10.profile</string>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>e8c21dcb-b580-40b4-b814-0ef5e495df1e</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+	<key>PayloadRemovalDisallowed</key>
+	<false/>
+</dict>
+</plist>

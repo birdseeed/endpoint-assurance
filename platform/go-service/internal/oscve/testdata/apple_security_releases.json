@@ -1,0 +1,40 @@
+{
+  "_note": "Representative fixture hand-authored from the documented Apple security-releases schema (support.apple.com/en-us/100100). Real CVE ids; trimmed to two macOS releases plus one iOS release to prove the macOS-only filter. Not a verbatim Apple payload.",
+  "releases": [
+    {
+      "name": "macOS Sonoma 14.5",
+      "product": "macOS Sonoma",
+      "version": "14.5",
+      "build": "23F79",
+      "advisory_url": "https://support.apple.com/en-us/120903",
+      "published": "2024-05-13",
+      "cves": [
+        {"id": "CVE-2024-23296", "severity": "HIGH", "score": 7.8},
+        {"id": "CVE-2024-27834", "severity": "HIGH"},
+        {"id": "CVE-2024-27818", "severity": "MEDIUM", "score": 5.5}
+      ]
+    },
+    {
+      "name": "macOS Ventura 13.6.7",
+      "product": "macOS Ventura",
+      "version": "13.6.7",
+      "build": "22G720",
+      "advisory_url": "https://support.apple.com/en-us/120896",
+      "published": "2024-05-13",
+      "cves": [
+        {"id": "CVE-2024-27834", "severity": "HIGH"}
+      ]
+    },
+    {
+      "name": "iOS 17.5 and iPadOS 17.5",
+      "product": "iOS",
+      "version": "17.5",
+      "build": "21F79",
+      "advisory_url": "https://support.apple.com/en-us/120902",
+      "published": "2024-05-13",
+      "cves": [
+        {"id": "CVE-2024-23296", "severity": "HIGH"}
+      ]
+    }
+  ]
+}

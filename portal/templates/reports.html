@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div class="page-head__title">
+    <h1>Reports</h1>
+  </div>
+  <p class="meta">Audit-ready compliance reports for your estate, generated on demand</p>
+</div>
+
+{% if generated %}
+<div class="notice notice-ok">Report generation requested. It will appear in the history below shortly; refresh this page in a minute.</div>
+{% endif %}
+{% if generate_error %}
+<div class="notice">Could not request {{ generate_error_report.label if generate_error_report else 'the report' }}: {{ generate_error }}</div>
+{% endif %}
+
+<div class="card">
+  <h2>Software reports</h2>
+  <p>Pre-staged software asset management reports, refreshed automatically from your estate's software and lifecycle evidence.</p>
+  <ul>
+    <li><a href="/reports/software/unsupported">Unsupported software</a>: every installed product and operating system version past its vendor's end of support, or within 90 days of it, with the Cyber Essentials evidence it feeds.</li>
+    <li><a href="/reports/software/remote-access">Remote access tools</a>: every remote access tool on your estate with its approval state, and your own RMM agents shown separately.</li>
+    <li><a href="/reports/software/version-sprawl">Version sprawl</a>: how many versions of each application are live across your estate, and how they compare with the latest released version.</li>
+    <li><a href="/reports/software/duplicate-tools">Duplicate tools</a>: categories where your estate runs several competing products for the same job, so consolidation candidates are visible without needing price data.</li>
+    <li><a href="/reports/software/publishers">Software publishers</a>: every installed application grouped by the publisher its code signing evidence proves, with installs Patched cannot verify shown first.</li>
+    <li><a href="/reports/new-software">New software</a>: products first seen on your estate since your last review, with quick approve or unapprove from the row.</li>
+    <li><a href="/reports/software-drift">Unapproved and unreviewed software</a>: the current Unapproved and Unreviewed list, a 26-week trend, and the devices carrying the most Unapproved software.</li>
+    <li>Approved software list: every approved application, browser extension and Homebrew policy. <a href="/reports/software/approved.csv">Download CSV</a>.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>Endpoint assurance</h2>
+  <p>Evidence packs drawn from what Patched already holds about your estate, with the source and date of every answer.</p>
+  <ul>
+    <li><a href="/reports/insurance-evidence">Cyber insurance evidence</a>: the endpoint questions on a typical cyber insurance renewal form, each answered from Patched's evidence with how much of your estate it covers, plus the questions Patched cannot answer for you. Download it as a PDF or CSV.</li>
+    <li><a href="/ce-readiness">Cyber Essentials readiness</a>: what stands between each device and the Cyber Essentials 14-day update rule, and the controls Patched can evidence.</li>
+  </ul>
+</div>
+
+<div class="card report-catalogue">
+  <h2>Generate a report</h2>
+  {% if catalogue_unavailable %}
+  <p class="empty">Report choices are not available right now. Please try again later.</p>
+  {% elif catalogue %}
+  <p>Every generated report can be downloaded as a PDF or a CSV from the history below.</p>
+  <div class="report-catalogue__grid">
+  {% for report in catalogue %}
+  <section class="report-catalogue__item">
+    <h3>{{ report.label }}</h3>
+    <p>{{ report.description }}</p>
+    <p class="meta mono">DEFAULT {{ report.default_frequency }}</p>
+    <form method="post" action="/reports/generate">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="report_type" value="{{ report.type }}">
+      <button type="submit" class="btn btn-primary">Generate report</button>
+    </form>
+  </section>
+  {% endfor %}
+  </div>
+  {% else %}
+  <p class="empty">There are no report choices available for this estate.</p>
+  {% endif %}
+  <p class="toolbar-hint mono">ISSUED DOCUMENTS ARE ALWAYS LIGHT, WHATEVER THEME YOU READ THE PORTAL IN</p>
+</div>
+
+<div class="card" id="schedule">
+  <h2>Scheduled reports</h2>
+  {% if schedule_saved %}
+  <div class="notice notice-ok">Schedule saved.</div>
+  {% endif %}
+  {% if schedule_error %}
+  <div class="notice">Could not save the schedule: {{ schedule_error }}</div>
+  {% endif %}
+  {% if catalogue_unavailable %}
+  <p class="empty">Schedules cannot be configured until report choices are available. Please try again later.</p>
+  {% elif schedules_unavailable %}
+  <p class="empty">Scheduling is not available right now. Please try again later.</p>
+  {% else %}
+  <p>Generate a selected report automatically on a schedule. Scheduled reports appear in the history below, ready to download, and are produced as both a PDF and a CSV.</p>
+  {% if selected_report %}
+  <form method="get" action="/reports" class="report-schedule-picker">
+    <label class="field">
+      <span class="field-label">Report</span>
+      <select name="schedule_type" onchange="this.form.submit()">
+        {% for report in catalogue %}
+        <option value="{{ report.type }}" {{ 'selected' if report.type == selected_type }}>{{ report.label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <noscript><button type="submit" class="btn btn-small">Choose report</button></noscript>
+  </form>
+  {% if schedule and schedule.configured %}
+  <p class="sched-status">
+    <span class="pill {{ 'pill-ok' if schedule.enabled else 'pill-muted' }}">{{ 'Enabled' if schedule.enabled else 'Paused' }}</span>
+    <span class="sched-summary">{{ schedule_summary }}</span>
+    {% if schedule.enabled and schedule.next_run_at %}
+    <span class="sched-next">Next run {{ schedule.next_run_at | humandate(true) }} (UTC)</span>
+    {% endif %}
+    {% if schedule.last_run_at %}
+    <span class="sched-next">Last run {{ schedule.last_run_at | humandate(true) }} (UTC)</span>
+    {% endif %}
+  </p>
+  {% endif %}
+  {% set configured = schedule and schedule.configured %}
+  {% set sel_weekday = schedule.weekday if configured and schedule.weekday is not none else 1 %}
+  {% set sel_monthday = schedule.month_day if configured and schedule.month_day is not none else 1 %}
+  {% set sel_hour = schedule.hour_utc if configured and schedule.hour_utc is not none else 7 %}
+  <form method="post" action="/reports/schedule" class="sched-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="report_type" value="{{ selected_type }}">
+    <div class="sched-fields">
+      <label class="field">
+        <span class="field-label">Frequency</span>
+        <select name="cadence" id="sched-cadence">
+          <option value="daily" {{ 'selected' if schedule and schedule.cadence == 'daily' }}>Daily</option>
+          <option value="weekly" {{ 'selected' if not schedule or not schedule.configured or schedule.cadence == 'weekly' }}>Weekly</option>
+          <option value="monthly" {{ 'selected' if schedule and schedule.cadence == 'monthly' }}>Monthly</option>
+        </select>
+      </label>
+      <label class="field" id="sched-weekday-field">
+        <span class="field-label">Day of week</span>
+        <select name="weekday">
+          {% for wd in [1, 2, 3, 4, 5, 6, 0] %}
+          <option value="{{ wd }}" {{ 'selected' if wd == sel_weekday }}>{{ weekday_names[wd] }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="field" id="sched-monthday-field">
+        <span class="field-label">Day of month</span>
+        <select name="month_day">
+          {% for d in range(1, 32) %}
+          <option value="{{ d }}" {{ 'selected' if d == sel_monthday }}>{{ d }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="field">
+        <span class="field-label">Time (UTC)</span>
+        <select name="hour_utc">
+          {% for h in range(24) %}
+          <option value="{{ h }}" {{ 'selected' if h == sel_hour }}>{{ '%02d:00' % h }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="field field-check">
+        <input type="checkbox" name="enabled" {{ 'checked' if not configured or schedule.enabled }}>
+        <span class="field-label">Enabled</span>
+      </label>
+    </div>
+    <p class="sched-hint" id="sched-monthday-hint">Days 29 to 31 run on the last day of shorter months.</p>
+    <button type="submit" class="btn btn-primary">Save schedule</button>
+  </form>
+  <script>
+    (function () {
+      var cadence = document.getElementById("sched-cadence");
+      var weekday = document.getElementById("sched-weekday-field");
+      var monthday = document.getElementById("sched-monthday-field");
+      var hint = document.getElementById("sched-monthday-hint");
+      function sync() {
+        weekday.style.display = cadence.value === "weekly" ? "" : "none";
+        monthday.style.display = cadence.value === "monthly" ? "" : "none";
+        hint.style.display = cadence.value === "monthly" ? "" : "none";
+      }
+      cadence.addEventListener("change", sync);
+      sync();
+    })();
+  </script>
+  {% else %}
+  <p class="empty">There are no report schedules available for this estate.</p>
+  {% endif %}
+  {% endif %}
+</div>
+
+<div class="card card-table">
+  <h2>Report history</h2>
+  {% if reports %}
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>Generated</th><th>Report</th><th></th></tr></thead>
+    <tbody>
+      {% for r in reports %}
+      <tr>
+        <td>{{ (r.generated_at or r.created_at) | humandate_nowrap(true) }} (UTC)</td>
+        <td>{{ r.report_label or r.name or 'Report' }}</td>
+        <td class="cell-actions">
+          <div class="report-downloads">
+            <a class="btn btn-small" href="/reports/{{ r.id }}/download">Download PDF</a>
+            {% if r.formats is defined and r.formats is sequence and r.formats is not string and 'csv' in r.formats %}
+            <a class="btn btn-small" href="/reports/{{ r.id }}/download?format=csv">Download CSV</a>
+            {% elif r.formats is defined and r.formats is sequence and r.formats is not string %}
+            <span class="meta report-downloads__note">CSV is available for newly generated reports.</span>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">No reports have been generated yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

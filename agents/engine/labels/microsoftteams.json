@@ -1,0 +1,26 @@
+{
+  "label": "microsoftteams",
+  "name": "Microsoft Teams classic",
+  "type": "pkg",
+  "app_path": "/Applications/Microsoft Teams classic.app",
+  "expected_team_id": "UBF8T346G9",
+  "download": {
+    "method": "static",
+    "url": "https://go.microsoft.com/fwlink/?linkid=869428"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [
+    "Microsoft Teams classic Helper"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "mirror_eula_approved": false,
+    "reviewed_by": "andy",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true. PAT-500: in scope for Phase 2 mirror pipeline; EULA review pending."
+  }
+}

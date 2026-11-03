@@ -1,0 +1,24 @@
+{
+  "label": "shottr",
+  "name": "Shottr",
+  "type": "dmg",
+  "app_path": "/Applications/Shottr.app",
+  "expected_team_id": "2Y683PRQWN",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://shottr.cc/newversion.html"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

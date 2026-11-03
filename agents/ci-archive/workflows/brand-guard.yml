@@ -1,0 +1,14 @@
+name: brand-guard
+# PAT-952: pull_request + main pushes only — the old bare [push, pull_request]
+# double-fired on every PR-branch push (61 runs in one sprint day).
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Brand guard
+        run: bash scripts/brand-guard.sh

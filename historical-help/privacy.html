@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Data &amp; privacy - Patched.im docs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="What the Patched agent collects, what it doesn't, where your data goes, how it's protected in transit, and the legal framework it operates under." />
+  <link rel="icon" href="/favicon.ico?v=20260926-brand-v3" sizes="32x32" />
+  <link rel="icon" href="/favicon.svg?v=20260926-brand-v3" type="image/svg+xml" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=20260926-brand-v3" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=20260926-brand-v3" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20260926-brand-v3" />
+  <link rel="mask-icon" href="/mask-icon.svg?v=20260926-brand-v3" color="#2563eb" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=20260926-brand-v3" />
+</head>
+<body>
+
+  <!-- ── Nav ─────────────────────────────────────────────── -->
+  <header class="nav">
+    <div class="nav__inner">
+      <a class="nav__logo" href="https://patched.im" aria-label="Patched.im home"><img src="/patched-lockup-horizontal.svg" width="132" height="27" alt="Patched" /></a>
+      <nav class="nav__links" aria-label="Primary">
+        <a href="/getting-started.html">Getting started</a>
+        <a href="/faq.html">FAQ</a>
+        <div class="nav__dropdown">
+          <button type="button" class="nav__dropdown-trigger" aria-haspopup="true" aria-expanded="false">Guides <svg class="nav__dropdown-chevron" width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="nav__dropdown-menu" role="menu">
+            <a role="menuitem" href="/agent-updater.html">Endpoint agent</a>
+            <a role="menuitem" href="/protected.html">Configuration assurance</a>
+            <a role="menuitem" href="/read-your-report.html">Reports and evidence</a>
+            <a role="menuitem" href="/remediation-guide.html">Remediation guide</a>
+            <a role="menuitem" href="/using-your-portal.html">Customer portal</a>
+            <a role="menuitem" href="/security.html">Security</a>
+            <a role="menuitem" href="/privacy.html">Data and privacy</a>
+          </div>
+        </div>
+      </nav>
+      <div class="nav__spacer"></div>
+      <div class="nav__cta"><a class="btn btn--primary" href="https://patched.im/pricing">Become a design partner</a></div>
+      <button class="nav__burger" type="button" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+
+  <main class="doc">
+    <div class="wrap">
+      <div class="doc__inner">
+        <a class="doc__back" href="/">&larr; All guides</a>
+
+        <article class="article">
+          <header>
+            <p class="kicker">Guide 06</p>
+            <h1>Data &amp; privacy</h1>
+            <p class="lead">
+              What the agent collects and why, what it explicitly does not collect, where
+              your data goes and how it's protected, and the legal framework it operates
+              under. Written for IT administrators, legal, and compliance teams evaluating
+              a Patched deployment.
+            </p>
+          </header>
+
+          <!-- ── What's collected ───────────────────────── -->
+          <h2>What the agent collects</h2>
+          <p>
+            Every field collected maps to a reporting or compliance purpose. Nothing is
+            collected speculatively.
+          </p>
+
+          <h3>Hardware identity</h3>
+          <p>
+            Make, model, serial number, and hardware UUID. Used to identify devices
+            across sessions, associate data with the correct endpoint, and support
+            device-lifecycle reporting (enrolment, suspension, offboarding).
+          </p>
+
+          <h3>Operating system</h3>
+          <p>
+            OS version, build, and security update status. Used for operating-system
+            currency, configuration assurance and end-of-support reporting.
+          </p>
+
+          <h3>Installed applications</h3>
+          <p>
+            Application name, version, source, and install date for every app on the
+            device. The basis for software inventory, identity normalisation,
+            governance classification and new-software detection.
+          </p>
+
+          <h3>Compliance signals</h3>
+          <p>
+            The CIS Level&nbsp;1 control readings: disk encryption status, firewall
+            configuration, screen-lock settings, automatic update state, remote-access
+            surfaces, local administrator account count, and the rest of the benchmark.
+            See <a href="/protected.html">What "Compliant" means</a> for the full list.
+          </p>
+
+          <h3>Security posture signals</h3>
+          <p>
+            Certificate inventory and expiry dates, browser extension inventory, EDR and
+            security-tool presence, FileVault / BitLocker encryption posture. Used for
+            certificate-expiry alerting, browser-extension policy, and EDR coverage
+            reporting.
+          </p>
+
+          <h3>Usage metering (opt-in, off by default)</h3>
+          <p>
+            Last-opened timestamp and run count per application. Only collected when
+            explicitly enabled in your signed agent configuration: aggregate counts
+            only, no window titles or file paths.
+          </p>
+
+          <!-- ── What's not collected ───────────────────── -->
+          <h2>What the agent does not collect</h2>
+          <ul>
+            <li>Document contents, message bodies, email, or calendar data</li>
+            <li>Browsing history, search queries, or web page contents</li>
+            <li>Keystrokes or clipboard contents</li>
+            <li>Screen captures</li>
+            <li>Camera or microphone data</li>
+            <li>Home directory file listings</li>
+            <li>Proxy credentials (redacted before any log upload)</li>
+          </ul>
+          <p>
+            The acceptable-use terms prohibit using Patched as employee-surveillance
+            tooling. Controls that could touch user-specific data require explicit
+            per-tenant opt-in with a recorded reason.
+          </p>
+
+          <!-- ── How data leaves the endpoint ──────────── -->
+          <h2>How data leaves the endpoint</h2>
+
+          <h3>Destination</h3>
+          <p>
+            All agent uploads go to <code>api.patched.im</code> over HTTPS (TLS
+            1.2&nbsp;minimum), port&nbsp;443. No other outbound destination is required
+            for the retained collection path. Remediation tools may require their own
+            destinations, but they are outside the Patched agent data flow.
+          </p>
+
+          <h3>Authentication on every request</h3>
+          <p>
+            Every request carries a bearer token and an HMAC-SHA256 signature computed
+            over the exact payload bytes. A timestamp and single-use nonce are also
+            required. Any request that fails these checks is rejected before data is
+            stored: see <a href="/security.html">Security architecture</a> for detail.
+          </p>
+
+          <h3>Log uploads</h3>
+          <p>
+            Agent logs are uploaded only when explicitly requested by the platform (per-device
+            or tenant-wide). Before upload, the agent automatically redacts home directory
+            paths, proxy credentials, bearer tokens, and any string matching a key-like
+            pattern. Log bundles are retained for 30 days.
+          </p>
+
+          <!-- ── Data residency ─────────────────────────── -->
+          <h2>Data residency and storage</h2>
+          <p>
+            Platform infrastructure is hosted in the
+            <strong>EU (Finland and Germany)</strong> on Patched-operated
+            infrastructure. Data is stored in a PostgreSQL database with encrypted
+            nightly backups. Patched is built and run from the Isle&nbsp;of&nbsp;Man by
+            Patched.im Ltd, company number 139269C. Patched operates under the IoM Data
+            Protection Act 2018, which mirrors the UK GDPR.
+          </p>
+
+          <h3>Data retention</h3>
+          <p>
+            Inventory snapshots, posture data, and provenance records are retained on
+            the platform. Specific retention schedules and deletion timelines are
+            available on request: <a href="mailto:hello@patched.im">email us</a> or
+            raise it at a security review.
+          </p>
+
+          <!-- ── Controller / processor ─────────────────── -->
+          <h2>Controller and processor</h2>
+          <p>
+            You are the data controller; Patched acts as the data processor. We process
+            device and posture data on your instruction, for the purposes you specify,
+            under the legal basis of legitimate interest (GDPR Article&nbsp;6(1)(f) /
+            IoM DPA 2018).
+          </p>
+
+          <h3>Data Processing Agreement</h3>
+          <p>
+            A DPA is available and covers: scope of processing, sub-processor list,
+            72-hour breach notification to the controller, data subject rights support
+            (access, erasure, and portability within 30 days of your written instruction),
+            and the right to one audit per 12-month period with 30 days' notice.
+          </p>
+
+          <h3>Sub-processors</h3>
+          <p>
+            The sub-processor list (infrastructure provider, backup provider, and
+            VirusTotal) is available on request and will be maintained in the DPA
+            schedule.
+          </p>
+
+          <!-- ── Security review ────────────────────────── -->
+          <h2>Security review and questions</h2>
+          <p>
+            We expect IT and security teams to do due diligence before deploying
+            software with elevated access to their estate. The exact permissions differ
+            by platform and collector version and should be reviewed during onboarding.
+          </p>
+          <p>
+            For data-flow diagrams, the full egress table, retention schedules,
+            sub-processor details, the Data Processing Agreement, or to arrange a
+            formal security review, email
+            <a href="mailto:hello@patched.im">hello@patched.im</a>.
+          </p>
+
+          <nav class="pager">
+            <a href="/security.html">&larr; Security architecture</a>
+            <a href="/faq.html">FAQ &rarr;</a>
+          </nav>
+        </article>
+      </div>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__logo"><img src="/patched-lockup-horizontal-white.svg" width="132" height="27" alt="Patched" /></div>
+      <nav class="footer__links" aria-label="Footer"><a href="https://patched.im/cyber-essentials">Cyber Essentials</a><a href="https://patched.im/msp">For MSPs</a><a href="https://patched.im/pricing">Pricing</a><a href="https://patched.im/security.html">Security</a><a href="https://patched.im/about.html">About</a><a href="https://patched.im/blog">Blog</a><a href="https://docs.patched.im">Docs</a><a href="https://status.patched.im">Status</a><a href="https://patched.im/privacy.html">Privacy</a><a href="https://patched.im/cookies.html">Cookies</a><a href="mailto:hello@patched.im">Contact</a></nav>
+      <div class="footer__meta">&copy; <span data-year>2026</span> Patched.im Ltd · Isle of Man · Company No. 139269C</div>
+    </div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+title = "Patched updater"
+
+[allowlist]
+  description = "Known test-fixture constants — not real credentials"
+  stopwords = [
+    "TestBase64Secret",
+  ]

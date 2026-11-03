@@ -1,0 +1,84 @@
+<!--
+PAT-1430 fixture. A trimmed but byte-faithful fragment of the real
+https://cdn.azul.com/zulu/bin/ directory-listing page, captured 2026-08-19.
+
+Rows kept, arm64 and x64 variants of each:
+  - two zulu17 "ca-jdk17" builds (the JDK 11/13/15/17/18 family whose
+    downloadURL regex over-captured a trailing `</td>` into the resolved
+    URL) -- an older point release and the current latest, so a test can
+    also prove `sort -V | tail -1` still selects the newest build once the
+    URL is clean.
+  - one zulu11 "ca-jdk11" build -- the specific label whose real-world
+    breakage (a resolved URL ending `...macosx_aarch64.dmg</td>`, missing
+    the whole "zulu11.90." filename prefix too) started this investigation.
+  - one zulu8 "ca-jdk8" build -- a sibling label whose sed cleanup already
+    stripped `</a></td>` before this fix and must not regress.
+
+The row markup shape is IDENTICAL across every zulu* version on the real
+page -- `...dmg</a></td>` immediately followed by a `<td>` for the next
+column, on the same line as the closing `</a>`. That is the key finding
+behind the PAT-1430 fix: the five broken labels were not looking at
+different vendor markup than the five that already worked. See the ticket
+for the full writeup.
+-->
+<table>
+<tr><th valign="top"><img src="/icons/blank.gif" alt="[ICO]"></th><th><a href="?C=N;O=D">Name</a></th><th><a href="?C=M;O=A">Last modified</a></th><th><a href="?C=S;O=A">Size</a></th><th><a href="?C=D;O=A">Description</a></th></tr>
+<tr><th colspan="5"><hr></th></tr>
+		<tr>
+			<td><img src="/icons/unknown.gif" alt="[   ]"></td>
+			<td><a href="/zulu/bin/zulu17.66.19-ca-jdk17.0.19-macosx_aarch64.dmg">zulu17.66.19-ca-jdk17.0.19-macosx_aarch64.dmg</a></td>
+			<td>2026-09-26 16:48</td>
+			<td>186M</td>
+			<td></td>
+			<td style="width:50%;"></td>
+		</tr>
+		<tr>
+			<td><img src="/icons/unknown.gif" alt="[   ]"></td>
+			<td><a href="/zulu/bin/zulu17.68.203-ca-jdk17.0.20.1-macosx_aarch64.dmg">zulu17.68.203-ca-jdk17.0.20.1-macosx_aarch64.dmg</a></td>
+			<td>2026-07-23 22:32</td>
+			<td>185M</td>
+			<td></td>
+			<td style="width:50%;"></td>
+		</tr>
+		<tr>
+			<td><img src="/icons/unknown.gif" alt="[   ]"></td>
+			<td><a href="/zulu/bin/zulu17.68.203-ca-jdk17.0.20.1-macosx_x64.dmg">zulu17.68.203-ca-jdk17.0.20.1-macosx_x64.dmg</a></td>
+			<td>2026-07-23 22:32</td>
+			<td>187M</td>
+			<td></td>
+			<td style="width:50%;"></td>
+		</tr>
+		<tr>
+			<td><img src="/icons/unknown.gif" alt="[   ]"></td>
+			<td><a href="/zulu/bin/zulu11.90.205-ca-jdk11.0.32.1-macosx_aarch64.dmg">zulu11.90.205-ca-jdk11.0.32.1-macosx_aarch64.dmg</a></td>
+			<td>2026-07-23 22:32</td>
+			<td>186M</td>
+			<td></td>
+			<td style="width:50%;"></td>
+		</tr>
+		<tr>
+			<td><img src="/icons/unknown.gif" alt="[   ]"></td>
+			<td><a href="/zulu/bin/zulu11.90.205-ca-jdk11.0.32.1-macosx_x64.dmg">zulu11.90.205-ca-jdk11.0.32.1-macosx_x64.dmg</a></td>
+			<td>2026-07-23 22:32</td>
+			<td>187M</td>
+			<td></td>
+			<td style="width:50%;"></td>
+		</tr>
+		<tr>
+			<td><img src="/icons/unknown.gif" alt="[   ]"></td>
+			<td><a href="/zulu/bin/zulu8.96.0.205-ca-jdk8.0.504-macosx_aarch64.dmg">zulu8.96.0.205-ca-jdk8.0.504-macosx_aarch64.dmg</a></td>
+			<td>2026-07-23 22:32</td>
+			<td>101M</td>
+			<td></td>
+			<td style="width:50%;"></td>
+		</tr>
+		<tr>
+			<td><img src="/icons/unknown.gif" alt="[   ]"></td>
+			<td><a href="/zulu/bin/zulu8.96.0.205-ca-jdk8.0.504-macosx_x64.dmg">zulu8.96.0.205-ca-jdk8.0.504-macosx_x64.dmg</a></td>
+			<td>2026-07-23 22:32</td>
+			<td>103M</td>
+			<td></td>
+			<td style="width:50%;"></td>
+		</tr>
+<tr><th colspan="5"><hr></th></tr>
+</table>

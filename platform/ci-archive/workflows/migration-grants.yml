@@ -1,0 +1,28 @@
+name: migration-grants
+
+# M-INFRA-3: fail CI if a new migration creates a table/sequence without a
+# GRANT ... TO patched (recurring prod 500s — PAT-579, PAT-603).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'go-service/migrations/**'
+      - '.github/workflows/migration-grants.yml'
+  pull_request:
+    paths:
+      - 'go-service/migrations/**'
+      - '.github/workflows/migration-grants.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check-grants:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: shellcheck the guard
+        run: shellcheck go-service/migrations/check-grants.sh
+      - name: Check migration GRANTs
+        run: bash go-service/migrations/check-grants.sh

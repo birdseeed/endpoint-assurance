@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <rect x="2.304" y="2.304" width="59.392" height="59.392" rx="16.64" fill="none" stroke="currentColor" stroke-width="4.608"></rect>
+  <path d="M 30.72 2.304 H 47.36 A 16.64 16.64 0 0 1 61.696 16.64" fill="none" stroke="currentColor" stroke-width="4.608" stroke-linecap="round"></path>
+  <text x="32" y="43.8" text-anchor="middle" font-family="Archivo, 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="33.28" letter-spacing="-1.33" fill="currentColor">P</text>
+</svg>

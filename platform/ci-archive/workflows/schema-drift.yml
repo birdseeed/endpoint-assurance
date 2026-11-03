@@ -1,0 +1,114 @@
+name: schema-drift
+
+# PAT-2053: build the expected schema fingerprint journal from the migrations
+# and prove the drift check against a real PostgreSQL. The journal is uploaded
+# as an artifact; deploy/api-01/schema-drift-check.sh compares it READ-ONLY
+# with patched-api-01's live schema. The deploy builds its own journal in
+# api-build.yml and deploy.sh runs the check before migrations (PAT-2062); see
+# deploy/api-01/SCHEMA_DRIFT.md.
+#
+# PostgreSQL 16 on purpose: prod runs 16, and the fingerprint refuses to
+# compare across majors because view and function deparsing can differ.
+
+on:
+  pull_request:
+    paths:
+      - 'go-service/migrations/**'
+      - 'deploy/api-01/schema_drift.py'
+      - 'deploy/api-01/schema_fingerprint.sql'
+      - 'deploy/api-01/schema-drift-check.sh'
+      - 'deploy/api-01/schema-drift-allowlist.txt'
+      - 'deploy/api-01/test_schema_drift_check.py'
+      - '.github/workflows/schema-drift.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'go-service/migrations/**'
+      - 'deploy/api-01/schema_drift.py'
+      - 'deploy/api-01/schema_fingerprint.sql'
+      - 'deploy/api-01/schema-drift-check.sh'
+      - 'deploy/api-01/schema-drift-allowlist.txt'
+      - 'deploy/api-01/test_schema_drift_check.py'
+      - '.github/workflows/schema-drift.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  journal:
+    # Pinned: the drift journal needs postgresql-client-16 from this release's archive.
+    runs-on: ubuntu-24.04
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: patched
+          POSTGRES_PASSWORD: patched_test
+          POSTGRES_DB: patched_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+
+    env:
+      PGPASSWORD: patched_test
+      PGHOST: localhost
+      PGUSER: patched
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install the PostgreSQL 16 client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-16 shellcheck
+          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
+
+      - name: Lint the box-side wrapper
+        run: shellcheck deploy/api-01/schema-drift-check.sh
+
+      - name: Drift check tests (database required)
+        env:
+          SCHEMA_DRIFT_TEST_DSN: postgres://patched:patched_test@localhost:5432/patched_test?sslmode=disable
+          SCHEMA_DRIFT_DB_TESTS_REQUIRED: "1"
+        run: python3 -m unittest -v deploy/api-01/test_schema_drift_check.py
+
+      - name: Build the expected fingerprint journal from the migrations
+        env:
+          SCHEMA_DRIFT_BUILD_DSN: postgres://patched:patched_test@localhost:5432/patched_test_drift_journal?sslmode=disable
+        run: |
+          createdb patched_test_drift_journal
+          mkdir -p dist
+          python3 deploy/api-01/schema_drift.py build-journal \
+            --migrations go-service/migrations --out dist/SCHEMA_FINGERPRINT_JOURNAL
+
+      - name: A migrations-built database passes the check
+        env:
+          DATABASE_URL: postgres://patched:patched_test@localhost:5432/patched_test_drift_journal?sslmode=disable
+        run: |
+          deploy/api-01/schema-drift-check.sh --journal dist/SCHEMA_FINGERPRINT_JOURNAL
+
+      - name: A planted column on the real schema fails the check
+        env:
+          DATABASE_URL: postgres://patched:patched_test@localhost:5432/patched_test_drift_journal?sslmode=disable
+        run: |
+          psql -d "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'ALTER TABLE devices ADD COLUMN pat2053_planted integer'
+          set +e
+          deploy/api-01/schema-drift-check.sh --journal dist/SCHEMA_FINGERPRINT_JOURNAL | tee check.out
+          rc="${PIPESTATUS[0]}"
+          set -e
+          test "$rc" -eq 1
+          grep -q '^+ column|devices|pat2053_planted|integer|null|' check.out
+
+      - name: Upload the journal
+        uses: actions/upload-artifact@v7
+        with:
+          name: schema-fingerprint-journal
+          path: dist/SCHEMA_FINGERPRINT_JOURNAL
+          retention-days: 14
+          if-no-files-found: error

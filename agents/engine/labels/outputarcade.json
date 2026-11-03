@@ -1,0 +1,24 @@
+{
+  "label": "outputarcade",
+  "name": "Arcade",
+  "type": "pkg",
+  "app_path": "/Applications/Arcade.app",
+  "expected_team_id": "M4BQRFQ23V",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://api.output.com/v1/arcade_version"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,20 @@
+name: test-verify-agent-release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/verify-agent-release.py'
+      - 'tools/test-verify-agent-release.py'
+  pull_request:
+    paths:
+      - 'tools/verify-agent-release.py'
+      - 'tools/test-verify-agent-release.py'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run verifier tests (pure Python, no deps, no network)
+        run: python3 tools/test-verify-agent-release.py

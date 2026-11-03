@@ -1,0 +1,70 @@
+name: codeql-go
+
+# CodeQL SAST for the Go platform (PAT-1695).
+# Checks: SQL injection, unsafe deserialization, path traversal, SSRF,
+# weak crypto, and other standard Go query patterns.
+#
+# Advisory only: upload: never (avoids GitHub Advanced Security requirement
+# on private org repos) and the analyze step does not fail the job on
+# findings. SARIF results are uploaded as a workflow artifact for review
+# instead. This mirrors codeql-csharp.yml's posture, not a Go-specific
+# weakening.
+#
+# Becomes blocking when all of the following are true: an initial triage of
+# existing findings has been completed (fixed or explicitly suppressed), the
+# gate is turned on before first customer ship, and it happens alongside the
+# PAT-941 non-author-review restore (`fail-on-severity: error` on the
+# analyze step, plus `upload: always` to get findings into the Security tab).
+#
+# No per-PR run: this is a scan cadence choice (weekly + every main push
+# keeps the baseline current), not a cost workaround like codeql-csharp.yml's
+# PAT-952 windows-latest note — this job runs on ubuntu-latest.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'go-service/**'
+      - 'api-vps-artefacts/alerting/selector-liveness/**'
+      - '.github/workflows/codeql-go.yml'
+  schedule:
+    - cron: '0 6 * * 1'
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go-service/go.mod
+
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: go
+
+      - name: Build go-service
+        working-directory: go-service
+        run: go build ./...
+
+      - name: Build selector-liveness
+        working-directory: api-vps-artefacts/alerting/selector-liveness
+        run: go build ./...
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          upload: never
+          output: ${{ runner.temp }}/codeql-results
+
+      - name: Upload SARIF
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: codeql-go-sarif
+          path: ${{ runner.temp }}/codeql-results

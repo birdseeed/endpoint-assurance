@@ -1,0 +1,35 @@
+name: test-verify-agent-config
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'endpoint/verify-agent-config.py'
+      - 'endpoint/agent_config_floor.py'
+      - 'endpoint/test-verify-agent-config.py'
+      - 'endpoint/agent_update_channel.py'
+      - 'endpoint/test-agent-update-channel.py'
+      - 'macos/patched-bootstrap.sh'
+      - 'macos/lib/agent_health.sh'
+  pull_request:
+    paths:
+      - 'endpoint/verify-agent-config.py'
+      - 'endpoint/agent_config_floor.py'
+      - 'endpoint/test-verify-agent-config.py'
+      - 'endpoint/agent_update_channel.py'
+      - 'endpoint/test-agent-update-channel.py'
+      - 'macos/patched-bootstrap.sh'
+      - 'macos/lib/agent_health.sh'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run verifier tests (pure Python, no deps)
+        run: python3 endpoint/test-verify-agent-config.py
+      - name: Run verified update-channel tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh
+          python3 endpoint/test-agent-update-channel.py

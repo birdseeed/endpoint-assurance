@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% from "_macros.html" import group_card_head, jamf_result_notice %}
+{% block content %}
+<div class="page-head">
+  <h1>Jamf setup</h1>
+  <p class="meta">Patched never holds a Jamf API credential. Your Jamf Pro instance pushes webhooks to the URL below instead.</p>
+</div>
+
+{% if token_reveal %}
+<div class="notice notice-ok" id="jamf-token-reveal" role="status" tabindex="-1">
+  <p><strong>{{ 'Webhook token created.' if token_reveal.action == 'token_created' else 'Webhook token rotated.' }}</strong> Copy it now, it will not be shown again.</p>
+  <div class="code-block">
+    <div class="code-block__head">
+      <span class="field-label">Webhook token</span>
+      <button type="button" class="code-block__copy" data-copy-target="jamf-token-value">Copy</button>
+    </div>
+    <pre><code id="jamf-token-value">{{ token_reveal.token | e }}</code></pre>
+  </div>
+  <p class="meta">{{ token_reveal.note | e }}</p>
+  <p class="meta">Webhook URL: <span class="mono">{{ token_reveal.webhook_url | e }}</span></p>
+</div>
+{% else %}
+{{ jamf_result_notice(jamf_result) }}
+{% endif %}
+
+<div class="card group-card gap-card" id="jamf-setup-health">
+  {{ group_card_head('Connector health', connector.label if connector else none, none, connector.pill_class | replace('pill-', '') if connector else 'muted') }}
+  <div class="gap-card__body">
+    {% if connector %}
+    <p>{{ connector.message or 'No connector health message was returned.' }}</p>
+    <p class="meta">
+      {% if connector.last_event_at %}Last Jamf event {{ connector.last_event_at | humandate(true) }} UTC{% if connector.hours_since_last_event is not none %} ({% if connector.hours_since_last_event == 0 %}less than an hour ago{% else %}{{ connector.hours_since_last_event }} hour{{ '' if connector.hours_since_last_event == 1 else 's' }} ago{% endif %}){% endif %}.{% elif connector.status == 'awaiting_first_event' %}No Jamf event received yet.{% else %}No last event time is available.{% endif %}
+    </p>
+    {% elif token_reveal %}
+    <p class="meta">Copy the token into Jamf Pro, then refresh this page to see authoritative connector health and the last event time.</p>
+    {% elif connector_unavailable %}
+    <p class="empty">Connector health is temporarily unavailable. The setup controls below are still available.</p>
+    {% else %}
+    <p class="meta">No connector health is available yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card group-card gap-card">
+  {{ group_card_head('Webhook', 'Connected' if setup.configured else 'Not connected', none, 'ok' if setup.configured else 'muted') }}
+  <div class="gap-card__body">
+    {% if setup.configured %}
+    <p>Webhook URL: <span class="mono">{{ setup.webhook_url | e }}</span></p>
+    {% if setup.token and setup.token.exists %}
+    <p class="meta">Token created {{ setup.token.created_at | humandate(true) if setup.token.created_at else 'unknown' }} UTC{% if setup.token.last_rotated_at %}, last rotated {{ setup.token.last_rotated_at | humandate(true) }} UTC{% endif %}. The plaintext is shown only once, when it is created or rotated.</p>
+    {% else %}
+    <p class="meta">The webhook token has been revoked. Jamf events are refused until a new token is created.{% if setup.token and setup.token.revoked_at %} Revoked {{ setup.token.revoked_at | humandate(true) }} UTC.{% endif %}</p>
+    {% endif %}
+    {% else %}
+    <p>Create a webhook token to get your webhook URL and connect Jamf Pro.</p>
+    {% endif %}
+
+    {% if can_edit %}
+    <form method="post" action="/devices/jamf/token" class="jamf-token-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn btn-small">{{ 'Rotate token' if setup.configured and setup.token and setup.token.exists else 'Create token' }}</button>
+    </form>
+    {% if setup.configured and setup.token and setup.token.exists %}
+    <details class="retire-panel">
+      <summary class="ask-link">Revoke token &rarr;</summary>
+      <form method="post" action="/devices/jamf/token/revoke">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <p class="meta"><strong>Revoking deletes the Jamf device records first seen under this token.</strong> Macs first seen under an earlier token are kept. Jamf events are refused until a new token is created; coverage then refills from Jamf's next events.</p>
+        <button type="submit" class="btn btn-small">Revoke token</button>
+      </form>
+    </details>
+    {% endif %}
+    {% elif role_unavailable %}
+    <p class="toolbar-hint">Token controls are unavailable right now because your account role could not be checked.</p>
+    {% else %}
+    <p class="toolbar-hint">An administrator on your account can create, rotate or revoke the webhook token.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if setup.configured %}
+<div class="card group-card gap-card">
+  {{ group_card_head('Events to subscribe in Jamf Pro', none, 'Settings > Global Management > Webhooks. Create one webhook per event below, all pointing at the URL above, with Content Type JSON.', 'muted') }}
+  <div class="gap-card__body">
+    <div class="table-scroll">
+    <table class="data-table table-stack">
+      <thead><tr><th>Event</th><th>Required</th><th>Subscribed</th><th>Purpose</th></tr></thead>
+      <tbody>
+        {% for e in setup.events or [] %}
+        <tr>
+          <td class="mono" data-label="Event">{{ e.event }}</td>
+          <td data-label="Required">{{ 'Required' if e.required else 'Optional' }}</td>
+          <td data-label="Subscribed"><span class="pill {{ 'pill-ok' if e.subscribed else 'pill-muted' }}">{{ 'Subscribed' if e.subscribed else 'Not subscribed' }}</span></td>
+          <td data-label="Purpose">{{ e.purpose }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<div class="card group-card gap-card">
+  {{ group_card_head('Authentication in Jamf Pro', none, none, 'muted') }}
+  <div class="gap-card__body">
+    <p>{{ setup.authentication.type }}, Content Type {{ setup.authentication.content_type }}, with this header JSON:</p>
+    <div class="code-block">
+      <div class="code-block__head">
+        <span class="field-label">Header JSON</span>
+        <button type="button" class="code-block__copy" data-copy-target="jamf-auth-header">Copy</button>
+      </div>
+      <pre><code id="jamf-auth-header">{{ setup.authentication.header_json | e }}</code></pre>
+    </div>
+    <p class="meta">Alternative: {{ setup.authentication.alternative }}.</p>
+    <p class="meta">{{ setup.authentication.instance_header_note }}</p>
+  </div>
+</div>
+
+<div class="card group-card gap-card">
+  {{ group_card_head('Check-in events', 'On' if setup.check_in_enabled else 'Off', 'Optional: a Mac checked in, collapsed to one update per Mac per hour. Off by default to keep event volume low.', 'ok' if setup.check_in_enabled else 'muted') }}
+  <div class="gap-card__body">
+    {% if can_edit %}
+    <form method="post" action="/devices/jamf/setup" class="jamf-checkin-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="check_in_enabled" value="{{ 'false' if setup.check_in_enabled else 'true' }}">
+      <button type="submit" class="btn btn-small">{{ 'Turn off check-in events' if setup.check_in_enabled else 'Turn on check-in events' }}</button>
+    </form>
+    {% else %}
+    <p class="toolbar-hint">An administrator on your account can change this.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card group-card gap-card">
+  {{ group_card_head('Jamf Pro instance', none, "The instance header ('X-Patched-Jamf-Instance') is optional. Jamf Pro webhooks do not name the server, so this is how Patched records which instance events come from.", 'muted') }}
+  <div class="gap-card__body">
+    {% if setup.jamf_instance and setup.jamf_instance.url %}
+    <p>Pinned instance: <span class="mono">{{ setup.jamf_instance.url }}</span>{% if setup.jamf_instance.mismatch %} - the latest events claim a different instance from the first ones.{% endif %}</p>
+    {% if can_edit %}
+    <details class="retire-panel">
+      <summary class="ask-link">Reset pinned instance &rarr;</summary>
+      <form method="post" action="/devices/jamf/setup">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="reset_jamf_instance" value="true">
+        <p class="meta">Use this after moving to a different Jamf Pro instance. The next event's claim is pinned afresh.</p>
+        <button type="submit" class="btn btn-small">Reset pinned instance</button>
+      </form>
+    </details>
+    {% endif %}
+    {% else %}
+    <p class="meta">No instance pinned yet. The first Jamf event pins one.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card group-card gap-card">
+  {{ group_card_head('Purge Jamf devices', none, 'Deletes every Mac Jamf has reported for your account. The connector, token and webhook URL are kept, and the lists refill from the next events Jamf sends.', 'muted') }}
+  <div class="gap-card__body">
+    {% if can_edit %}
+    <details class="retire-panel">
+      <summary class="ask-link">Purge Jamf devices &rarr;</summary>
+      <form method="post" action="/devices/jamf/devices/purge">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="btn btn-small">Purge Jamf devices</button>
+      </form>
+    </details>
+    {% else %}
+    <p class="toolbar-hint">An administrator on your account can do this.</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<p class="toolbar-hint"><a href="/devices/jamf">Back to Jamf coverage</a></p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  function clearTokenReveal() {
+    var reveal = document.getElementById("jamf-token-reveal");
+    if (reveal) reveal.remove();
+  }
+  window.addEventListener("pagehide", clearTokenReveal);
+  window.addEventListener("pageshow", function (event) {
+    if (event.persisted) clearTokenReveal();
+  });
+  document.querySelectorAll(".code-block__copy").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var target = document.getElementById(btn.getAttribute("data-copy-target"));
+      if (!target || !navigator.clipboard) return;
+      navigator.clipboard.writeText(target.textContent).then(function () {
+        var original = btn.textContent;
+        btn.textContent = "Copied";
+        btn.classList.add("is-copied");
+        setTimeout(function () {
+          btn.textContent = original;
+          btn.classList.remove("is-copied");
+        }, 1500);
+      });
+    });
+  });
+})();
+</script>
+{% endblock %}

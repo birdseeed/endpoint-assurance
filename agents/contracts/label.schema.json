@@ -1,0 +1,386 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patched.im/schemas/label.schema.json",
+  "title": "Patched Updater — label record",
+  "description": "One application's structured verification and endpoint-authorization record. Endpoints currently execute the separately committed Installomator.sh label stanza; CI cross-checks the pkgindmg payload contract against that real runtime source. PAT-1403 owns the broader single-source migration. See docs/label-manifest-format.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["label", "name", "type", "app_path", "expected_team_id", "download", "patched"],
+  "properties": {
+    "label": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "Stable label id, kebab-case. Matches the source filename (engine/labels/<label>.json)."
+    },
+    "name": {
+      "type": "string",
+      "description": "Application display name."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["dmg", "pkg", "zip", "tbz", "appindmg", "appinzip", "pkgindmg", "pkginzip", "appindmginzip"],
+      "description": "Artifact packaging type the engine must handle."
+    },
+    "pkg_in_dmg": {
+      "type": "object",
+      "description": "Optional only for type=pkgindmg. Absence is the root-unique-pkg default. An explicit object declares how the verifier and shell engine identify a non-default package inside the mounted DMG.",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "required": ["mode"],
+          "properties": {
+            "mode": {
+              "const": "root-unique-pkg",
+              "description": "The DMG must contain exactly one .pkg at its root. Nested packages are not candidates."
+            }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "required": ["mode", "patterns"],
+          "properties": {
+            "mode": {
+              "const": "relative-path-glob",
+              "description": "Match exactly one safe relative path/glob pattern inside the mounted DMG and require exactly one package result."
+            },
+            "patterns": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              }
+            }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "required": ["mode", "patterns_by_arch"],
+          "properties": {
+            "mode": {
+              "const": "relative-path-glob-by-arch",
+              "description": "Select only the pattern for the verifier's current arm64/i386 rotation, matching the shell stanza's architecture branch."
+            },
+            "patterns_by_arch": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["arm64", "i386"],
+              "properties": {
+                "arm64": { "type": "string", "minLength": 1, "maxLength": 512 },
+                "i386": { "type": "string", "minLength": 1, "maxLength": 512 }
+              }
+            }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "required": ["mode", "template", "separator", "component_index", "version_source"],
+          "properties": {
+            "mode": {
+              "const": "relative-path-version-component",
+              "description": "Render one exact relative package path from a component of the resolved artifact version."
+            },
+            "template": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9 ._+@/\\[\\]*?()-]*\\{version_component\\}[A-Za-z0-9 ._+@/\\[\\]*?()-]*\\.pkg$",
+              "maxLength": 512
+            },
+            "separator": { "const": "." },
+            "component_index": { "const": 3 },
+            "version_source": {
+              "type": "string",
+              "enum": ["resolved-version", "sparkle-enclosure-version"],
+              "description": "PAT-1385 P1 fix (round 8): which raw value the component split is applied to. 'resolved-version' is the same reportable version used for the up-to-date comparison (the long-standing default). 'sparkle-enclosure-version' instead uses the sparkle-appcast enclosure's own raw sparkle:version attribute -- ONLY meaningful when download.strategy is sparkle-appcast, and REQUIRED whenever the real shell stanza derives its pkgPathPattern component from `enclosure/@sparkle:version` rather than shortVersionString (jre8's Oracle feed is the case this exists for: sparkle:version=\"26\" and sparkle:shortVersionString=\"1.8.501.0\" are genuinely different strings, and using the wrong one silently diverges the verifier's rendered package path from what the shell actually installs). Required, not optional with a default, so any future label using this locator mode must explicitly state which XML source its path component comes from rather than inheriting an implicit, easy-to-get-wrong assumption."
+            }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "required": ["mode", "template"],
+          "properties": {
+            "mode": {
+              "const": "relative-path-version-digits",
+              "description": "Render one exact relative package path by removing every non-digit character from the resolved artifact version."
+            },
+            "template": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9 ._+@/\\[\\]*?()-]*\\{version_digits\\}[A-Za-z0-9 ._+@/\\[\\]*?()-]*\\.pkg$",
+              "maxLength": 512
+            }
+          }
+        }
+      ]
+    },
+    "app_path": {
+      "type": "string",
+      "pattern": "^/Applications/.+\\.app$",
+      "description": "Installed bundle path — used for the installed-version read and the post-install codesign Team ID check."
+    },
+    "installed_version_key": {
+      "type": "string",
+      "enum": ["CFBundleShortVersionString", "CFBundleVersion"],
+      "description": "Info.plist key used by the endpoint engine for the installed-version comparison. Absence means CFBundleShortVersionString, matching Installomator's default."
+    },
+    "expected_team_id": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]{10}$",
+      "description": "The 10-character Apple Developer Team ID the artifact MUST be signed by. Must be present and non-empty — an empty value is rejected by CI (closes threat T4). Verified against Apple's records at review time."
+    },
+    "download": {
+      "type": "object",
+      "description": "How the engine and the verification agent obtain the installer.",
+      "required": ["method"],
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "required": ["method", "url"],
+          "properties": {
+            "method": { "const": "static" },
+            "url": {
+              "type": "string",
+              "pattern": "^https://",
+              "description": "Fixed HTTPS URL. May be a stable URL that server-side redirects to the current version."
+            }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "required": ["method", "strategy", "source"],
+          "properties": {
+            "method": { "const": "resolved" },
+            "strategy": {
+              "type": "string",
+              "enum": ["github-release", "sparkle-appcast", "sparkle-plist-feed", "http-redirect", "vendor-api"],
+              "description": "How the real download URL is computed at run time. 'resolved' labels carry residual threat T5 until the app is moved onto the internal mirror."
+            },
+            "source": {
+              "type": "string",
+              "pattern": "^https://",
+              "description": "The HTTPS endpoint queried to resolve the download URL (appcast XML, GitHub releases API, redirecting URL, vendor API)."
+            },
+            "asset_pattern": {
+              "type": "string",
+              "description": "Optional regex/glob selecting the right asset from the resolved source (e.g. the macOS arm64 build)."
+            },
+            "vendor_api_referer": {
+              "type": "string",
+              "pattern": "^https://",
+              "description": "Optional HTTPS Referer header sent when resolving vendor-api URLs. Some CDNs use hotlink protection that requires a Referer from the vendor's own domain."
+            }
+          }
+        }
+      ]
+    },
+    "version": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "How the available (new) version string is determined, for the up-to-date comparison.",
+      "required": ["source"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": ["resolved-source", "download-filename", "http-headers", "none"],
+          "description": "Where the available version string comes from. 'resolved-source' = extracted from the same response download.source returns (resolved labels). 'download-filename' = parsed from the artifact filename (static-redirect labels). 'http-headers' = Last-Modified/ETag heuristic. 'none' = not resolvable; the engine cannot pre-compare and treats the app as reinstall-on-request only."
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Optional regex extracting the version from the source."
+        }
+      }
+    },
+    "blocking_processes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Process names that must be quit before install. Empty array = none."
+    },
+    "pinned_sha256": {
+      "type": ["string", "null"],
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "PAT-500: SHA-256 of the currently pinned mirrored artifact. Written by the mirror pipeline after a successful publish (ci/mirror_pipeline.py). Null until the first mirror run for this label completes. Endpoint verifies the downloaded artifact against this value when patched.mirror=true; a mismatch aborts the install."
+    },
+    "max_artifact_bytes": {
+      "type": ["integer", "null"],
+      "minimum": 1,
+      "description": "PAT-662: per-label artifact size cap override in bytes. Null or absent = use the global 2 GB cap. Allows fine-grained size control for labels whose artifacts are known to exceed or should be bounded below the global cap."
+    },
+    "cross_hash_sources": {
+      "type": "array",
+      "description": "Independent hash oracles compared against the artifact SHA-256 after download (PAT-502). A mismatch is an alert; absence of a cross-source is not.",
+      "items": {
+        "type": "object",
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "required": ["type", "id"],
+            "properties": {
+              "type": { "const": "homebrew_cask" },
+              "id": { "type": "string", "description": "Homebrew Cask formula name." }
+            }
+          },
+          {
+            "additionalProperties": false,
+            "required": ["type", "id"],
+            "properties": {
+              "type": { "const": "winget_catalog" },
+              "id": { "type": "string", "description": "winget package identifier." }
+            }
+          },
+          {
+            "additionalProperties": false,
+            "required": ["type", "url"],
+            "properties": {
+              "type": { "const": "vendor_sha256_url" },
+              "url": { "type": "string", "pattern": "^https://", "description": "HTTPS URL returning a body that contains a SHA-256 hex string." },
+              "pattern": { "type": "string", "description": "Optional regex to isolate the hash within the response body." }
+            }
+          }
+        ]
+      }
+    },
+    "redistribution_notice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spdx", "url", "sha256"],
+      "description": "Licence notice that must accompany a redistributed mirrored binary. The mirror pipeline fetches the pinned notice, verifies its SHA-256, publishes it alongside the artifact, and records it in the public mirror manifest.",
+      "properties": {
+        "spdx": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9.+-]+$",
+          "description": "SPDX licence identifier, for example MIT or BSD-3-Clause."
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://",
+          "description": "Authoritative HTTPS source for the licence notice."
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Pinned SHA-256 of the exact licence notice bytes."
+        }
+      }
+    },
+    "patched": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowlisted", "mirror", "reviewed_by", "reviewed_at"],
+      "description": "Patched-owned metadata — not part of the upstream label model.",
+      "properties": {
+        "allowlisted": {
+          "type": "boolean",
+          "description": "True if endpoints receive this label. The endpoint allowlist is the subset of the manifest with allowlisted = true."
+        },
+        "mirror": {
+          "type": "boolean",
+          "description": "True if this app is served from the internal mirror rather than the vendor URL (review §4.4)."
+        },
+        "mirror_url": {
+          "type": ["string", "null"],
+          "pattern": "^https://",
+          "description": "PAT-647: public CDN URL of the pinned mirrored artifact. Written by the mirror pipeline alongside pinned_sha256. Endpoint uses this URL instead of download.url when patched.mirror=true. Null until the first mirror run completes."
+        },
+        "mirror_eula_approved": {
+          "type": "boolean",
+          "description": "PAT-500: redistribution/redistribution-licensing confirmed for internal mirror. Must be true before the mirror pipeline will include this label. False = in scope for Phase 2 but EULA review pending. Set true only after per-label EULA sign-off."
+        },
+        "vendor_only": {
+          "type": "boolean",
+          "description": "PAT-664: true if this label cannot be mirrored programmatically — download requires session auth, CDN hotlink protection that cannot be replicated in CI, or the product has no public programmatic download URL. The mirror pipeline skips vendor_only=true labels and they do not appear in the failure report."
+        },
+        "vendor_only_reason": {
+          "type": "string",
+          "description": "PAT-664: human-readable explanation for vendor_only=true. E.g. 'auth-gated-cdn', 'vendor-api-unavailable', 'product-discontinued'. Required when vendor_only=true."
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["core", "standard"],
+          "description": "Optional rollout grouping. 'core' = high-prevalence apps verified/mirrored first."
+        },
+        "reviewed_by": {
+          "type": "string",
+          "description": "Who last reviewed this label record."
+        },
+        "reviewed_at": {
+          "type": "string",
+          "format": "date",
+          "description": "Date of last human review (ISO 8601 date)."
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "description": "Free-text reviewer notes — e.g. redistribution-licensing status, URL-resolution caveats."
+        },
+        "ring_policy": {
+          "type": "string",
+          "enum": ["immediate"],
+          "description": "PAT-629: deployment ring policy override. 'immediate' = deploy to all rings on day 0, bypassing staged rollout. For security-critical apps (browsers, password managers) where rapid patching outweighs canary risk."
+        },
+        "smoke_test_exempt": {
+          "type": "boolean",
+          "description": "PAT-504: if true, the CI smoke test is skipped for this label. Requires smoke_test_exempt_reason."
+        },
+        "smoke_test_exempt_reason": {
+          "type": "string",
+          "description": "PAT-504: required when smoke_test_exempt=true. Explains why smoke testing is impractical (e.g. requires interactive login, no headless mode, requires hardware peripheral)."
+        },
+        "behavioral_exempt": {
+          "type": "boolean",
+          "description": "PAT-505: if true, the behavioral analysis probe is skipped for this label. Requires behavioral_exempt_reason."
+        },
+        "behavioral_exempt_reason": {
+          "type": "string",
+          "description": "PAT-505: required when behavioral_exempt=true. Explains why behavioral analysis is impractical (e.g. kernel extension, requires hardware, produces high volumes of expected network noise)."
+        },
+        "behavioral_exceptions": {
+          "type": "object",
+          "description": "PAT-505: known-good behavioral signals to suppress from alerts. Each key is a signal type; values are lists of allowed prefixes/names.",
+          "additionalProperties": false,
+          "properties": {
+            "allowed_network_destinations": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Remote host:port pairs (or prefixes) that are expected for this app and should not alert."
+            },
+            "allowed_sensitive_paths": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Sensitive filesystem paths this app legitimately writes to (e.g. a LaunchDaemon it owns)."
+            },
+            "allowed_unexpected_paths": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Non-sensitive paths outside the expected app dirs that this app legitimately writes to."
+            },
+            "allowed_persistence_plists": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "macOS: LaunchAgent/Daemon plist paths this app legitimately installs."
+            },
+            "allowed_services": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Windows: service names this app legitimately registers."
+            },
+            "allowed_scheduled_tasks": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Windows: scheduled task names this app legitimately registers."
+            }
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": ["type"],
+        "properties": { "type": { "const": "pkgindmg" } }
+      },
+      "then": true,
+      "else": { "not": { "required": ["pkg_in_dmg"] } }
+    }
+  ]
+}

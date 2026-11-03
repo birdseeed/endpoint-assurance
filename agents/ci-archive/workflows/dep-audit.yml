@@ -1,0 +1,57 @@
+name: dep-audit
+
+# Dependency vulnerability gate (PAT-509).
+# Runs on any PR that touches pinned Python deps or NuGet .csproj files.
+# Fails the build if pip-audit finds any known CVE in requirements.txt,
+# or if dotnet reports a High/Critical NuGet package vulnerability.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'requirements.txt'
+      - 'windows/**/*.csproj'
+  pull_request:
+    paths:
+      - 'requirements.txt'
+      - 'windows/**/*.csproj'
+  schedule:
+    - cron: '0 7 * * 1'
+
+jobs:
+  pip-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Audit Python dependencies
+        run: pip-audit -r requirements.txt
+
+  dotnet-vulnerable:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Restore
+        run: dotnet restore windows/PatchedAgent.sln
+
+      - name: Check for vulnerable NuGet packages
+        shell: pwsh
+        run: |
+          $out = dotnet list windows/PatchedAgent.sln package --vulnerable --include-transitive
+          $out
+          # --fail-on-severity was unreliable across SDK versions; detect via output pattern.
+          if ($out -match "has the following vulnerable packages") { exit 1 }

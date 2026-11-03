@@ -1,0 +1,23 @@
+{
+  "label": "asana",
+  "name": "Asana",
+  "type": "dmg",
+  "app_path": "/Applications/Asana.app",
+  "expected_team_id": "A679L395M8",
+  "download": {
+    "method": "static",
+    "url": "https://desktop-downloads.asana.com/darwin_universal/prod/latest/Asana.dmg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,64 @@
+/* PAT-2373: approved Brand v3 operator shell and shared components.
+   Loaded after specialist styles; no permission or route visibility rules. */
+:root { --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; }
+body { font-size: 14px; line-height: 1.5; }
+.topbar { min-height: 76px; height: auto; padding: 12px 24px; gap: 16px; }
+.operator-logo { display: block; width: 140px; height: 32px; object-fit: contain; }
+.logo-dark { display: none; }
+[data-theme="dark"] .logo-light { display: none; }
+[data-theme="dark"] .logo-dark { display: block; }
+.operator-environment { border: 1px dashed var(--not-assessed); border-radius: var(--radius-sm); padding: 3px 8px; font-size: 12px; }
+.topbar-customer { min-width: 0; max-width: 300px; }
+.topbar-customer select { min-width: 0; width: 100%; text-overflow: ellipsis; }
+.identity-name { max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
+.skip-link { position: fixed; top: -100px; left: 16px; z-index: 1000; padding: 12px 18px; background: var(--surface); color: var(--link); border: 1px solid var(--border); }
+.skip-link:focus { top: 8px; }
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible,
+.topbar-customer select:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; box-shadow: none; }
+#console-main:focus { outline-offset: -3px; }
+.page-header { gap: 16px; flex-wrap: wrap; }
+.page-header h1 { font-size: 28px; line-height: 1.2; letter-spacing: -.025em; font-weight: 700; }
+h2 { font-size: 17px; }
+.page-header .sub { max-width: 760px; line-height: 1.5; }
+.page-header-actions, .command-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+button, select, input:not([type="checkbox"]):not([type="radio"]), textarea { min-height: 36px; max-width: 100%; }
+button { white-space: normal; }
+input, select, textarea { border-radius: var(--radius-sm); }
+.console-loading, .empty-state, .placeholder-state { padding: 24px; border: 1px dashed var(--not-assessed); border-radius: var(--radius); background: var(--surface); color: var(--text-dim); }
+.console-loading { color: var(--unknown); border-color: var(--unknown); }
+.console-error { color: var(--danger); border-color: var(--danger); background: var(--danger-wash); }
+.console-section, .panel, .command-bar > *, .page-header > * { min-width: 0; }
+table { font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { padding-top: 12px; padding-bottom: 12px; overflow-wrap: anywhere; }
+.data-table th { font-size: 12px; }
+.home-health-row { display: grid; grid-template-columns: 10px minmax(0, 1fr); align-items: start; gap: 6px; padding: 12px 0; }
+.home-health-label { font-weight: 600; }
+.home-health-value { grid-column: 2; white-space: normal; max-width: 100%; text-align: left; font: 12px/1.5 var(--font-body); }
+.home-health-explanation { flex-basis: 100%; color: var(--text-dim); font-size: 12px; }
+.home-health-observations { margin-top: 12px; }
+.home-health-observations summary { cursor: pointer; color: var(--text-dim); }
+@media (min-width: 901px) {
+  .app-body { display: grid; grid-template-columns: 208px minmax(0, 1fr); grid-template-rows: max-content 1fr; }
+  .global-rail { grid-column: 1; grid-row: 1; width: auto; padding: 24px 12px 12px; background: var(--surface); overflow: visible; }
+  .grail-item { min-height: 44px; padding: 10px 8px; gap: 8px; color: var(--text-body); border-left-width: 3px; }
+  .grail-label { white-space: normal; font-size: 13px; line-height: 1.4; }
+  .grail-item:hover { color: var(--link); background: var(--surface-sunken); }
+  .grail-item.active { color: var(--nav-active); background: var(--nav-active-wash); border-left-color: var(--nav-active); }
+  .context-nav { grid-column: 1; grid-row: 2; width: auto; padding: 16px 12px; overflow: visible; }
+  .context-nav.ctxnav-empty { width: auto; border-right: 1px solid var(--border); }
+  .context-nav a, .ctxnav-cust-name { overflow-wrap: anywhere; }
+  .main { grid-column: 2; grid-row: 1 / span 2; padding: 26px 28px; max-width: none; }
+}
+@media (min-width: 901px) and (max-width: 1150px) {
+  .app-body { grid-template-columns: 184px minmax(0, 1fr); }
+  .topbar { gap: 10px; padding: 12px 16px; }
+  .identity-name { max-width: 150px; }
+  .main { padding: 24px; }
+  .home-bottom-grid, .home-work-grid, .cl-landing-grid, .tenant-priorities-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+  .topbar { flex-wrap: wrap; padding: 10px; gap: 8px; }
+  .topbar-spacer { display: none; }
+  .operator-logo { width: 115px; }
+  .identity-name { max-width: 130px; }
+}

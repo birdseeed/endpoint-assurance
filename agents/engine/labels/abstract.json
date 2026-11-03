@@ -1,0 +1,23 @@
+{
+  "label": "abstract",
+  "name": "Abstract",
+  "type": "zip",
+  "app_path": "/Applications/Abstract.app",
+  "expected_team_id": "77MZLZE47D",
+  "download": {
+    "method": "static",
+    "url": "https://api.goabstract.com/releases/latest/download"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

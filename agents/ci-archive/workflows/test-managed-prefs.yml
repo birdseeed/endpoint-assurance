@@ -1,0 +1,26 @@
+name: test-managed-prefs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/managed_prefs.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/test-managed-prefs.zsh'
+      - 'macos/patched-collect.sh'
+  pull_request:
+    paths:
+      - 'macos/lib/managed_prefs.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/test-managed-prefs.zsh'
+      - 'macos/patched-collect.sh'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh (managed preferences collector tests exercise a real zsh script)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run managed preferences collector tests
+        run: zsh macos/lib/test-managed-prefs.zsh

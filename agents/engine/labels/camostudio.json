@@ -1,0 +1,23 @@
+{
+  "label": "camostudio",
+  "name": "Camo Studio",
+  "type": "zip",
+  "app_path": "/Applications/Camo Studio.app",
+  "expected_team_id": "Q248YREB53",
+  "download": {
+    "method": "static",
+    "url": "https://reincubate.com/res/labs/camo/camo-macos-latest.zip"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

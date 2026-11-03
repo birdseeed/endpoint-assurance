@@ -1,0 +1,49 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+  description = "CIS L1 rule-key identifiers (e.g. cis_macos_2_5_2_2_firewall) in Go test fixtures under go-service/. High entropy trips generic-api-key but these are benchmark rule IDs, never credentials. Scoped to the cis_macos_ identifier shape (not the whole file) so an unrelated real secret landing in the same test file is still caught."
+  paths = ['''^go-service/.*_test\.go$''']
+  regexes = ['''cis_macos_[a-z0-9_]+''']
+  condition = "AND"
+
+[[allowlists]]
+  description = "enrolment_test.go asserts generated PEM output contains the literal header text via strings.Contains(keyPEM, \"-----BEGIN PRIVATE KEY-----\"), which is not an embedded key; gitleaks' private-key rule flags the header text alone. Scoped to the exact source shape that assertion produces (header immediately followed by the closing quote and brace), which a real leaked key would never match, so a real private key landing in this file is still caught."
+  paths = ['''^go-service/internal/handlers/enrolment_test\.go$''']
+  regexes = ['''-----BEGIN PRIVATE KEY-----"\) \{''']
+  condition = "AND"
+
+[[allowlists]]
+  description = "Known synthetic HMAC test vector base64(\"test-secret\")"
+  regexes = ['''dGVzdC1zZWNyZXQ=''']
+
+[[allowlists]]
+  description = "PAT-1481 legacy-execution-quarantine test fixtures use literal strings like pat1481-quarantine-generation-hmac as bearer tokens and HMAC secrets. Named after the ticket and their role in the test, never real credentials. Scoped to the pat1481-quarantine- identifier shape in this one test file so an unrelated real secret landing here is still caught."
+  paths = ['''^go-service/internal/handlers/legacy_execution_gate_test\.go$''']
+  regexes = ['''pat1481-quarantine-[a-z0-9-]+''']
+  condition = "AND"
+
+[[allowlists]]
+  description = "CIS L1 rule-key identifiers (e.g. cis_macos_5_6_root_disabled) in e2e fixture/test data. High entropy trips generic-api-key but these are benchmark rule IDs, never credentials. Scoped to the cis_macos_ identifier shape (not the whole file) so an unrelated real secret landing in these files is still caught."
+  paths = ['''^e2e/data/matrix\.json$''', '''^e2e/data/settings-results\.md$''', '''^e2e/run_settings\.py$''']
+  regexes = ['''cis_macos_[a-z0-9_]+''']
+  condition = "AND"
+
+[[allowlists]]
+  description = "Illustrative enrollment_token in the portal-api.md API contract's example 201 response body. Documentation placeholder, never a minted credential."
+  paths = ['''^contracts/portal-api\.md$''']
+  regexes = ['''eee_EXAMPLEtokenEXAMPLEtokenEXAMPLEtoken00''']
+  condition = "AND"
+
+[[allowlists]]
+  description = "Internal Tailscale IP for patched-api-01 documented in the prod-01 backup runbook's env-var example block. Not a credential."
+  paths = ['''^api-vps-artefacts/BACKUP_DR\.md$''']
+  regexes = ['''100\.72\.238\.114''']
+  condition = "AND"
+
+[[allowlists]]
+  description = "PAT-2263 kernel driver fixtures and driver blocklist tests carry synthetic driver file hashes (sha256, sha1, authenticode_sha256/sha1) as hex strings. High entropy trips generic-api-key but these are file digests, never credentials. Scoped to the fixture and test paths and to lines where the value is a named hash field, so an unrelated real secret landing in these files is still caught."
+  paths = ['''^go-service/testdata/payload-fixtures/(valid|invalid)/.*kernel-drivers.*\.json$''', '''^go-service/internal/driverblock/.*_test\.go$''', '''^go-service/internal/extractor/kernel_drivers.*_test\.go$''']
+  regexTarget = "line"
+  regexes = ['''"(authenticode_)?sha(256|1)"\s*:\s*"[0-9a-fA-F]{40,64}"''', '''\b(sha256|sha1|auth256|auth1)\s*:\s*"[0-9a-fA-F]{40,64}"''']
+  condition = "AND"

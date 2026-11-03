@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+  description = "Known synthetic UUID used only as a PAT-1398 idempotency-key test fixture, never a minted credential."
+  regexes = ['''d76ec58c-2ff0-4e4a-96cb-1aeb144c4c63''']

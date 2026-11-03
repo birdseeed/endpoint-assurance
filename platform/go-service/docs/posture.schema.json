@@ -1,0 +1,222 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Patched.im Device Posture",
+  "description": "Response schema for GET /v1/posture. Versioned; increment schema_version on breaking changes.",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "device", "tier", "app_count", "compliance", "evidence"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "description": "Schema version. Currently 1. Increment on breaking changes to this document.",
+      "enum": [1]
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC timestamp when this response was generated."
+    },
+    "device": {
+      "type": "object",
+      "description": "Device identity and metadata. Derived from the credential — never client-supplied.",
+      "required": ["id", "os"],
+      "properties": {
+        "id":            { "type": "string", "format": "uuid" },
+        "serial":        { "type": "string" },
+        "hw_uuid":       { "type": "string" },
+        "hostname":      { "type": "string" },
+        "computer_name": { "type": "string" },
+        "hw_model":      { "type": "string" },
+        "arch":          { "type": "string", "examples": ["arm64", "x86_64"] },
+        "os":            { "type": "string", "examples": ["macOS", "Windows"] },
+        "os_version":    { "type": "string", "examples": ["15.4.1"] },
+        "os_build":      { "type": "string", "examples": ["24E263"] },
+        "agent_version": { "type": "string" },
+        "first_seen":    { "type": "string", "format": "date-time" },
+        "last_seen":     { "type": "string", "format": "date-time" }
+      }
+    },
+    "tier": {
+      "type": "string",
+      "description": "Agent subscription tier from the signed agent-config. UI uses this to gate actions honestly.",
+      "examples": ["report_deploy", "patch"]
+    },
+    "app_count": {
+      "type": "integer",
+      "description": "Number of distinct applications currently installed on the device."
+    },
+    "compliance": {
+      "type": "object",
+      "required": ["platform", "benchmarks"],
+      "properties": {
+        "platform": {
+          "type": "string",
+          "description": "Platform derived from device.os.",
+          "examples": ["macOS", "Windows"]
+        },
+        "benchmarks": {
+          "type": "array",
+          "description": "One entry per benchmark evaluated on this device (e.g. CIS + patched.im baseline).",
+          "items": {
+            "type": "object",
+            "required": ["benchmark", "benchmark_version", "implemented", "benchmark_total", "passed", "failed", "not_applicable", "errors", "compliance_pct", "sections"],
+            "properties": {
+              "benchmark":         { "type": "string", "examples": ["CIS Apple macOS"] },
+              "benchmark_version": { "type": "string", "examples": ["v3.0.0"] },
+              "implemented": {
+                "type": "integer",
+                "description": "Rules with at least one evaluation for this device."
+              },
+              "benchmark_total": {
+                "type": "integer",
+                "description": "Total enabled rules defined in the benchmark for this platform. UI renders 'implemented of benchmark_total'."
+              },
+              "passed":        { "type": "integer" },
+              "failed":        { "type": "integer" },
+              "not_applicable": { "type": "integer" },
+              "errors":        { "type": "integer" },
+              "compliance_pct": {
+                "type": "number",
+                "description": "passed / (passed + failed + errors) × 100. not_applicable excluded from denominator."
+              },
+              "sections": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["section", "passed", "total", "controls"],
+                  "properties": {
+                    "section": {
+                      "type": "string",
+                      "description": "CIS section number extracted from rule_key (e.g. '1', '2', '5')."
+                    },
+                    "passed": { "type": "integer" },
+                    "total":  { "type": "integer" },
+                    "controls": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["rule_key", "title", "severity", "status", "evaluated_at"],
+                        "properties": {
+                          "rule_key":       { "type": "string" },
+                          "title":          { "type": "string" },
+                          "severity":       { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+                          "status":         { "type": "string", "enum": ["pass", "fail", "not_applicable", "error"] },
+                          "observed_value": { "type": ["string", "null"] },
+                          "evaluated_at":   { "type": "string", "format": "date-time" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "description": "Audit evidence: coverage window, scan count, report digest.",
+      "required": ["coverage_window_days", "scans_logged", "recent_scan_times"],
+      "properties": {
+        "coverage_window_days": {
+          "type": "integer",
+          "description": "Rolling window over which scans_logged is counted. Currently 30.",
+          "const": 30
+        },
+        "scans_logged": {
+          "type": "integer",
+          "description": "Successful extractions for this device within the coverage window."
+        },
+        "last_signed_report_digest": {
+          "type": ["string", "null"],
+          "description": "SHA-256 hex digest of the most recently generated compliance PDF for this device. Null if no report has been generated. Written by ComplianceReportHandler into device_report_digests; read back here as posture evidence."
+        },
+        "recent_scan_times": {
+          "type": "array",
+          "description": "Timestamps of the five most recent successful scans, newest first.",
+          "maxItems": 5,
+          "items": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "findings": {
+      "description": "CVE findings for installed apps, sourced from device_cve_findings (populated by patched-cve-sync). Ordered by cvss_v3_score DESC. Empty array when no findings exist.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["cve_id", "description", "description_source", "severity", "app_name", "app_version", "match_confidence", "last_seen_at"],
+        "properties": {
+          "cve_id":            { "type": "string", "examples": ["CVE-2024-12345"] },
+          "description":       { "type": "string" },
+	  "description_source": { "type": "string", "enum": ["", "nvd", "msrc", "apple"], "description": "Upstream source for a non-empty description. Empty only when description is empty." },
+          "cvss_v3_score":     { "type": ["number", "null"], "description": "CVSS v3 base score. Null when NVD has no CVSS v3 record." },
+          "severity":          { "type": "string", "examples": ["CRITICAL", "HIGH", "MEDIUM", "LOW"] },
+          "published_at":      { "type": ["string", "null"], "format": "date-time" },
+          "app_name":          { "type": "string" },
+          "app_version":       { "type": "string" },
+          "match_confidence":  { "type": "string", "enum": ["version_confirmed", "version_unverified"],
+                                 "description": "version_confirmed: version range from NVD matched the installed version. version_unverified: app name matched but NVD lacks usable version-range data." },
+          "last_seen_at":      { "type": "string", "format": "date-time",
+                                 "description": "When the CVE was last confirmed by the sync worker for this device/app." }
+        }
+      }
+    },
+    "updates": {
+      "description": "Available app updates sourced from the updater catalog (app_catalog_entries). One entry per installed app whose version differs from the catalog's latest_version. Ordered by app_name. Empty array when all apps are current or the catalog has no entry for the app.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["app_name", "identifier", "current_version", "target_version", "source", "linked_cve_ids"],
+        "properties": {
+          "app_name":        { "type": "string", "description": "Display name of the application." },
+          "identifier":      { "type": "string", "description": "Bundle ID (macOS) or MSI product code / registry uninstall key (Windows)." },
+          "current_version": { "type": "string", "description": "Version string currently installed on the device." },
+          "target_version":  { "type": "string", "description": "Latest known-good version from the catalog." },
+          "source":          { "type": "string", "enum": ["catalog", "manual"], "description": "Provenance of the target_version entry." },
+          "linked_cve_ids":  {
+            "type": "array",
+            "description": "CVE IDs from device_cve_findings that affect this app at current_version. Updating to target_version is expected to close these CVEs. Empty array when no CVEs link.",
+            "items": { "type": "string", "examples": ["CVE-2024-12345"] }
+          }
+        }
+      }
+    },
+    "app_policy": {
+      "type": "object",
+      "description": "Per-app policy resolution and drift findings for this device. Sourced from tenant_app_policies (PAT-470). apps contains every installed app that has a configured policy; apps without a policy entry are omitted. drift lists advisory violations (mandatory app missing, unapproved app present).",
+      "required": ["apps", "drift"],
+      "properties": {
+        "apps": {
+          "type": "array",
+          "description": "Installed apps with their resolved policy. Omits apps not in the tenant policy store.",
+          "items": {
+            "type": "object",
+            "required": ["app_name", "identifier", "policy", "user_removable", "enforcement_tier"],
+            "properties": {
+              "app_name":         { "type": "string", "description": "Display name of the app." },
+              "identifier":       { "type": "string", "description": "CFBundleIdentifier or Windows GUID." },
+              "policy":           { "type": "string", "enum": ["mandatory", "approved", "unapproved", "unmanaged"] },
+              "user_removable":   { "type": "boolean", "description": "False when policy is mandatory — agent should not offer to uninstall." },
+              "enforcement_tier": { "type": "string", "enum": ["report_deploy", "report", "patch", "app_management", "managed"], "description": "Tier at which enforcement acts may be taken. report = advisory only. report_deploy/patch are the canonical names (PAT-1121); report/app_management are deprecated legacy aliases still accepted during the Windows-agent dual-accept migration window." }
+            }
+          }
+        },
+        "drift": {
+          "type": "array",
+          "description": "Advisory policy violation findings. mandatory_missing: a mandatory app is absent from this device. unapproved_present: an unapproved app is installed.",
+          "items": {
+            "type": "object",
+            "required": ["drift_type", "app_name", "identifier", "policy", "enforcement_tier"],
+            "properties": {
+              "drift_type":       { "type": "string", "enum": ["mandatory_missing", "unapproved_present"] },
+              "app_name":         { "type": "string" },
+              "identifier":       { "type": "string" },
+              "policy":           { "type": "string", "enum": ["mandatory", "approved", "unapproved", "unmanaged"] },
+              "enforcement_tier": { "type": "string", "enum": ["report_deploy", "report", "patch", "app_management", "managed"], "description": "report_deploy/patch are canonical (PAT-1121); report/app_management are deprecated legacy aliases accepted during the Windows-agent migration window." }
+            }
+          }
+        }
+      }
+    }
+  }
+}

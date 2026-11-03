@@ -1,0 +1,23 @@
+{
+  "label": "bravepkg",
+  "name": "Brave Browser",
+  "type": "pkg",
+  "app_path": "/Applications/Brave Browser.app",
+  "expected_team_id": "KL8N8XSYF4",
+  "download": {
+    "method": "static",
+    "url": "https://referrals.brave.com/latest/Brave-Browser.pkg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

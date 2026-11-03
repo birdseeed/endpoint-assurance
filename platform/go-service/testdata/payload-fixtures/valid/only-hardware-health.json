@@ -1,0 +1,64 @@
+{
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.8.0",
+  "tenant_id": "44444444-4444-4444-4444-444444444444",
+  "collected_at": "2026-12-01T00:00:00Z",
+  "device": {
+    "serial": "C00000000003",
+    "hw_uuid": "33333333-AAAA-BBBB-CCCC-DDDDDDDDDDDD",
+    "hostname": "hw-health-test-host",
+    "computer_name": "HW Health Test",
+    "hw_model": "Mac14,6",
+    "arch": "arm64",
+    "last_boot": "2026-12-01T00:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M3 Pro",
+    "cpu_cores": 12,
+    "ram_gb": 18,
+    "disk_total_gb": 512.0,
+    "disk_free_gb": 256.0
+  },
+  "os": {
+    "name": "macOS",
+    "version": "15.4.1",
+    "build": "24E263"
+  },
+  "compliance": {},
+  "security_tools": [],
+  "system_extensions": [],
+  "background_items": [],
+  "icloud": { "signed_in": "Yes" },
+  "apps": [],
+  "hardware_health": {
+    "battery": {
+      "present": true,
+      "cycle_count": 42,
+      "condition": "Normal",
+      "max_capacity_pct": 94
+    },
+    "storage": [
+      {
+        "mount": "/",
+        "total_bytes": 494384795648,
+        "free_bytes": 309000000000,
+        "used_pct": 37
+      },
+      {
+        "mount": "/System/Volumes/Data",
+        "total_bytes": 494384795648,
+        "free_bytes": 290000000000,
+        "used_pct": 41
+      }
+    ],
+    "disks": [
+      {
+        "device": "disk0",
+        "smart_status": "Verified",
+        "internal": true,
+        "solid_state": true
+      }
+    ]
+  }
+}

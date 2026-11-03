@@ -1,0 +1,24 @@
+{
+  "label": "bambustudio",
+  "name": "BambuStudio",
+  "type": "dmg",
+  "app_path": "/Applications/BambuStudio.app",
+  "expected_team_id": "T3UBR9Y3B2",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/bambulab/BambuStudio/releases/latest"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "scope": "Synthetic; private Unix socket; TCP disabled; no customer data",
+  "platform_commit": "132360cc0e18159f40f078c0e83615331a1a3021",
+  "started_at": "2026-10-02T23:30:00.303851+00:00",
+  "finished_at": "2026-10-02T23:30:08.849068+00:00",
+  "cluster": "/var/folders/9m/76rz5kjd7yl99cw8lfxlw5780000gn/T/pat2371-pg-jmitp1n3",
+  "cleanup": "removed",
+  "failure": null,
+  "checks": [
+    {
+      "name": "initdb",
+      "exit": 0,
+      "seconds": 0.38,
+      "log": "/var/folders/9m/76rz5kjd7yl99cw8lfxlw5780000gn/T/pat2371-pg-jmitp1n3/initdb.log",
+      "passes": 0,
+      "skips": 0
+    },
+    {
+      "name": "start",
+      "exit": 0,
+      "seconds": 0.13,
+      "log": "/var/folders/9m/76rz5kjd7yl99cw8lfxlw5780000gn/T/pat2371-pg-jmitp1n3/start.log",
+      "passes": 0,
+      "skips": 0
+    },
+    {
+      "name": "role",
+      "exit": 0,
+      "seconds": 0.02,
+      "log": "/var/folders/9m/76rz5kjd7yl99cw8lfxlw5780000gn/T/pat2371-pg-jmitp1n3/role.log",
+      "passes": 0,
+      "skips": 0
+    },
+    {
+      "name": "integration",
+      "exit": 0,
+      "seconds": 4.95,
+      "log": "/var/folders/9m/76rz5kjd7yl99cw8lfxlw5780000gn/T/pat2371-pg-jmitp1n3/integration.log",
+      "passes": 43,
+      "skips": 0
+    },
+    {
+      "name": "feedback-local",
+      "exit": 0,
+      "seconds": 0.58,
+      "log": "/var/folders/9m/76rz5kjd7yl99cw8lfxlw5780000gn/T/pat2371-pg-jmitp1n3/feedback-local.log",
+      "passes": 11,
+      "skips": 0
+    },
+    {
+      "name": "keys",
+      "exit": 0,
+      "seconds": 2.3,
+      "log": "/var/folders/9m/76rz5kjd7yl99cw8lfxlw5780000gn/T/pat2371-pg-jmitp1n3/keys.log",
+      "passes": 25,
+      "skips": 0
+    },
+    {
+      "name": "stop",
+      "exit": 0,
+      "seconds": 0.12,
+      "log": "/var/folders/9m/76rz5kjd7yl99cw8lfxlw5780000gn/T/pat2371-pg-jmitp1n3/stop.log",
+      "passes": 0,
+      "skips": 0
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "patched-im-docs",
+  "compatibility_date": "2026-11-15",
+  "assets": {
+    "directory": "."
+  },
+  // Custom Domain (not a Route) so Cloudflare provisions the docs.patched.im DNS
+  // record + edge cert automatically. Routes match request patterns but do NOT
+  // create DNS — that distinction bit us www.patched.im chase.
+  "routes": [
+    { "pattern": "docs.patched.im", "custom_domain": true }
+  ]
+}

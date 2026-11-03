@@ -1,0 +1,23 @@
+{
+  "label": "cherryaudiosurrealisticmg1plus",
+  "name": "Surrealistic MG-1 Plus",
+  "type": "pkg",
+  "app_path": "/Applications/Surrealistic MG-1 Plus.app",
+  "expected_team_id": "A2XFV22B2X",
+  "download": {
+    "method": "static",
+    "url": "https://store.cherryaudio.com/downloads/surrealistic-mg-1-plus-macos-installer?file=Surrealistic-MG-1-Plus-Installer-macOS.pkg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

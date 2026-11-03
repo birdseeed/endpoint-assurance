@@ -1,0 +1,58 @@
+# Patched public scan service — /etc/patched-scan/env
+# Copied into place by deploy/install-scan.sh on first run; NEVER overwritten on
+# re-run, and never committed with real values. chmod 640 root:scan.
+#
+# This box holds ONLY mail + Turnstile credentials. No platform API keys, no
+# tenant secrets, no admin tokens — the scan service never talks to the platform.
+
+# Both public creation funnels are retired by default. Only true enables them.
+# Missing, blank, false or malformed values remain disabled. Restart to apply.
+PUBLIC_SCAN_ENABLED=false
+
+# ── Microsoft Graph sendMail (PAT-109) — primary report/OTP delivery ──
+# Patched.im Mailer app (app-only Mail.Send, scoped to MAIL_SENDER via an
+# Exchange ApplicationAccessPolicy). When these three are set, mail goes via
+# Graph; leave them blank to fall back to SendGrid (SENDGRID_API_KEY).
+GRAPH_MAIL_TENANT_ID=
+GRAPH_MAIL_CLIENT_ID=
+GRAPH_MAIL_CLIENT_SECRET=
+# The mailbox the service sends AS (must be inside the Graph app access policy).
+MAIL_SENDER=noreply@patched.im
+
+# ── Cloudflare Turnstile (bot protection on the public forms) ──
+# Server-side verification secret. PAT-893: if blank, the service now FAILS
+# CLOSED — every submission is refused (400) rather than silently letting bot
+# protection sit disabled. production MUST set this.
+TURNSTILE_SECRET=
+# Legacy alias kept for compatibility with the dashboard env; set the same value.
+TURNSTILE_SECRET_KEY=
+# Public site key rendered into the forms (safe to expose).
+TURNSTILE_SITE_KEY=
+# Explicit, deliberate opt-out for local/dev only — set to 1 to skip Turnstile
+# verification when TURNSTILE_SECRET is blank. Leave unset in production.
+TURNSTILE_DEV_BYPASS=
+
+# ── Public URLs + retention ──
+# Used to build the download / delete links in the report email. MUST match the
+# public hostname so the links resolve.
+PUBLIC_BASE_URL=https://scan.patched.im
+# Days before uploads/reports/rows are purged by the retention sweep. The Mac
+# app waitlist itself (waitlist_signups) is never swept; only its rate-limit
+# ledger is. People leave the list through bin/waitlist.py remove.
+PUBLIC_RETENTION_DAYS=30
+
+# ── Mac app waitlist (PAT-2560) ──
+# Where each new sign up is announced, with the running total in the subject.
+# Blank means the same mailbox as enquiries (PRICING_ENQUIRY_TO, by default
+# hello@patched.im).
+WAITLIST_NOTIFY_TO=
+
+# ── Email dry-run ──
+# Set to any non-empty value to log emails instead of sending (staging / smoke).
+# Leave blank in production.
+EMAIL_DRY_RUN=
+
+# ── NVD dataset location ──
+# Overridden by the systemd unit to /var/lib/patched-scan/nvd.db; only set here
+# if you run the app outside systemd. Seed it with bin/refresh-nvd.py.
+# NVD_DB_PATH=/var/lib/patched-scan/nvd.db

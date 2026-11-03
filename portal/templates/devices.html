@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% from "_macros.html" import device_table, kpi_summary, segmented_control, group_card_head, device_result_notice, device_list_upload_form %}
+{% block content %}
+<div class="page-head">
+  <h1>Devices</h1>
+  <p class="meta">Your estate roster, with reported OS versions and last-seen evidence. Use reports to review issues across your estate.</p>
+</div>
+
+{{ device_result_notice(device_result) }}
+
+{% call kpi_summary(
+  [('Known devices', total, ''), ('Silent more than ' ~ silent_days ~ ' days', silent | length, 'bad-text' if silent else ''), ('Retired', retired | length, '')],
+  'Known devices are devices Patched has heard from. This is not a claim about the size of your whole estate until you upload a device list to compare against.'
+) %}<a class="btn btn-small" href="/devices.pdf">Download PDF</a> <a class="btn btn-small" href="/devices.csv">Download CSV</a>{% endcall %}
+
+<div class="devices-toolbar">
+  {#- PAT-1957: reporting state only. Silent takes the alert tone and Quiet the warning tone when they hold devices; Normal is never toned. PAT-2135: Retired is its own group, never toned - it is the customer's own decision, not an alert. -#}
+  {{ segmented_control('view', device_view, view_options, 'view', 'Device reporting state', server_navigation=true) }}
+  {{ segmented_control('', device_type, type_options, 'type', 'Device type', server_navigation=true) }}
+</div>
+
+<div class="card group-card">
+  {{ group_card_head('Device roster', total ~ ' known device' ~ ('' if total == 1 else 's'), 'Silent, quiet, normally reporting and retired devices share this roster. Use the control above to change the visible group.', 'muted') }}
+  <input type="search" id="device-search" class="search group-card__search" data-table-search="#device-table" placeholder="Search hostname, platform or OS version" aria-label="Search devices in the selected reporting state">
+  {{ device_table(devices, actions=True, filter_by_group=True, selected_group=device_view, can_edit=can_edit, csrf_token=csrf_token, return_to=return_to) }}
+  <p class="empty filtered-empty" data-filter-empty data-empty-roster{% if has_visible_devices %} hidden{% endif %}>{% if has_visible_devices %}No devices match this reporting state and search.{% else %}{{ empty_type_text }} Try another type or reporting state.{% endif %}</p>
+</div>
+
+{#- The reporting links navigate with the selected type. The hint follows
+    the server-rendered state, and the existing JS initialises that state. -#}
+<p class="toolbar-hint" data-silent-only>A device silent for more than {{ silent_days }} days cannot provide current evidence for the Cyber Essentials v3.3 requirement to apply critical and high-severity security updates within 14 days.</p>
+
+<div class="card group-card gap-card" id="device-list-card">
+  {% if device_list.has_list %}
+  {% call group_card_head('Your device list', none, none, 'muted') %}
+  <div class="dl-head-actions">
+    {% if can_edit %}
+    <div class="dl-head-buttons">
+      <details class="retire-panel">
+        <summary class="btn btn-small" aria-label="Replace your uploaded device list">Replace list</summary>
+        {{ device_list_upload_form(csrf_token) }}
+      </details>
+      <form method="post" action="/devices/device-list/clear">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <details class="retire-panel">
+          <summary class="btn btn-small" aria-label="Clear your uploaded device list">Clear list</summary>
+          <p class="meta">This clears your uploaded list. Devices already seen stay on your roster.</p>
+          <button type="submit" class="btn btn-small">Clear list</button>
+        </details>
+      </form>
+    </div>
+    {% endif %}
+    <span class="dl-upload-meta">{% if device_list.list.filename %}{{ device_list.list.filename }} &middot; {% endif %}{{ device_list.list.uploaded_at | humandate(true) }} UTC &middot; {{ device_list.list.uploaded_by or 'unknown' }}</span>
+  </div>
+  {% endcall %}
+  <div class="gap-card__body">
+    {% if device_list.truncated %}<p class="meta">Some rows below are not shown; the counts above and below are complete.</p>{% endif %}
+
+    {#- PAT-2212: count tiles replace the old "N entries matched" sentence
+        and the "On your list, never seen"/"Seen, not on your list" prose
+        headings. Each tile is a plain link carrying ?list_group=, so the
+        server renders exactly one group's table below with no JS - the
+        same "server owns the state, the control just links to it" shape
+        /devices' own Silent/Quiet/Normal/Retired tabs already use. -#}
+    <div class="dl-tiles" role="group" aria-label="Filter your device list by match state">
+      <a class="ov-card dl-tile{% if list_group == 'matched' %} dl-tile--active{% endif %}" href="{{ list_urls.matched }}"{% if list_group == 'matched' %} aria-current="true"{% endif %}>
+        <span class="ov-card__label" title="Matched">Matched</span>
+        <span class="ov-card__headline">{{ device_list.matched_count if device_list.matched_count is not none else '-' }}</span>
+        {% if device_list.matched_retired_count %}<span class="dl-tile__hint">{{ device_list.matched_retired_count }} of these {{ 'is' if device_list.matched_retired_count == 1 else 'are' }} retired</span>{% endif %}
+      </a>
+      <a class="ov-card dl-tile{% if list_group == 'never_seen' %} dl-tile--active{% endif %}" href="{{ list_urls.never_seen }}"{% if list_group == 'never_seen' %} aria-current="true"{% endif %}>
+        <span class="ov-card__label" title="Not reporting">Not reporting</span>
+        <span class="ov-card__headline">{{ device_list.never_seen_total }}</span>
+        <span class="dl-tile__hint">Not proof a device is missing</span>
+      </a>
+      <a class="ov-card dl-tile{% if list_group == 'not_on_list' %} dl-tile--active{% endif %}" href="{{ list_urls.not_on_list }}"{% if list_group == 'not_on_list' %} aria-current="true"{% endif %}>
+        <span class="ov-card__label" title="Reporting, not on your list">Reporting, not on your list</span>
+        <span class="ov-card__headline">{{ device_list.not_on_list_total }}</span>
+        <span class="dl-tile__hint">A retired device is never shown here</span>
+      </a>
+    </div>
+
+    {% if list_group == 'never_seen' %}
+    {% set never_seen_has_serial = device_list.never_seen | selectattr('serial') | list | length > 0 %}
+    {% if device_list.never_seen %}
+    <div class="table-scroll">
+    <table class="data-table table-stack">
+      <thead><tr><th>Hostname</th>{% if never_seen_has_serial %}<th>Serial</th>{% endif %}<th><span class="visually-hidden">Action</span></th></tr></thead>
+      <tbody>
+        {% for e in device_list.never_seen %}
+        <tr>
+          <td data-label="Hostname">{{ e.hostname or '-' }}</td>
+          {% if never_seen_has_serial %}<td class="mono" data-label="Serial">{{ e.serial or '-' }}</td>{% endif %}
+          <td class="cell-actions" data-label="Action">
+            {#- PAT-2271: the customer's own removal, not Patched acting for
+                them (rubric C1) - a no-JS confirm step, the same
+                click-to-reveal-then-submit <details> idiom every other
+                destructive action on this page already uses. entry_id is
+                only present once the platform has shipped PAT-2271; an
+                older upstream simply omits it and this row shows no
+                remove control, never a broken one. -#}
+            {% if can_edit and e.entry_id %}
+            <details class="retire-panel">
+              <summary class="ask-link" aria-label="Remove {{ e.hostname or e.serial or 'this entry' }} from your list">Remove from list &rarr;</summary>
+              <form class="retire-form" method="post" action="/devices/device-list/entries/{{ e.entry_id }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="btn btn-small">Remove from list</button>
+              </form>
+            </details>
+            {% endif %}
+            <a class="btn btn-small" href="/install">Install the agent</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="empty">&#10003; Every device on your list has been seen.</p>
+    {% endif %}
+
+    {% elif list_group == 'not_on_list' %}
+    {% set not_on_list_has_serial = device_list.not_on_list | selectattr('serial') | list | length > 0 %}
+    {% if device_list.not_on_list %}
+    <div class="table-scroll">
+    <table class="data-table table-stack">
+      <thead><tr><th>Hostname</th>{% if not_on_list_has_serial %}<th>Serial</th>{% endif %}</tr></thead>
+      <tbody>
+        {% for d in device_list.not_on_list %}
+        <tr>
+          <td data-label="Hostname"><a href="/devices/{{ d.device_id }}">{{ d.hostname or '-' }}</a></td>
+          {% if not_on_list_has_serial %}<td class="mono" data-label="Serial">{{ d.serial or '-' }}</td>{% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="empty">&#10003; Every reporting device is on your list.</p>
+    {% endif %}
+
+    {% elif list_group == 'matched' %}
+    <details class="retire-panel dl-matched">
+      <summary class="ask-link">Show matched entries</summary>
+      {% if device_list.matched_itemised %}
+      {#- PAT-2271: itemised, so the customer can actually check the
+          matching - which uploaded entry matched which device - rather
+          than a count alone. -#}
+      {% if device_list.matched %}
+      {% set matched_has_serial = (device_list.matched | selectattr('serial') | list | length > 0) or (device_list.matched | map(attribute='device') | selectattr('serial') | list | length > 0) %}
+      <div class="table-scroll">
+      <table class="data-table table-stack dl-matched-table">
+        <thead><tr><th>Hostname</th>{% if matched_has_serial %}<th>Serial</th>{% endif %}<th>Matched device</th></tr></thead>
+        <tbody>
+          {% for m in device_list.matched %}
+          <tr>
+            <td data-label="Hostname">{{ m.hostname or '-' }}</td>
+            {% if matched_has_serial %}<td class="mono" data-label="Serial">{{ m.serial or '-' }}</td>{% endif %}
+            <td data-label="Matched device"><a href="/devices/{{ m.device.device_id }}">{{ m.device.hostname or '-' }}</a>{% if m.device.retired %} <span class="pill pill-muted">Retired</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% else %}
+      <p class="empty">&#10003; No entries have matched a device yet.</p>
+      {% endif %}
+      {% else %}
+      {#- Fallback for a platform not yet upgraded to PAT-2271: count only,
+          no itemised rows, so the portal can deploy on either side of the
+          platform's own rollout. -#}
+      <p class="meta">{{ device_list.matched_count if device_list.matched_count is not none else '-' }} entr{{ 'y' if device_list.matched_count == 1 else 'ies' }} on your list matched a known device{% if device_list.matched_retired_count %}, {{ device_list.matched_retired_count }} of those retired{% endif %}. Patched counts matches here; it does not list each matched row individually yet.</p>
+      {% endif %}
+    </details>
+    {% endif %}
+  </div>
+  {% else %}
+  {{ group_card_head('Your device list', none, 'No device list on file yet.', 'muted') }}
+  <div class="gap-card__body">
+    <p>Upload a device list (CSV) to see two extra groups here: devices you expect but have not seen, and devices reporting to Patched that are not on your list. Neither is counted anywhere on this page until you upload one.</p>
+    {% if not device_list.available %}
+    <p class="empty">Your device list could not be read right now. Reload the page to try again.</p>
+    {% elif can_edit %}
+    {{ device_list_upload_form(csrf_token) }}
+    {% else %}
+    <p class="meta">An administrator on your account can upload a device list.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="card group-card gap-card" id="jamf-coverage-card">
+  {{ group_card_head('Jamf Pro coverage', none, 'Compare the Macs your Jamf Pro manages with the Macs Patched sees, built from the webhooks your Jamf Pro sends. Patched never holds a Jamf credential.', 'muted') }}
+  <div class="gap-card__body">
+    <p><a class="btn btn-small" href="/devices/jamf">View Jamf coverage &rarr;</a></p>
+  </div>
+</div>
+
+<p class="toolbar-hint">Retiring a device does not delete it here on its own. The decision is recorded against the device with the date and who made it, and it then shows as retired rather than missing, in the portal and in every report issued afterwards.</p>
+{% endblock %}
+{% block scripts %}<script src="{{ static_url('js/portal.js') }}"></script>{% endblock %}

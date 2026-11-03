@@ -1,0 +1,30 @@
+{
+  "label": "openvpnconnectv3",
+  "name": "OpenVPN Connect",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "relative-path-glob-by-arch",
+    "patterns_by_arch": {
+      "arm64": "OpenVPN_Connect_[0-9_()]*_arm64_Installer_signed.pkg",
+      "i386": "OpenVPN_Connect_[0-9_()]*_x86_64_Installer_signed.pkg"
+    }
+  },
+  "app_path": "/Applications/OpenVPN Connect.app",
+  "expected_team_id": "ACV7L3WCD8",
+  "download": {
+    "method": "static",
+    "url": "https://openvpn.net/downloads/openvpn-connect-v3-macos.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

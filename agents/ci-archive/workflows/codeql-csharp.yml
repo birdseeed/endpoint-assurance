@@ -1,0 +1,59 @@
+name: codeql-csharp
+
+# CodeQL SAST for the Windows C# agent (PAT-510).
+# Checks: SQL/command injection, unsafe deserialization, deprecated crypto APIs,
+# path traversal, P/Invoke return-value misuse.
+#
+# upload: never — avoids GitHub Advanced Security requirement on private org
+# repos. SARIF results are uploaded as a workflow artifact for review instead.
+# To make findings blocking: add `fail-on-severity: error` once initial triage
+# is complete and findings are suppressed or fixed.
+
+# PAT-952 (pre-prod cost posture): no per-PR runs — each analysis burns ~10
+# windows-latest minutes at 2x billing and was the single largest Actions cost
+# line. Weekly schedule + every main push keep the SAST baseline current;
+# per-PR coverage returns with the PAT-941 pre-launch security restore.
+on:
+  push:
+    branches: [main]
+    paths: ['windows/**', 'contracts/**']
+  schedule:
+    - cron: '0 6 * * 1'
+
+jobs:
+  analyze:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: csharp
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Build
+        run: dotnet build windows/PatchedAgent.sln -c Release --nologo
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          upload: never
+          output: ${{ runner.temp }}/codeql-results
+
+      - name: Upload SARIF
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: codeql-csharp-sarif
+          path: ${{ runner.temp }}/codeql-results

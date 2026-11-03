@@ -1,0 +1,24 @@
+name: test-certs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/certs.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/test-certs.zsh'
+      - 'macos/patched-collect.sh'
+  pull_request:
+    paths:
+      - 'macos/lib/certs.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/test-certs.zsh'
+      - 'macos/patched-collect.sh'
+
+jobs:
+  test:
+    runs-on: macos-latest          # zsh + /usr/bin/python3 are stock on macOS runners
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run System keychain certificate collector tests
+        run: zsh macos/lib/test-certs.zsh

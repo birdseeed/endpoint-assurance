@@ -1,0 +1,13 @@
+{
+  "installed_os": "14.6.1",
+  "latest_os": "14.6.1",
+  "target_os": "14.6.1",
+  "state": "up_to_date",
+  "severity": "none",
+  "security_relevant": false,
+  "actively_exploited": false,
+  "deadline": null,
+  "deferrals_remaining": 5,
+  "release_age_days": 18,
+  "checked_at": "2026-12-10T10:00:00Z"
+}

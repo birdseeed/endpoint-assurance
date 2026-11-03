@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card card-narrow card-center">
+  <p class="eyebrow"><span class="eyebrow__dot"></span>Account not linked</p>
+  <h1>Your account isn't linked to an estate yet</h1>
+  <p>You have signed in successfully, but this email address is not yet linked to a customer estate. This usually means your onboarding is still in progress, or you signed in with a different address from the one we set up.</p>
+  <p>Contact <a href="mailto:{{ support_email }}">{{ support_email }}</a> and we will link your account.</p>
+</div>
+{% endblock %}

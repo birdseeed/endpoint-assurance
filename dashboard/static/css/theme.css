@@ -1,0 +1,1312 @@
+/* Patched operator console, Brand v3 (PAT-2373).
+ * Canonical colours and semantic states come from the pinned vendored kit.
+ * These aliases retain the established console component API and native fonts.
+ */
+/* ── Semantic tokens ────────────────────────────────────────── */
+:root {
+  --canvas: var(--surface-sunken);
+  --rail: var(--surface);
+  --surface-raised: var(--surface);
+  --border-soft: var(--border-faint);
+  --text: var(--text-strong);
+  --text-dim: var(--text-body);
+  --muted: var(--text-muted);
+  --focus: var(--focus-ring);
+  --accent-dim: var(--primary-hover);
+  --accent-solid: var(--primary);
+  --accent-solid-hover: var(--primary-hover);
+  --on-accent: var(--on-primary);
+  --on-signal: #0f172a;
+  --cyan: var(--info);
+  --purple: var(--unknown);
+  --shadow: rgba(15,23,42,.06);
+  --badge-radius: 4px;
+}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+
+/* ── Legacy / compatibility aliases ─────────────────────────────
+   Hundreds of existing inline styles and console.css rules across
+   this console reference the following names directly. Rather than
+   rename every call site for a visual rewrite, every one of them is
+   kept as a real alias onto the semantic tokens above — the shell
+   and component system are new; these names are not. ───────────── */
+:root {
+  --bg:            var(--canvas);
+  --bg2:           var(--surface-sunken);
+  --bg-card:       var(--surface);
+  --card:          var(--surface);
+  --card-2:        var(--surface-sunken);
+  --card-border:   var(--border);
+  --card-hover:    var(--surface-sunken);
+  --row-alt:       var(--surface-sunken);
+  --surface-2:     var(--surface-sunken);
+
+  --amber:   var(--warning);
+  --orange:  var(--warning);
+  --red:     var(--danger);
+  --danger-bg: var(--danger-wash);
+  --green:   var(--success);
+  --green-dim: var(--success-wash);
+
+  /* Legacy names resolve to the canonical Brand v3 action tokens.
+     They remain aliases because specialist surfaces still reference them. */
+  --blue-dim:  var(--accent-solid-hover);
+  --blue-soft: var(--accent-wash);
+  --accent-subtle: var(--accent-wash);
+  --accent-dim2:   var(--accent-wash);
+  --accent-glow:   var(--accent-wash);
+  --ok:        var(--success);
+  --uv-hover:  var(--link-hover);
+
+  --fg:          var(--text);
+  --fg-muted:    var(--muted);
+  --input-bg:     var(--surface);
+  --input-border: var(--border);
+
+  --grid-line: transparent; /* PAT-1047: the trading-terminal grid backdrop is retired */
+
+  --radius:      10px;
+  --radius-sm:   6px;
+  --radius-md:   4px;
+  --radius-lg:   8px;
+  --radius-cell: 1px;
+
+  --track-mono:    0.12em;
+  --dur-base:      150ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* System-font stack — staff console uses the native OS font, not the web
+     brand font (decision: internal-dashboard-planning reaffirmed
+     PAT-1047). Renders natively on macOS and Windows; no external font
+     dependency for operator UI. */
+  --font-display: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-body:    -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:    ui-monospace, SFMono-Regular, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --mono: var(--font-mono);
+  --sans: var(--font-body);
+  /* Compatibility aliases for older component selectors. Both resolve to the
+     console's native system stacks; the internal product UI loads no web font. */
+  --font-brand-display: var(--font-body);
+  --font-brand-mono:    var(--font-mono);
+  /* static/vendor/brand/tokens.css (shared byte-for-byte with the portal) also
+     defines --font-sans as Inter — the portal's own web-font stack. Nothing in
+     this console reads --font-sans today, but override it here too (PAT-1601)
+     so the value is never reachable from console CSS/JS: the internal Console
+     uses native system fonts only, never the portal's brand faces. */
+  --font-sans: var(--font-body);
+
+  /* ── Type scale (base = 14px) ───────────────────────────────── */
+  --fs-2xs:  0.714rem;   /* 10px — tiny labels, micro badges */
+  --fs-xs:   0.786rem;   /* 11px — secondary meta, small tags */
+  --fs-sm:   0.857rem;   /* 12px — table cells, UI controls */
+  --fs-base: 1rem;       /* 14px — body text */
+  --fs-md:   1.143rem;   /* 16px — sub-headings */
+  --fs-lg:   1.286rem;   /* 18px — section card headings */
+  --fs-xl:   1.5rem;     /* 21px — tenant display name */
+}
+
+/* ── Reset ──────────────────────────────────────────────────── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  --env-chrome-height: 3px;
+  --impersonation-chrome-height: 0px;
+  background: var(--canvas);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+body.env-dev,
+body.env-local {
+  --env-chrome-height: 34px;
+}
+body.imp-active {
+  --impersonation-chrome-height: 40px;
+}
+
+/* ── Typography ─────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  color: var(--text);
+  line-height: 1.25;
+  font-weight: 700;
+}
+h1 { font-size: 1.5rem;  margin-bottom: 0.3rem; }
+h2 { font-size: 1.2rem;  margin-bottom: 0.3rem; }
+h3 { font-size: 1.02rem; margin-bottom: 0.3rem; font-weight: 600; }
+h4 { font-size: 0.92rem; font-weight: 600; }
+
+p, li, label, input, select, textarea, button, td, th {
+  font-family: var(--font-body);
+}
+
+a { color: var(--link); text-decoration: none; }
+a:hover { color: var(--link-hover); text-decoration: underline; }
+
+::selection { background: var(--accent); color: var(--on-accent); }
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ── Top-level application shell ────────────────────────────── */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Top bar ────────────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 56px;
+  flex: 0 0 auto;
+  padding: 0 18px;
+  background: var(--rail);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: calc(var(--env-chrome-height) + var(--impersonation-chrome-height));
+  z-index: 20;
+}
+.topbar-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--text);
+}
+.topbar-menu-btn span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: currentColor;
+  margin: 4px 0;
+  border-radius: 1px;
+}
+.topbar-spacer { flex: 1 1 auto; }
+.topbar .env-prod-tag { margin-top: 0; }
+
+/* ── Global rail (REDESIGN_V2.md, re-skinned PAT-1601) ───────────
+   The four global destinations only — Work, Customers, Operations,
+   Administration. Establishes global context only; specialist
+   destinations live in the context navigator beside it.
+
+   PAT-1601: the rail is now a deliberately theme-invariant slate
+   surface (console-redesign/04-components.html: "the rail goes
+   slate") — it stays dark in both light and dark app theme, unlike
+   every other surface in the shell. --surface-inverse (vendored
+   brand token, static/vendor/brand/tokens.css) is the existing token
+   for exactly this: #0f1115 in light theme, #000000 in dark theme —
+   always dark, never the theme's normal light/dark-following
+   --rail/--surface. Foreground colours inside the rail are literal
+   white-alpha (matching theme.css's own dark-theme literals for
+   --border/--border-soft, rgba(255,255,255,.12)/.07)) rather than a
+   semantic text token, because every semantic text token in this
+   theme is designed to flip with the app theme — wrong for a surface
+   that must not flip.
+
+   Width/padding/type-scale below are deliberately UNCHANGED from the
+   PAT-1142/PAT-1143 compact-rail values (144px / --fs-sm / 8px 6px /
+   7px 5px), which tests/test_pat1139_shell_navigation.py,
+   tests/test_pat1142_compact_global_rail.py and
+   tests/test_pat1143_compact_menu_type.py pin as intentional, tested
+   product decisions. The console-redesign component sheet specifies
+   232px/13px instead; that is a direct conflict with those three
+   tickets, not something this CSS-only slice resolves unilaterally —
+   see the PAT-1601 implementation report for the flagged gap. */
+.global-rail {
+  width: 144px;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: var(--surface-inverse);
+  border-right: 1px solid var(--border);
+  padding: 8px 6px;
+  overflow-y: auto;
+}
+.grail-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 7px 5px;
+  color: rgba(255,255,255,.72);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  border-left: 2px solid transparent;
+  margin-bottom: 2px;
+  transition: background 0.13s ease, color 0.13s ease, border-color 0.13s ease;
+}
+.grail-item:hover { background: rgba(255,255,255,.05); color: #fff; }
+.grail-item.active {
+  background: rgba(255,255,255,.07);
+  color: #fff;
+  border-left-color: var(--accent);
+  font-weight: 500;
+}
+.grail-item .icon { flex: 0 0 18px; }
+.grail-label {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm); /* PAT-1143 compact type token — kept, see note above */
+  font-weight: 600;
+  text-align: left;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* ── Context navigator, 280px (REDESIGN_V2.md) ──────────────────
+   Its content changes with the selected global destination or
+   customer — exactly one .nav-section is .active at a time (see
+   _applyContextNav() in console.html). Collapses to 0 width when no
+   group is active (Work/Customers list, whose workspace is primary). */
+.context-nav {
+  width: 280px;
+  flex: 0 0 auto;
+  background: var(--rail);
+  border-right: 1px solid var(--border);
+  padding: 16px 12px;
+  overflow-y: auto;
+}
+.context-nav.ctxnav-empty { width: 0; padding: 0; border-right: none; overflow: hidden; }
+.context-nav .nav-section { display: none; }
+.context-nav .nav-section.active { display: block; }
+
+.main {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 28px 32px;
+  max-width: 1320px;
+}
+
+/* Ring mark lockup: mark (30px) + "Patched" in the native system stack. */
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+}
+.brand-lockup .ring-mark {
+  flex-shrink: 0;
+  display: block;
+  width: 26px;
+  height: 26px;
+}
+.brand-lockup .brand-name {
+  font-family: var(--font-brand-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  color: var(--text);
+  line-height: 1;
+}
+
+/* ── Context navigator links ─────────────────────────────────── */
+.context-nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  color: var(--muted);
+  text-decoration: none;
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  font-weight: 500;
+  line-height: 1.5;
+  margin-bottom: 2px;
+  border-radius: var(--radius-sm);
+  transition: background 0.13s ease, color 0.13s ease;
+}
+.context-nav a:hover { background: var(--surface-sunken); color: var(--text); }
+.context-nav a.active {
+  background: var(--accent-wash);
+  color: var(--accent-dim);
+  font-weight: 600;
+}
+.context-nav a .icon { font-size: var(--fs-sm); width: 17px; text-align: center; }
+
+/* ── Context-nav section groups (Service Health / Admin Tools) ─── */
+.context-nav .nav-section-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 10px;
+  margin-bottom: 1px;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.context-nav .nav-section.has-active-child > .nav-section-label { color: var(--text-dim); }
+.context-nav .nav-section > a { padding-left: 20px; font-size: var(--fs-sm); }
+
+/* ── Customer workflow nav (vertical) — REDESIGN_V2.md ─────────
+   Replaces the old horizontal workload tab bar + secondary sub-tab
+   rows. Priorities/Devices/Patching/Assurance/Evidence/Customer
+   setup, each optionally expanding a static vertical sub-nav. */
+.ctxnav-cust-identity { padding: 4px 10px 14px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+.ctxnav-cust-name { font-size: var(--fs-md); font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.ctxnav-cust-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+.ctxnav-cust-coverage { font-size: var(--fs-sm); color: var(--muted); }
+
+.cwf-nav { display: flex; flex-direction: column; }
+.cwf-group { margin-bottom: 2px; }
+.cwf-group-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.13s ease, color 0.13s ease;
+}
+.cwf-group-btn:hover { background: var(--surface-sunken); color: var(--text); }
+.cwf-group-btn.active { background: var(--accent-wash); color: var(--accent-dim); font-weight: 600; }
+.cwf-subnav { display: flex; flex-direction: column; margin: 2px 0 6px 14px; }
+.cwf-subnav .tnav-link {
+  display: block;
+  text-align: left;
+  padding: 6px 10px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.cwf-subnav .tnav-link:hover { background: var(--surface-sunken); color: var(--text); }
+.cwf-subnav .tnav-link.active { color: var(--accent-dim); font-weight: 600; }
+
+/* ── Top-bar customer selector + operator identity ──────────── */
+.topbar-customer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+.topbar-customer .icon { color: var(--muted); font-size: var(--fs-sm); }
+.topbar-customer select {
+  border: none;
+  background: none;
+  padding: 0;
+  min-width: 140px;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+}
+.topbar-customer select:focus { outline: none; box-shadow: none; }
+/* PAT-1370: the customer list failed to load — distinguish "could not load"
+   from "loaded, zero customers" rather than leaving the selector quietly
+   empty. Matches the amber warning idiom used by .freshness-stamp--stale
+   (PAT-697) elsewhere in the console. */
+.topbar-customer--degraded {
+  border-color: var(--orange);
+}
+.topbar-customer--degraded .icon {
+  color: var(--orange);
+}
+.topbar-customer--degraded select {
+  color: var(--orange);
+  font-weight: 600;
+}
+
+.topbar-identity { position: relative; }
+.identity-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+.identity-btn:hover { border-color: var(--border); background: var(--surface-sunken); }
+.identity-btn .icon { color: var(--muted); }
+.identity-btn .chev { color: var(--muted); font-size: var(--fs-xs); }
+.identity-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 220px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px var(--shadow);
+  padding: 10px;
+  z-index: 30;
+}
+.identity-menu[hidden] { display: none; }
+.identity-row {
+  padding: 6px 8px;
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.identity-menu .theme-toggle { width: 100%; margin-top: 4px; }
+
+/* ── Sidebar identity / role chip (retained id for compatibility) ── */
+.sidebar-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.si-email {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.si-role-chip {
+  padding: 2px 8px;
+  border-radius: var(--badge-radius);
+  border: 1px solid var(--border);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted);
+}
+.si-role-owner { color: var(--accent-dim); border-color: var(--accent-wash); background: var(--accent-wash); }
+
+/* ── Theme toggle ───────────────────────────────────────────── */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 10px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.theme-toggle:hover { border-color: var(--accent); color: var(--accent-dim); }
+
+.env-badge,
+.env-prod-tag {
+  font-family: var(--font-body);
+  font-size: var(--fs-2xs);
+  color: var(--muted);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  text-align: center;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── Page header ───────────────────────────────────────────── */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.page-header-text h1 { font-size: 1.45rem; margin-bottom: 0.2rem; }
+.page-header .sub,
+.page-header-text .sub {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+.page-header-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* ── Command bar — filters/search/sort row above a table/list ── */
+.command-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.command-bar .spacer { flex: 1 1 auto; }
+
+/* ── Device workspace nav (vertical) — REDESIGN_V2.md ────────────
+   Replaces the old horizontal six-tab device-detail bar. Narrow
+   vertical navigator: Summary, Hardware, Security, Software, Patching,
+   Compliance, Activity — same data-ddtab values and _ddTab()/
+   _applyDdTab() dispatch as before, only the outer chrome changed. */
+.device-workspace { display: flex; gap: 20px; align-items: flex-start; }
+.ddw-nav {
+  flex: 0 0 180px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  padding-right: 12px;
+}
+.ddw-nav button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  margin-bottom: 2px;
+  transition: background 0.13s, color 0.13s;
+}
+.ddw-nav button:hover { background: var(--surface-sunken); color: var(--text); }
+.ddw-nav button.active {
+  background: var(--accent-wash);
+  color: var(--accent-dim);
+  font-weight: 600;
+}
+.ddw-panels { flex: 1 1 auto; min-width: 0; }
+
+/* ── Status strip (compact inline status rollup) ─────────────── */
+.status-strip {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 18px;
+}
+.status-strip-item { display: flex; flex-direction: column; gap: 2px; }
+.status-strip-item .k {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.status-strip-item .v {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Panel (replaces decorative card/gradient treatment) ─────── */
+.panel,
+.metric-card,
+.scan-card,
+.dmg-card,
+.detail-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 4px;
+}
+.scan-card,
+.detail-panel { padding: 18px 20px; }
+.panel-title,
+.section-title {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* ── Metrics grid ───────────────────────────────────────────── */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.metric-card .label {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+.metric-card .value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.55rem;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.metric-card .detail {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+/* ── Buttons ───────────────────────────────────────────────── */
+button,
+.btn-scan,
+.btn-rerun,
+.btn-del,
+.btn-dl,
+.dmg-btn,
+.dmg-btn-primary,
+.dmg-btn-danger,
+input[type="submit"],
+input[type="button"] {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+button:hover,
+.btn-rerun:hover,
+.dmg-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent-dim);
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+button:disabled:hover {
+  border-color: var(--border);
+  color: var(--text);
+}
+
+/* Primary — brand orange, the one verb */
+.btn-scan,
+.dmg-btn-primary,
+button.primary {
+  background: var(--accent-solid) !important;
+  color: var(--on-accent) !important;
+  border-color: var(--accent-solid) !important;
+}
+.btn-scan:hover,
+.dmg-btn-primary:hover,
+button.primary:hover {
+  background: var(--accent-solid-hover) !important;
+  border-color: var(--accent-solid-hover) !important;
+  color: var(--on-accent) !important;
+}
+
+/* Destructive */
+.btn-del,
+.dmg-btn-danger {
+  border-color: var(--border);
+  color: var(--muted);
+}
+.btn-del:hover,
+.dmg-btn-danger:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--surface);
+}
+
+.btn-rerun {
+  background: var(--accent-wash);
+  color: var(--accent-dim);
+  border-color: var(--accent-wash);
+}
+
+/* ── Forms ─────────────────────────────────────────────────── */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.form-row.full { grid-template-columns: 1fr; }
+.form-group label,
+label {
+  display: block;
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="tel"],
+input[type="date"],
+input[type="search"],
+select,
+textarea,
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+textarea {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  resize: vertical;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+input::placeholder,
+textarea::placeholder { color: var(--muted); opacity: 0.75; }
+
+/* ── Tables ────────────────────────────────────────────────── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  font-size: var(--fs-sm);
+}
+thead { background: var(--surface-sunken); }
+th {
+  text-align: left;
+  padding: 9px 13px;
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border);
+}
+td {
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+}
+tr:last-child td { border-bottom: none; }
+tbody tr { transition: background 0.1s; }
+tbody tr:hover td { background: var(--surface-sunken); }
+
+/* ── Status badges ─────────────────────────────────────────── */
+.status-badge,
+.dmg-badge,
+.badge {
+  display: inline-block;
+  padding: 2px 9px;
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  border-radius: var(--badge-radius);
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--muted);
+}
+.status-badge.complete,
+.dmg-badge.ok,
+.badge-success       { background: var(--success-wash); color: var(--success); border-color: var(--success-wash); }
+.status-badge.running,
+.dmg-badge.active,
+.badge-action        { background: var(--accent-wash);  color: var(--accent-dim); border-color: var(--accent-wash); }
+.status-badge.error,
+.dmg-badge.error,
+.badge-danger         { background: var(--danger-wash);  color: var(--danger); border-color: var(--danger-wash); }
+.dmg-badge.pending,
+.badge-warning        { background: var(--warning-wash); color: var(--warning); border-color: var(--warning-wash); }
+.dmg-badge.skipped    { background: var(--surface-sunken); color: var(--muted); border-color: var(--border); }
+
+/* ── Progress bar ──────────────────────────────────────────── */
+.prog-bar-track {
+  width: 100%;
+  height: 5px;
+  background: var(--border);
+  border-radius: 999px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+.prog-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  transition: width 0.3s;
+}
+.prog-pct {
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  color: var(--accent-dim);
+}
+.prog-log {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  max-height: 220px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  line-height: 1.65;
+  color: var(--muted);
+  margin-top: 10px;
+}
+.prog-log .ok  { color: var(--success); }
+.prog-log .err { color: var(--danger); }
+.prog-top { display: flex; justify-content: space-between; align-items: center; }
+
+/* ── Alert banners ─────────────────────────────────────────── */
+.alert-banner {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.alert-banner.warning  { background: var(--warning-wash); border-color: var(--warning-wash); color: var(--warning); }
+.alert-banner.critical { background: var(--danger-wash);  border-color: var(--danger-wash);  color: var(--danger); }
+
+/* ── Toggle ────────────────────────────────────────────────── */
+.toggle { position: relative; display: inline-block; width: 34px; height: 19px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--border);
+  border-radius: 999px;
+  transition: 0.2s;
+}
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 13px;
+  width: 13px;
+  left: 3px;
+  bottom: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+.toggle input:checked + .toggle-slider { background: var(--accent); }
+.toggle input:checked + .toggle-slider:before { transform: translateX(15px); }
+
+/* ── Role Search engagement-type filter (chip group + row badge) ── */
+.rs-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 7px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+}
+.rs-filter-label {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+.rs-chip-group { display: inline-flex; gap: 4px; }
+.rs-chip {
+  appearance: none;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--badge-radius);
+  padding: 3px 11px;
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.rs-chip:hover { color: var(--text); border-color: var(--accent); }
+.rs-chip.active {
+  background: var(--accent-wash);
+  color: var(--accent-dim);
+  border-color: var(--accent-wash);
+  font-weight: 600;
+}
+.rs-eng {
+  display: inline-block;
+  min-width: 16px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-align: center;
+  vertical-align: 1px;
+  border: 1px solid transparent;
+}
+.rs-eng.eng-c { background: rgba(8,145,178,.14); color: var(--cyan); border-color: rgba(8,145,178,.4); }
+.rs-eng.eng-p { background: var(--warning-wash); color: var(--warning); border-color: var(--warning-wash); }
+
+/* ── Sub-tab nav (legacy name, shares .tab-bar's look) ───────── */
+.subtab-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.subtab-nav button {
+  padding: 9px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.subtab-nav button.active { color: var(--accent-dim); border-bottom-color: var(--accent); }
+.subtab-nav button:hover { color: var(--text); border-color: var(--border); }
+.subtab-nav button.active:hover { border-bottom-color: var(--accent); color: var(--accent-dim); }
+
+/* ── Detail panel / definition list ──────────────────────────── */
+.detail-panel { margin-top: 14px; }
+.detail-panel h2 {
+  font-size: 1.15rem;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex-wrap: wrap;
+}
+.detail-panel .detail-meta,
+.deflist {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.detail-panel .detail-meta div,
+.deflist-item {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 11px;
+}
+.detail-panel .detail-meta .k,
+.deflist-item dt {
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.detail-panel .detail-meta .v,
+.deflist-item dd {
+  font-size: var(--fs-sm);
+  color: var(--text);
+}
+.detail-panel textarea { min-height: 200px; }
+.detail-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+/* ── Empty / loading / error states ──────────────────────────── */
+.empty-state,
+.state-empty,
+.console-loading,
+.loading-state {
+  text-align: center;
+  padding: 36px 20px;
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+.console-error,
+.state-error,
+.error-state {
+  padding: 12px 16px;
+  background: var(--danger-wash);
+  border: 1px solid var(--danger-wash);
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--danger);
+  margin-bottom: 14px;
+}
+
+/* ── Filter bar ────────────────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  gap: 9px;
+  margin-bottom: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.filter-bar input,
+.filter-bar select {
+  width: auto;
+  flex: 0 1 auto;
+  font-size: var(--fs-sm);
+  padding: 7px 11px;
+}
+.filter-bar input[type="text"],
+.filter-bar input[type="search"] { flex: 1 1 200px; min-width: 160px; }
+
+/* ── Fit Score stars ───────────────────────────────────────── */
+.fit-score {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  letter-spacing: 1px;
+  color: var(--accent-dim);
+  white-space: nowrap;
+}
+.fit-score.s1 { color: var(--muted); }
+
+/* ── Active pipeline board (Contracting tab) ─────────────────── */
+#cpActiveBoard > .dmg-card { padding: 0.85rem; }
+#cpActiveBoard h3 {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--accent-dim);
+  margin-bottom: 9px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--border);
+}
+.dmg-chrome {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+/* ── Scrollbars ────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--canvas); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; border: 2px solid var(--canvas); }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ── Defensive: rewrite leftover legacy `color/background:white`
+     inline styles into theme-aware values. ─────────────────── */
+[style*="background:white"],
+[style*="background: white"],
+[style*="background:#fff"],
+[style*="background: #fff"] {
+  background-color: var(--surface) !important;
+}
+[style*="color:white"],
+[style*="color: white"],
+[style*="color:#fff"],
+[style*="color: #fff"] {
+  color: var(--text) !important;
+}
+
+/* ── Credential expiry pills ────────────────────────────────── */
+.cred-pill { display:inline-block;padding:2px 8px;border-radius:var(--badge-radius);font-size:var(--fs-2xs);font-weight:600; }
+.cred-pill-red    { background:#fca5a5;color:#7f1d1d; }
+.cred-pill-orange { background:#fdba74;color:#7c2d12; }
+.cred-pill-yellow { background:#fde047;color:#713f12; }
+.cred-pill-green  { background:#86efac;color:#14532d; }
+.cred-pill-grey   { background:var(--border);color:var(--muted); }
+
+/* ── News strip (endpoint intelligence feed) ───────────────── */
+.news-strip {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+}
+.news-item {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 13px;
+  border-bottom: 1px solid var(--border-soft);
+  text-decoration: none;
+  transition: background 0.1s;
+}
+.news-item:last-child { border-bottom: none; }
+.news-item:hover { background: var(--surface-sunken); }
+.news-source {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--accent-dim);
+  white-space: nowrap;
+  min-width: 60px;
+}
+.news-title {
+  font-size: var(--fs-sm);
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.news-item:hover .news-title { color: var(--text); }
+.news-time {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.news-error {
+  padding: 12px 13px;
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .metrics { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 900px) {
+  .topbar-menu-btn { display: block; }
+  .topbar-customer .icon,
+  .topbar-customer { max-width: 46vw; }
+
+  /* The drawer covers the workspace while open. Contain any wide underlying
+     table in that state so it cannot create a document-level horizontal
+     scrollbar beside the navigation; closed pages retain their normal scroll
+     behaviour and nested table scrollers. */
+  html:has(body.nav-open),
+  body.nav-open { overflow-x: hidden; }
+
+  /* Off-canvas drawer for the global rail + context navigator (PAT-965
+     behaviour; PAT-1047 v2 — both navigators become drawers at narrow
+     width, sliding in together side by side). */
+  .app-body { position: relative; }
+  .global-rail, .context-nav {
+    position: fixed;
+    top: calc(var(--env-chrome-height) + var(--impersonation-chrome-height) + 56px);
+    bottom: 0;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    z-index: 25;
+    box-shadow: 4px 0 20px var(--shadow);
+  }
+  .global-rail { left: 0; }
+  /* Keep both drawers within the viewport. The primary rail still leaves
+     enough width for every compact one-line label, while the context drawer shrinks
+     safely on narrow phones instead of extending the document sideways. */
+  .context-nav {
+    left: 144px;
+    width: calc(100vw - 144px);
+    max-width: 260px;
+    min-width: 0;
+    /* The shared -100% transform clears only this drawer's own width. Also
+       clear its 144px offset so a closed context drawer is fully off-canvas. */
+    transform: translateX(calc(-100% - 144px));
+  }
+  .context-nav.ctxnav-empty { width: 0; box-shadow: none; }
+  body.nav-open .global-rail, body.nav-open .context-nav { transform: translateX(0); }
+  .nav-backdrop {
+    display: none;
+    position: fixed;
+    inset: calc(var(--env-chrome-height) + var(--impersonation-chrome-height) + 56px) 0 0 0;
+    background: rgba(0,0,0,.35);
+    z-index: 24;
+  }
+  body.nav-open .nav-backdrop { display: block; }
+
+  .main { padding: 20px 16px; max-width: 100%; }
+  .metrics { grid-template-columns: repeat(2, 1fr); }
+  .form-row { grid-template-columns: 1fr; }
+  #cpActiveBoard { grid-template-columns: 1fr !important; }
+  .page-header { flex-direction: column; align-items: stretch; }
+  .status-strip { gap: 14px; }
+}
+@media (max-width: 480px) {
+  /* Keep the phone top bar fully operable without allowing the identity
+     control to extend the document. The user icon and its menu remain; only
+     the redundant inline name yields space to customer context. */
+  .topbar { padding-right: 10px; padding-left: 10px; gap: 8px; }
+  .topbar-customer { max-width: 42vw; gap: 5px; padding: 5px 7px; }
+  .topbar-customer select { min-width: 80px; }
+  .identity-btn { gap: 4px; padding: 6px 5px; }
+  .identity-name { display: none; }
+  .metrics { grid-template-columns: 1fr 1fr; }
+  .page-header-text h1 { font-size: 1.25rem; }
+  .metric-card .value { font-size: 1.35rem; }
+  .filter-bar { flex-direction: column; align-items: stretch; }
+  .filter-bar input,
+  .filter-bar select { width: 100%; flex: 1 0 auto; }
+}
+@media (max-width: 360px) {
+  /* Preserve the mark, navigation, customer switcher and identity control at
+     the narrowest supported width; the wordmark can yield this final space. */
+  .topbar { padding-right: 8px; padding-left: 8px; gap: 6px; }
+  .brand-lockup .brand-name { display: none; }
+  .topbar-customer { max-width: 44vw; }
+  .topbar-customer select { min-width: 76px; }
+}

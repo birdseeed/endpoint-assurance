@@ -1,0 +1,24 @@
+{
+  "label": "microsoftofficefactoryreset",
+  "name": "Microsoft Office Factory Reset",
+  "type": "pkg",
+  "app_path": "/Applications/Microsoft Office Factory Reset.app",
+  "expected_team_id": "QGS93ZLCU7",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://office-reset.com/macadmins/"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

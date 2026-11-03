@@ -1,0 +1,13 @@
+[Unit]
+Description=Prune old dashboard .docx reports daily (PAT-87)
+
+[Timer]
+# Daily at 03:42 UTC. Off-peak, jittered so it doesn't collide with the
+# 04:17 hetzner-firewall-apply timer or other on-the-hour jobs.
+OnCalendar=*-*-* 03:42:00 UTC
+# If the box was off when the timer fired, run on next boot.
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

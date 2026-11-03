@@ -1,0 +1,41 @@
+{% extends "report_email_base.html" %}
+{% from "report_email_macros.html" import action, fact %}
+{% block content %}
+<p style="margin:0 0 16px;color:#475569;">Severity band: {{ severity_label }}</p>
+{% if band == "all_categorised" %}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;background-color:#f8fafc;font-size:14px;">
+<tr><td style="padding:8px 10px;color:#b91c1c;">Expired: <strong>{{ counts.expired }}</strong></td><td style="padding:8px 10px;color:#b91c1c;">Critical (&le;7d): <strong>{{ counts.critical }}</strong></td></tr>
+<tr><td style="padding:8px 10px;color:#a15c07;">Warning (&le;30d): <strong>{{ counts.warning }}</strong></td><td style="padding:8px 10px;color:#15803d;">Healthy: <strong>{{ counts.healthy }}</strong></td></tr>
+<tr><td colspan="2" style="padding:8px 10px;color:#475569;">Unknown expiry: <strong>{{ counts.unknown | default(0) }}</strong></td></tr>
+</table>
+{% endif %}
+{% if certs %}
+<table width="100%" cellpadding="0" cellspacing="0" style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:14px;color:#334155;">
+<caption style="text-align:left;font-weight:bold;padding:16px 0 8px;color:#0f172a;">Certificates</caption>
+<thead><tr><th scope="col" width="64%" style="padding:10px 6px;text-align:left;background-color:#f1f5f9;border-bottom:1px solid #e2e8f0;">Certificate details</th><th scope="col" width="36%" style="padding:10px 6px;text-align:left;background-color:#f1f5f9;border-bottom:1px solid #e2e8f0;">Expiry</th></tr></thead>
+<tbody>{% for cert in certs %}
+{% if cert.days_until_expiry is none %}{% set colour="#475569" %}{% set status="Unknown" %}
+{% elif cert.days_until_expiry < 0 %}{% set colour="#b91c1c" %}{% set status="Expired" %}
+{% elif cert.days_until_expiry <= 7 %}{% set colour="#b91c1c" %}{% set status="Critical" %}
+{% elif cert.days_until_expiry <= 30 %}{% set colour="#a15c07" %}{% set status="Warning" %}
+{% else %}{% set colour="#15803d" %}{% set status="Healthy" %}{% endif %}
+<tr><td style="padding:12px 6px;vertical-align:top;border-bottom:1px solid #e2e8f0;overflow-wrap:anywhere;word-wrap:break-word;word-break:break-word;">
+{{ fact("Subject CN", cert.subject_cn | default("(no CN)")) }}
+{{ fact("Issuer CN", cert.issuer_cn | default("(unknown)")) }}
+{{ fact("Type", cert.type) }}
+{% if cert.source == "uploaded" %}
+{{ fact("Source", "Uploaded certificate") }}
+{{ fact("Label", cert.label) }}
+{% else %}
+{{ fact("Source", "Endpoint certificate") }}
+{{ fact("Device", cert.device_id | default("Unknown", true)) }}
+{% endif %}
+</td><td style="padding:12px 6px;vertical-align:top;border-bottom:1px solid #e2e8f0;overflow-wrap:anywhere;word-wrap:break-word;">
+<span style="color:{{ colour }};font-weight:bold;">{{ status }}</span><br>
+{% if cert.days_until_expiry is not none %}{{ cert.not_after[:10] }}<br>{% endif %}
+{% if cert.days_until_expiry is none %}Expiry evidence unavailable{% elif cert.days_until_expiry < 0 %}Expired {{ cert.days_until_expiry | abs }}d ago{% else %}{{ cert.days_until_expiry }}d remaining{% endif %}
+</td></tr>{% endfor %}</tbody></table>
+{% else %}<p style="margin:16px 0;color:#475569;">No certificates matched the configured severity band.</p>{% endif %}
+{{ action(cert_view_url, "View full certificate list") }}
+{% endblock %}
+{% block footer %}<p style="margin:8px 0 0;">To change digest settings, contact Patched.</p>{% endblock %}

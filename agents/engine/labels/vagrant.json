@@ -1,0 +1,30 @@
+{
+  "label": "vagrant",
+  "name": "Vagrant",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "relative-path-glob",
+    "patterns": [
+      "vagrant.pkg"
+    ]
+  },
+  "app_path": "/Applications/Vagrant.app",
+  "expected_team_id": "D38WU7D763",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://developer.hashicorp.com/vagrant/downloads"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

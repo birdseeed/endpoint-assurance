@@ -1,0 +1,27 @@
+{
+  "label": "zulujdk25",
+  "name": "Zulu JDK 25",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "root-unique-pkg"
+  },
+  "app_path": "/Applications/Zulu JDK 25.app",
+  "expected_team_id": "TDTHCUPYFR",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://api.azul.com/metadata/v1/zulu/packages/?java_version=25&os=macos&archive_type=dmg&latest=true&java_package_type=jdk&javafx=false&release_status=ga"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

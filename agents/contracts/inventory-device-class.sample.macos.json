@@ -1,0 +1,12 @@
+{
+  "$comment": "PAT-1959 sample: macOS omits all three device-class keys. This file is deliberately a payload with nothing added, because that is the whole macOS side of the contract today. Omission is valid and carries a defined meaning, identical to device_class 'unknown': score the device the way it was scored before device class existed. The seam stays platform-neutral, so if the macOS collector later gains a way to tell a server from a laptop it fills the same three keys with the same vocabulary rather than a shape of its own.",
+  "schema_version": 3,
+  "platform": "macos",
+  "agent": "patched-agent",
+  "agent_version": "1.9.0",
+  "os": {
+    "name": "macOS",
+    "version": "26.6.2",
+    "build": "25G84"
+  }
+}

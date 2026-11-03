@@ -1,0 +1,23 @@
+{
+  "files": [
+    "Java 8 Update 451.app/Contents/Resources/JavaAppletPlugin.pkg",
+    "OpenVPN_Connect_3_6_0_arm64_Installer_signed.pkg",
+    "Installer.pkg",
+    "Nested/Installer.pkg",
+    "Segment/Nested/Other.pkg",
+    "Product (Intel).pkg"
+  ],
+  "cases": [
+    {"id": "jre-nested-glob", "pattern": "Java 8 Update *.app/Contents/Resources/JavaAppletPlugin.pkg", "valid": true, "match": "Java 8 Update 451.app/Contents/Resources/JavaAppletPlugin.pkg"},
+    {"id": "case-insensitive", "pattern": "java 8 update *.APP/contents/resources/javaappletplugin.PKG", "valid": true, "match": "Java 8 Update 451.app/Contents/Resources/JavaAppletPlugin.pkg"},
+    {"id": "openvpn-character-class", "pattern": "OpenVPN_Connect_[0-9_()]*_arm64_Installer_signed.pkg", "valid": true, "match": "OpenVPN_Connect_3_6_0_arm64_Installer_signed.pkg"},
+    {"id": "root-basename-preference", "pattern": "Installer.pkg", "valid": true, "match": "Installer.pkg"},
+    {"id": "segment-star-does-not-cross-slash", "pattern": "Segment/*.pkg", "valid": true, "match": null},
+    {"id": "absolute", "pattern": "/Escape.pkg", "valid": false, "match": null},
+    {"id": "traversal", "pattern": "A/../Escape.pkg", "valid": false, "match": null},
+    {"id": "empty-component", "pattern": "A//Escape.pkg", "valid": false, "match": null},
+    {"id": "newline", "pattern": "Safe.pkg\nOther.pkg", "valid": false, "match": null},
+    {"id": "bare-parentheses", "pattern": "Product (Intel).pkg", "valid": false, "match": null},
+    {"id": "non-ascii-under-utf8-locale", "pattern": "Installér.pkg", "valid": false, "match": null}
+  ]
+}

@@ -1,0 +1,170 @@
+rule_key,platform,signal_key,tier,collector_source,rule_status
+cis_macos_2_5_1_1_filevault,macos,filevault,T1,lib/security.sh,OK
+cis_macos_2_5_3_sip,macos,sip,T1,lib/security.sh,OK
+cis_macos_2_5_2_1_gatekeeper,macos,gatekeeper,T1,lib/security.sh,OK
+cis_macos_2_5_2_2_firewall,macos,firewall,T1,lib/security.sh,OK
+cis_macos_2_5_5_sealed_system_volume,macos,sealed_system_volume,T1,lib/security.sh,OK
+cis_macos_1_4_auto_security_updates,macos,auto_security_updates,T1,lib/updates.sh,OK
+cis_macos_3_x_audit_logging,macos,audit_logging,T1,lib/auth.sh,OK
+cis_macos_2_4_1_remote_apple_events,macos,remote_apple_events,T1,lib/sharing.sh,OK
+cis_macos_2_4_4_remote_login,macos,remote_login,T1,lib/sharing.sh,OK
+cis_macos_2_4_10_screen_sharing,macos,screen_sharing,T1,lib/sharing.sh,OK
+cis_macos_2_10_screensaver_password,macos,screensaver_password,T1,lib/screensaver.sh,OK
+cis_macos_5_1_auto_login_disabled,macos,auto_login_user,T1,lib/auth.sh,OK
+cis_macos_5_8_local_admin_count,macos,local_admin_count,T1,lib/auth.sh,OK
+cis_macos_5_x_password_policy_non_default,macos,password_policy_is_default,T1,lib/auth.sh,OK
+patched_mdm_enrolment,macos,mdm_enrolment,T1,lib/auth.sh,OK
+cis_macos_1_1_pending_security_updates,macos,pending_updates_count,T1,lib/updates.sh,OK
+cis_macos_5_x_secure_boot_arm64,macos,secure_boot,T1,lib/security.sh,OK
+cis_macos_5_2_1a_lockout_threshold,macos,pwpolicy_lockout_threshold,T2,lib/auth.sh,OK
+cis_macos_5_2_1b_lockout_reset_minutes,macos,pwpolicy_lockout_reset_minutes,T2,lib/auth.sh,OK
+cis_macos_5_2_2_min_length,macos,pwpolicy_min_length,T2,lib/auth.sh,OK
+cis_macos_5_2_7_max_age_days,macos,pwpolicy_max_age_days,T2,lib/auth.sh,OK
+cis_macos_5_2_8_history_depth,macos,pwpolicy_history_depth,T2,lib/auth.sh,OK
+cis_macos_1_2_update_check_auto,macos,update_check_auto,T2,lib/updates.sh,OK
+cis_macos_1_3_update_download_auto,macos,update_download_auto,T2,lib/updates.sh,OK
+cis_macos_1_5_app_updates_auto,macos,app_updates_auto_install,T2,lib/updates.sh,OK
+cis_macos_1_6a_xprotect_data_auto,macos,xprotect_data_auto_update,T2,lib/updates.sh,OK
+cis_macos_1_6b_critical_updates_auto,macos,critical_updates_auto_install,T2,lib/updates.sh,OK
+cis_macos_2_3_3_2_smbd_disabled,macos,smbd_disabled,T2,lib/sharing.sh,OK
+cis_macos_2_3_3_3_printer_sharing_disabled,macos,printer_sharing_disabled,T2,lib/sharing.sh,OK
+cis_macos_2_3_3_5_remote_management_disabled,macos,remote_management_disabled,T2,lib/sharing.sh,OK
+cis_macos_2_3_3_7_internet_sharing_disabled,macos,internet_sharing_disabled,T2,lib/sharing.sh,OK
+cis_macos_4_2_httpd_disabled,macos,httpd_disabled,T2,lib/sharing.sh,OK
+cis_macos_4_3_nfsd_disabled,macos,nfsd_disabled,T2,lib/sharing.sh,OK
+cis_macos_5_1_3_amfi_enabled,macos,amfi_enabled,T2,lib/security.sh,OK
+cis_macos_5_6_root_disabled,macos,root_disabled,T2,lib/auth.sh,OK
+cis_macos_2_10_2_password_after_screensaver_delay,macos,screensaver_delay_seconds,T1,lib/screensaver.sh,OK
+cis_macos_2_9_2_power_nap_disabled,macos,power_nap_disabled,T2,lib/os.sh,OK
+cis_macos_2_9_3_wake_on_network_disabled,macos,wake_on_network_disabled,T2,lib/os.sh,OK
+cis_macos_3_5_audit_control_no_acl,macos,audit_control_no_acl,T2,lib/filesystem.sh,OK
+cis_macos_3_5_audit_control_owner,macos,audit_control_owner,T2,lib/filesystem.sh,OK
+cis_macos_3_5_audit_control_group,macos,audit_control_group,T2,lib/filesystem.sh,OK
+cis_macos_3_5_audit_control_mode,macos,audit_control_mode,T2,lib/filesystem.sh,OK
+cis_macos_3_5_audit_folder_no_acl,macos,audit_folder_no_acl,T2,lib/filesystem.sh,OK
+cis_macos_3_5_audit_folder_owner,macos,audit_folder_owner,T2,lib/filesystem.sh,OK
+cis_macos_3_5_audit_folder_group,macos,audit_folder_group,T2,lib/filesystem.sh,OK
+cis_macos_3_5_audit_folder_mode,macos,audit_folder_mode,T2,lib/filesystem.sh,OK
+cis_macos_3_5_audit_logs_no_acl,macos,audit_logs_no_acl,T2,lib/filesystem.sh,OK
+cis_macos_3_5_audit_logs_owner,macos,audit_logs_owner,T2,lib/filesystem.sh,OK
+cis_macos_3_5_audit_logs_group,macos,audit_logs_group,T2,lib/filesystem.sh,OK
+cis_macos_3_5_audit_logs_mode,macos,audit_logs_mode,T2,lib/filesystem.sh,OK
+cis_macos_5_4_sudo_timeout,macos,sudo_timeout_minutes,T2,lib/auth.sh,OK
+cis_macos_5_5_sudo_timestamp_type,macos,sudo_timestamp_type,T2,lib/auth.sh,OK
+cis_macos_1_7_update_deferral_days,macos,update_deferral_days,T2,lib/managed_prefs.sh,OK
+cis_macos_2_2_2_firewall_stealth_mode,macos,firewall_stealth_mode,T2,lib/security.sh,OK
+cis_macos_2_3_1_1_airdrop_disabled,macos,airdrop_disabled,T2,lib/managed_prefs.sh,OK
+cis_macos_2_3_1_2_airplay_receiver_disabled,macos,airplay_receiver_disabled,T2,lib/managed_prefs.sh,OK
+cis_macos_2_3_2_1a_time_server_host,macos,time_server_host,T2,lib/managed_prefs.sh,OK
+cis_macos_2_3_2_1b_time_server_enforced,macos,time_server_enforced,T2,lib/managed_prefs.sh,OK
+cis_macos_2_3_2_2_timed_running,macos,timed_running,T2,lib/os.sh,OK
+cis_macos_2_3_3_10_bluetooth_sharing_disabled,macos,bluetooth_sharing_disabled,T2,lib/user_prefs.sh,OK
+cis_macos_2_3_4_2_time_machine_encrypted,macos,time_machine_encrypted,T2,lib/filesystem.sh,OK
+cis_macos_2_4_1_wifi_menu_visible,macos,wifi_menu_visible,T2,lib/user_prefs.sh,OK
+cis_macos_2_4_2_bluetooth_menu_visible,macos,bluetooth_menu_visible,T2,lib/user_prefs.sh,OK
+cis_macos_2_5_1_siri_disabled,macos,siri_disabled,T2,lib/managed_prefs.sh,OK
+cis_macos_2_6_4_personalized_ads_disabled,macos,personalized_ads_disabled,T2,lib/managed_prefs.sh,OK
+cis_macos_2_6_8_system_prefs_admin_lock,macos,system_prefs_admin_lock,T2,lib/auth.sh,OK
+cis_macos_2_10_3_loginwindow_text_set,macos,loginwindow_text_set,T2,lib/auth.sh,OK
+cis_macos_2_10_4_loginwindow_fullname_prompt,macos,loginwindow_fullname_prompt,T2,lib/auth.sh,OK
+cis_macos_2_10_5_loginwindow_password_hints,macos,loginwindow_password_hints,T2,lib/auth.sh,OK
+cis_macos_2_11_1_password_hints_absent,macos,password_hints_absent,T2,lib/auth.sh,OK
+cis_macos_2_12_1_guest_account_disabled,macos,guest_account_disabled,T2,lib/auth.sh,OK
+cis_macos_2_12_2_smb_guest_disabled,macos,smb_guest_disabled,T2,lib/sharing.sh,OK
+cis_macos_2_18_1_dictation_on_device,macos,dictation_on_device,T2,lib/managed_prefs.sh,OK
+cis_macos_3_3_install_log_retention,macos,install_log_retention_days,T2,lib/filesystem.sh,OK
+cis_macos_3_4_audit_retention_expire,macos,audit_retention_expire,T2,lib/filesystem.sh,OK
+cis_macos_3_6_firewall_logging,macos,firewall_logging,T2,lib/security.sh,OK
+cis_macos_5_1_1_home_folders_mode,macos,home_folders_mode,T2,lib/filesystem.sh,OK
+cis_macos_5_1_5_system_apps_world_writable,macos,system_apps_world_writable,T2,lib/filesystem.sh,OK
+cis_macos_5_1_6_system_folder_world_writable,macos,system_folder_world_writable,T2,lib/filesystem.sh,OK
+cis_macos_5_7_screensaver_unlock_group,macos,screensaver_unlock_group,T2,lib/screensaver.sh,OK
+cis_macos_5_9_guest_folder_absent,macos,guest_folder_absent,T2,lib/auth.sh,OK
+cis_macos_5_10_xprotect_running,macos,xprotect_running,T2,lib/sectools.sh,OK
+cis_macos_6_1_1_show_file_extensions,macos,show_file_extensions,T2,lib/user_prefs.sh,OK
+cis_macos_6_3_1_safari_auto_open_downloads_disabled,macos,safari_auto_open_downloads_disabled,T2,lib/safari.sh,OK
+cis_macos_6_3_3_safari_fraudulent_warning,macos,safari_fraudulent_warning,T2,lib/safari.sh,OK
+cis_macos_6_3_4_safari_cross_site_tracking_blocked,macos,safari_cross_site_tracking_blocked,T2,lib/safari.sh,OK
+cis_macos_6_3_6_safari_private_measurement,macos,safari_private_measurement,T2,lib/safari.sh,OK
+cis_macos_6_3_7_safari_full_url_shown,macos,safari_full_url_shown,T2,lib/safari.sh,OK
+cis_macos_6_3_10_safari_status_bar_shown,macos,safari_status_bar_shown,T2,lib/safari.sh,OK
+cis_macos_6_4_1_terminal_secure_keyboard,macos,terminal_secure_keyboard,T2,lib/user_prefs.sh,OK
+patched_macos_disk_encryption_off,macos,disk_encryption_off,T1,MISSING,RULE_WITHOUT_SIGNAL
+patched_macos_removable_storage_unencrypted,macos,removable_storage_unencrypted,T1,MISSING,RULE_WITHOUT_SIGNAL
+cis_win_18_10_11_bitlocker_os_drive,windows,bitlocker_os_drive,T1,ComplianceCollector.cs (AddBitlocker),OK
+cis_win_9_1_1_firewall_domain,windows,windows_firewall_domain,T1,ComplianceCollector.cs (AddFirewall),OK
+cis_win_9_2_1_firewall_private,windows,windows_firewall_private,T1,ComplianceCollector.cs (AddFirewall),OK
+cis_win_9_3_1_firewall_public,windows,windows_firewall_public,T1,ComplianceCollector.cs (AddFirewall),OK
+cis_win_18_9_45_defender_realtime,windows,defender_realtime,T1,ComplianceCollector.cs (AddDefender),OK
+cis_win_2_3_17_1_uac_enabled,windows,uac_enabled,T1,ComplianceCollector.cs (AddUac),OK
+cis_win_18_9_102_auto_updates,windows,auto_updates_enabled,T1,ComplianceCollector.cs (AddAutoUpdates),OK
+cis_win_18_10_56_2_rdp_disabled,windows,remote_desktop_enabled,T1,ComplianceCollector.cs (AddRemoteDesktop),OK
+cis_win_2_3_8_1_smb_signing,windows,smb_signing_required,T1,ComplianceCollector.cs (AddSmbSigning),OK
+cis_win_19_1_3_2_screensaver_enabled,windows,screensaver_enabled,T1,ComplianceCollector.cs (AddScreensaver),OK
+cis_win_19_1_3_3_screensaver_password,windows,screensaver_password_required,T1,ComplianceCollector.cs (AddScreensaver),OK
+cis_win_19_1_3_4_screensaver_timeout,windows,screensaver_timeout_seconds,T1,ComplianceCollector.cs (AddScreensaver),OK
+patched_win_mdm_enrolled,windows,mdm_enrolled,T1,ComplianceCollector.cs (AddMdmEnrolment),OK
+cis_win_1_1_1_password_history,windows,password_history_count,T2,AccountPolicyParser.cs via ComplianceCollector.cs (AddAccountPolicy),OK
+cis_win_1_1_2_password_max_age,windows,password_max_age_days,T2,AccountPolicyParser.cs via ComplianceCollector.cs (AddAccountPolicy),OK
+cis_win_1_1_3_password_min_age,windows,password_min_age_days,T2,AccountPolicyParser.cs via ComplianceCollector.cs (AddAccountPolicy),OK
+cis_win_1_1_4_password_min_length,windows,password_min_length,T2,AccountPolicyParser.cs via ComplianceCollector.cs (AddAccountPolicy),OK
+cis_win_1_1_5_password_complexity,windows,password_complexity_enabled,T2,AccountPolicyParser.cs via ComplianceCollector.cs (AddAccountPolicy),OK
+cis_win_1_1_7_reversible_encryption,windows,password_reversible_encryption_disabled,T2,AccountPolicyParser.cs via ComplianceCollector.cs (AddAccountPolicy),OK
+cis_win_1_2_1_lockout_duration,windows,account_lockout_duration_minutes,T2,AccountPolicyParser.cs via ComplianceCollector.cs (AddAccountPolicy),OK
+cis_win_1_2_2_lockout_threshold,windows,account_lockout_threshold,T2,AccountPolicyParser.cs via ComplianceCollector.cs (AddAccountPolicy),OK
+cis_win_1_2_4_lockout_reset,windows,account_lockout_reset_minutes,T2,AccountPolicyParser.cs via ComplianceCollector.cs (AddAccountPolicy),OK
+cis_win_17_1_1_audit_credential_validation,windows,audit_credential_validation,T2,AuditPolicyParser.cs via ComplianceCollector.cs (AddAuditPolicy),OK
+cis_win_17_2_3_audit_user_account_management,windows,audit_user_account_management,T2,AuditPolicyParser.cs via ComplianceCollector.cs (AddAuditPolicy),OK
+cis_win_17_2_2_audit_security_group_management,windows,audit_security_group_management,T2,AuditPolicyParser.cs via ComplianceCollector.cs (AddAuditPolicy),OK
+cis_win_17_3_2_audit_process_creation,windows,audit_process_creation,T2,AuditPolicyParser.cs via ComplianceCollector.cs (AddAuditPolicy),OK
+cis_win_17_5_4_audit_logon,windows,audit_logon,T2,AuditPolicyParser.cs via ComplianceCollector.cs (AddAuditPolicy),OK
+cis_win_17_5_1_audit_account_lockout,windows,audit_account_lockout,T2,AuditPolicyParser.cs via ComplianceCollector.cs (AddAuditPolicy),OK
+cis_win_17_7_1_audit_policy_change,windows,audit_policy_change,T2,AuditPolicyParser.cs via ComplianceCollector.cs (AddAuditPolicy),OK
+cis_win_17_8_1_audit_sensitive_privilege_use,windows,audit_sensitive_privilege_use,T2,AuditPolicyParser.cs via ComplianceCollector.cs (AddAuditPolicy),OK
+cis_win_17_9_5_audit_system_integrity,windows,audit_system_integrity,T2,AuditPolicyParser.cs via ComplianceCollector.cs (AddAuditPolicy),OK
+cis_win_17_9_3_audit_security_state_change,windows,audit_security_state_change,T2,AuditPolicyParser.cs via ComplianceCollector.cs (AddAuditPolicy),OK
+cis_win_2_3_1_1_block_microsoft_accounts,windows,block_microsoft_accounts,T2,SecurityOptionsParser.cs via ComplianceCollector.cs (AddSecurityOptions),OK
+cis_win_2_3_2_1_force_audit_subcategory,windows,audit_force_subcategory_policy,T2,SecurityOptionsParser.cs via ComplianceCollector.cs (AddSecurityOptions),OK
+cis_win_2_3_7_2_no_last_username,windows,dont_display_last_username,T2,SecurityOptionsParser.cs via ComplianceCollector.cs (AddSecurityOptions),OK
+cis_win_2_3_7_3_inactivity_limit,windows,machine_inactivity_limit_seconds,T2,SecurityOptionsParser.cs via ComplianceCollector.cs (AddSecurityOptions),OK
+cis_win_2_3_10_2_restrict_anonymous_sam,windows,restrict_anonymous_sam,T2,SecurityOptionsParser.cs via ComplianceCollector.cs (AddSecurityOptions),OK
+cis_win_2_3_11_1_no_lm_hash,windows,no_lm_hash,T2,SecurityOptionsParser.cs via ComplianceCollector.cs (AddSecurityOptions),OK
+cis_win_2_3_11_7_lm_auth_level,windows,lan_manager_auth_level,T2,SecurityOptionsParser.cs via ComplianceCollector.cs (AddSecurityOptions),OK
+cis_win_2_3_17_4_uac_admin_approval_builtin,windows,uac_admin_approval_builtin,T2,SecurityOptionsParser.cs via ComplianceCollector.cs (AddSecurityOptions),OK
+cis_win_18_4_3_smbv1_client_disabled,windows,smbv1_disabled,T2,ServicesFeaturesParser.cs via ComplianceCollector.cs (AddServicesFeatures),OK
+cis_win_18_6_4_1_llmnr_disabled,windows,llmnr_disabled,T2,ServicesFeaturesParser.cs via ComplianceCollector.cs (AddServicesFeatures),OK
+cis_win_18_9_8_2_autoplay_disabled,windows,autoplay_disabled,T2,ServicesFeaturesParser.cs via ComplianceCollector.cs (AddServicesFeatures),OK
+cis_win_18_9_85_1_always_install_elevated_disabled,windows,always_install_elevated_disabled,T2,ServicesFeaturesParser.cs via ComplianceCollector.cs (AddServicesFeatures),OK
+cis_win_18_8_36_1_remote_assistance_disabled,windows,remote_assistance_disabled,T2,ServicesFeaturesParser.cs via ComplianceCollector.cs (AddServicesFeatures),OK
+cis_win_18_3_7_wdigest_cleartext_disabled,windows,wdigest_cleartext_disabled,T2,ServicesFeaturesParser.cs via ComplianceCollector.cs (AddServicesFeatures),OK
+cis_win_18_9_47_4_1_defender_cloud_protection,windows,defender_cloud_protection,T2,DefenderPolicyParser.cs via ComplianceCollector.cs (AddDefenderPolicy),OK
+cis_win_18_9_47_4_2_defender_sample_submission,windows,defender_sample_submission,T2,DefenderPolicyParser.cs via ComplianceCollector.cs (AddDefenderPolicy),OK
+cis_win_18_9_47_8_defender_pua_protection,windows,defender_pua_protection,T2,DefenderPolicyParser.cs via ComplianceCollector.cs (AddDefenderPolicy),OK
+cis_win_18_9_47_9_defender_behavior_monitoring,windows,defender_behavior_monitoring,T2,DefenderPolicyParser.cs via ComplianceCollector.cs (AddDefenderPolicy),OK
+cis_win_18_9_47_12_defender_scan_removable_drives,windows,defender_scan_removable_drives,T2,DefenderPolicyParser.cs via ComplianceCollector.cs (AddDefenderPolicy),OK
+cis_win_18_9_47_11_defender_archive_scanning,windows,defender_archive_scanning,T2,DefenderPolicyParser.cs via ComplianceCollector.cs (AddDefenderPolicy),OK
+nist_win_ia7_fips_mode_enabled,windows,fips_mode_enabled,T2,ComplianceCollector.cs (AddFipsAndTls),OK
+nist_win_sc13_tls10_client_disabled,windows,tls10_client_disabled,T2,ComplianceCollector.cs (AddFipsAndTls),OK
+nist_win_sc13_tls10_server_disabled,windows,tls10_server_disabled,T2,ComplianceCollector.cs (AddFipsAndTls),OK
+nist_win_sc13_tls11_client_disabled,windows,tls11_client_disabled,T2,ComplianceCollector.cs (AddFipsAndTls),OK
+nist_win_sc13_tls11_server_disabled,windows,tls11_server_disabled,T2,ComplianceCollector.cs (AddFipsAndTls),OK
+nist_win_sc13_tls12_client_enabled,windows,tls12_client_enabled,T2,ComplianceCollector.cs (AddFipsAndTls),OK
+nist_win_sc13_tls12_server_enabled,windows,tls12_server_enabled,T2,ComplianceCollector.cs (AddFipsAndTls),OK
+nist_win_sc28_bitlocker_cipher_256bit,windows,bitlocker_cipher_256bit,T2,ComplianceCollector.cs (AddBitlocker),OK
+nist_win_si7_secure_boot_enabled,windows,secure_boot_enabled,T2,ComplianceCollector.cs (AddSecureBoot),OK
+nist_win_si7_tpm_ready,windows,tpm_ready,T2,ComplianceCollector.cs (AddTpmReady),OK
+nist_win_sc39_vbs_enabled,windows,vbs_enabled,T2,ComplianceCollector.cs (AddDeviceGuard),OK
+nist_win_si16_hvci_enabled,windows,hvci_enabled,T2,ComplianceCollector.cs (AddDeviceGuard),OK
+nist_win_sc41_kernel_dma_protection,windows,kernel_dma_protection,T2,ComplianceCollector.cs (AddDeviceGuard),OK
+nist_win_si16_mandatory_aslr,windows,mandatory_aslr_enabled,T2,ComplianceCollector.cs (AddExploitProtection),OK
+nist_win_ac2_laps_enrolled,windows,laps_enrolled,T2,ComplianceCollector.cs (AddLaps),OK
+nist_win_au11_security_log_max_size,windows,security_log_max_size_kb,T2,ComplianceCollector.cs (AddEventLogSecurity),OK
+nist_win_si3_defender_definition_age,windows,defender_definition_age_days,T2,ComplianceCollector.cs (AddDefenderSignatures),OK
+nist_win_si3_asr_ransomware,windows,asr_ransomware_enabled,T2,ComplianceCollector.cs (AddAsrRules),OK
+nist_win_cm7_asr_psexec_wmi_block,windows,asr_psexec_wmi_block_enabled,T2,ComplianceCollector.cs (AddAsrRules),OK
+patched_win_disk_encryption_off,windows,disk_encryption_off,T1,MISSING,RULE_WITHOUT_SIGNAL
+patched_win_removable_storage_unencrypted,windows,removable_storage_unencrypted,T1,MISSING,RULE_WITHOUT_SIGNAL
+,macos,xprotect_version,,lib/updates.sh,SIGNAL_WITHOUT_RULE
+,macos,mrt_version,,lib/updates.sh,SIGNAL_WITHOUT_RULE
+,macos,password_policy_present,,lib/auth.sh,SIGNAL_WITHOUT_RULE
+,macos,password_policy_raw,,lib/auth.sh,SIGNAL_WITHOUT_RULE

@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+jinja2
+requests
+PyJWT[crypto]==2.15.0
+# PAT-2135: multipart/form-data parsing for the device-list CSV upload
+# (Starlette's Request.form()/UploadFile need this to read a file field).
+python-multipart

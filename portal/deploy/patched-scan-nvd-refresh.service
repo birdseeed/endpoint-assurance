@@ -1,0 +1,31 @@
+[Unit]
+Description=Patched public scan — daily NVD dataset refresh
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=scan
+Group=scan
+WorkingDirectory=/opt/patched-scan
+EnvironmentFile=/etc/patched-scan/env
+Environment=NVD_DB_PATH=/var/lib/patched-scan/nvd.db
+StateDirectory=patched-scan
+ExecStart=/opt/patched-scan/venv/bin/python /opt/patched-scan/bin/refresh-nvd.py
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=patched-scan-nvd-refresh
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native

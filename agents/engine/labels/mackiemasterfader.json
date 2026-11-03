@@ -1,0 +1,24 @@
+{
+  "label": "mackiemasterfader",
+  "name": "MasterFader",
+  "type": "dmg",
+  "app_path": "/Applications/MasterFader.app",
+  "expected_team_id": "6X5AC85L48",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://mackie.com/en/products/mixers/master-fader/master_fader.html"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

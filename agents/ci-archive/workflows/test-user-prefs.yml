@@ -1,0 +1,24 @@
+name: test-user-prefs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/user_prefs.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/test-user-prefs.zsh'
+  pull_request:
+    paths:
+      - 'macos/lib/user_prefs.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/test-user-prefs.zsh'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh (per-user preferences collector tests exercise a real zsh script)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run per-user preferences collector tests
+        run: zsh macos/lib/test-user-prefs.zsh

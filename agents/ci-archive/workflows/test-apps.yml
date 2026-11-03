@@ -1,0 +1,32 @@
+name: test-apps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/lib/apps.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/test-apps*.zsh'
+      - '.github/workflows/test-apps.yml'
+      - 'macos/patched-collect.sh'
+  pull_request:
+    paths:
+      - 'macos/lib/apps.sh'
+      - 'macos/lib/common.sh'
+      - 'macos/lib/test-apps*.zsh'
+      - '.github/workflows/test-apps.yml'
+      - 'macos/patched-collect.sh'
+
+jobs:
+  test:
+    runs-on: macos-latest          # zsh + /usr/bin/python3 are stock on macOS runners
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run installed application collector tests
+        run: zsh macos/lib/test-apps.zsh
+      - name: Run per-user scope and absence safety tests
+        run: zsh macos/lib/test-apps-per-user-safety.zsh
+      - name: Run per-user home and /Users/Shared machine-root tests
+        run: zsh macos/lib/test-apps-per-user-home.zsh
+      - name: Verify account identity metadata boundary
+        run: zsh macos/lib/test-apps-account-identity.zsh

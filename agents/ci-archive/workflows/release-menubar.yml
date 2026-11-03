@@ -1,0 +1,586 @@
+name: release-menubar
+
+# PAT-648: Build, sign, notarise and publish the Patched menu bar app on tag push.
+#
+# Produces patched-menubar-<version>.zip containing:
+#   PatchedUpdater.app — menu-bar agent (tray icon + popover)
+#
+# Signing / notarisation uses the same secrets as sign-notarize.yml and
+# macos-agent-release.yml (already configured org-level). When secrets are
+# absent the workflow builds unsigned apps and skips notarisation with a
+# logged notice — no step fails.
+#
+# Trigger: push a tag matching `menubar-v*`  (e.g. menubar-v0.2.0)
+#          or workflow_dispatch with a version input.
+#
+# PAT-507 / PAT-1092: the publish job below references a GitHub Environment
+# named "release-gate", but that environment currently has zero protection
+# rules configured, so it does not pause publishing for approval. Private
+# repos need GitHub Enterprise for the "required reviewers" protection
+# rule, and this repo is on a Team plan - a billing limitation, not a
+# config oversight. Today, every tag push publishes with no automated
+# approval pause. This is a deliberate, accepted interim state pending an
+# Enterprise upgrade (Andy's cost decision) or estate-wide gate restoration
+# under PAT-941, not a bug. See docs/agent-release-runbook.md.
+#
+# Secrets required (all already set org-level):
+#   DEVELOPER_ID_APPLICATION_CERT_P12_B64
+#   DEVELOPER_ID_CERT_PASSWORD
+#   SIGNING_KEYCHAIN_PASSWORD
+#   APPLE_TEAM_ID
+#   APPLE_ASC_API_KEY_P8_B64
+#   APPLE_ASC_API_KEY_ID
+#   APPLE_ASC_API_KEY_ISSUER_ID
+#   ARTIFACT_SIGNING_KEY
+#   DEPLOY_SSH_KEY  (Tailscale dashboard registration)
+#   TS_OAUTH_CLIENT_ID
+#   TS_OAUTH_SECRET
+
+on:
+  push:
+    tags:
+      - 'menubar-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g. 0.2.0) — used when running manually'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    env:
+      APP_CERT_SET:   ${{ secrets.DEVELOPER_ID_APPLICATION_CERT_P12_B64 != '' }}
+      NOTARY_KEY_SET: ${{ secrets.APPLE_ASC_API_KEY_P8_B64 != '' }}
+
+    outputs:
+      version:       ${{ steps.ver.outputs.version }}
+      bundle_version: ${{ steps.ver.outputs.bundle_version }}
+      zip:           ${{ steps.pkg.outputs.zip }}
+      sha256:        ${{ steps.pkg.outputs.sha256 }}
+      artifact_hmac: ${{ steps.sign.outputs.artifact_hmac }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # ── Version ──────────────────────────────────────────────────────────────
+      - name: Resolve version
+        id: ver
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            V="${{ github.event.inputs.version }}"
+          else
+            V="${GITHUB_REF_NAME#menubar-v}"
+          fi
+          menubar/resolve-release-version.sh "$V" >> "$GITHUB_OUTPUT"
+          echo "Resolved and validated version: $V"
+
+      # ── Xcode toolchain ───────────────────────────────────────────────────────
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: menubar
+        run: xcodegen generate
+
+      # ── Keychain (only when cert secrets are set) ─────────────────────────────
+      - name: Create temporary keychain
+        if: env.APP_CERT_SET == 'true'
+        env:
+          KC_PW: ${{ secrets.SIGNING_KEYCHAIN_PASSWORD }}
+        run: |
+          KC="$RUNNER_TEMP/signing.keychain-db"
+          security create-keychain -p "$KC_PW" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$KC_PW" "$KC"
+          security list-keychain -d user -s "$KC"
+          echo "KC_PATH=$KC" >> "$GITHUB_ENV"
+
+      - name: Import Developer ID Application cert
+        if: env.APP_CERT_SET == 'true'
+        env:
+          CERT_B64: ${{ secrets.DEVELOPER_ID_APPLICATION_CERT_P12_B64 }}
+          CERT_PW:  ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
+          KC_PW:    ${{ secrets.SIGNING_KEYCHAIN_PASSWORD }}
+        run: |
+          CERT_FILE="$RUNNER_TEMP/app-cert.p12"
+          echo "$CERT_B64" | base64 --decode > "$CERT_FILE"
+          security import "$CERT_FILE" -P "$CERT_PW" -A -t cert -f pkcs12 -k "$KC_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KC_PW" "$KC_PATH"
+
+      # ── Archive both schemes ──────────────────────────────────────────────────
+      #
+      # project.yml sets CODE_SIGNING_REQUIRED=NO for development; we override
+      # at the command line for the Release build. When the cert is absent we
+      # build unsigned (original project.yml defaults).
+      #
+      - name: Archive PatchedUpdater (signed)
+        if: env.APP_CERT_SET == 'true'
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          RELEASE_MARKETING_VERSION: ${{ steps.ver.outputs.version }}
+          RELEASE_BUNDLE_VERSION: ${{ steps.ver.outputs.bundle_version }}
+        working-directory: menubar
+        run: |
+          xcodebuild archive \
+            -project PatchedUpdater.xcodeproj \
+            -scheme PatchedUpdater \
+            -configuration Release \
+            -archivePath "$RUNNER_TEMP/PatchedUpdater.xcarchive" \
+            CODE_SIGN_IDENTITY="$TEAM_ID" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGNING_REQUIRED=YES \
+            CODE_SIGNING_ALLOWED=YES \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            ENABLE_HARDENED_RUNTIME=YES \
+            OTHER_CODE_SIGN_FLAGS="--timestamp" \
+            MARKETING_VERSION="$RELEASE_MARKETING_VERSION" \
+            CURRENT_PROJECT_VERSION="$RELEASE_BUNDLE_VERSION" \
+            | xcpretty || true
+
+      - name: Archive PatchedUpdater (unsigned)
+        if: env.APP_CERT_SET != 'true'
+        env:
+          RELEASE_MARKETING_VERSION: ${{ steps.ver.outputs.version }}
+          RELEASE_BUNDLE_VERSION: ${{ steps.ver.outputs.bundle_version }}
+        working-directory: menubar
+        run: |
+          echo "::notice::DEVELOPER_ID_APPLICATION_CERT_P12_B64 not configured — building unsigned PatchedUpdater."
+          xcodebuild archive \
+            -project PatchedUpdater.xcodeproj \
+            -scheme PatchedUpdater \
+            -configuration Release \
+            -archivePath "$RUNNER_TEMP/PatchedUpdater.xcarchive" \
+            MARKETING_VERSION="$RELEASE_MARKETING_VERSION" \
+            CURRENT_PROJECT_VERSION="$RELEASE_BUNDLE_VERSION" \
+            | xcpretty || true
+
+      # ── Export .app bundles from archives ─────────────────────────────────────
+      - name: Write ExportOptions.plist (signed)
+        if: env.APP_CERT_SET == 'true'
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>developer-id</string>
+            <key>teamID</key>
+            <string>${TEAM_ID}</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>signingCertificate</key>
+            <string>Developer ID Application</string>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: Export PatchedUpdater.app
+        working-directory: menubar
+        run: |
+          OPTS="${RUNNER_TEMP}/ExportOptions.plist"
+          if [[ -f "$OPTS" ]]; then
+            xcodebuild -exportArchive \
+              -archivePath "$RUNNER_TEMP/PatchedUpdater.xcarchive" \
+              -exportPath   "$RUNNER_TEMP/export-updater" \
+              -exportOptionsPlist "$OPTS"
+          else
+            # Unsigned: extract .app directly from the archive
+            cp -R "$RUNNER_TEMP/PatchedUpdater.xcarchive/Products/Applications/PatchedUpdater.app" \
+                  "$RUNNER_TEMP/"
+          fi
+
+      # ── Assemble zip ─────────────────────────────────────────────────────────
+      - name: Assemble release zip
+        id: pkg
+        run: |
+          V="${{ steps.ver.outputs.version }}"
+          STAGE="$RUNNER_TEMP/patched-menubar-$V"
+          mkdir -p "$STAGE"
+
+          # Locate exported .app bundles (path differs between signed export and
+          # unsigned direct copy)
+          if [[ -d "$RUNNER_TEMP/export-updater" ]]; then
+            cp -R "$RUNNER_TEMP/export-updater/PatchedUpdater.app" "$STAGE/"
+          else
+            cp -R "$RUNNER_TEMP/PatchedUpdater.app" "$STAGE/"
+          fi
+
+          # The user-facing application must carry the exact tag version.
+          # Verify the staged bundle before creating a zip, HMAC, release, or
+          # dashboard registration so stale project defaults cannot ship.
+          BUNDLE_VERSION="${{ steps.ver.outputs.bundle_version }}"
+          menubar/verify-release-metadata.sh "$STAGE" "$V" "$BUNDLE_VERSION"
+
+          # Version file for agent self-update check
+          echo "$V" > "$STAGE/VERSION"
+
+          ZIP="patched-menubar-$V.zip"
+          ditto -c -k --sequesterRsrc --keepParent "$STAGE" "$ZIP"
+          SHA=$(shasum -a 256 "$ZIP" | awk '{print $1}')
+          echo "$SHA  $ZIP" > SHA256SUMS
+
+          echo "zip=$ZIP"   >> "$GITHUB_OUTPUT"
+          echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Built $ZIP  (SHA-256: $SHA)"
+
+      # ── Notarize zip ─────────────────────────────────────────────────────────
+      - name: Notarize zip
+        if: env.APP_CERT_SET == 'true' && env.NOTARY_KEY_SET == 'true'
+        env:
+          ASC_KEY_B64: ${{ secrets.APPLE_ASC_API_KEY_P8_B64 }}
+          ASC_KEY_ID:  ${{ secrets.APPLE_ASC_API_KEY_ID }}
+          ASC_ISSUER:  ${{ secrets.APPLE_ASC_API_KEY_ISSUER_ID }}
+        run: |
+          KEY_FILE="$RUNNER_TEMP/asc-api-key.p8"
+          echo "$ASC_KEY_B64" | base64 --decode > "$KEY_FILE"
+          xcrun notarytool submit "${{ steps.pkg.outputs.zip }}" \
+            --key     "$KEY_FILE" \
+            --key-id  "$ASC_KEY_ID" \
+            --issuer  "$ASC_ISSUER" \
+            --wait \
+            --output-format plist \
+            --verbose
+
+      - name: Skip notarization notice
+        if: env.APP_CERT_SET != 'true' || env.NOTARY_KEY_SET != 'true'
+        run: |
+          echo "::notice::Signing/notarization secrets not fully configured — notarization skipped. Build and packaging completed successfully."
+
+      # ── Staple ───────────────────────────────────────────────────────────────
+      # Apple's stapler works on .app bundles inside the zip, not the zip itself.
+      # We staple each exported .app then re-zip.
+      - name: Staple and repack
+        if: env.APP_CERT_SET == 'true' && env.NOTARY_KEY_SET == 'true'
+        run: |
+          V="${{ steps.ver.outputs.version }}"
+          STAGE="$RUNNER_TEMP/patched-menubar-$V"
+
+          xcrun stapler staple "$STAGE/PatchedUpdater.app"
+
+          ZIP="${{ steps.pkg.outputs.zip }}"
+          rm -f "$ZIP"
+          ditto -c -k --sequesterRsrc --keepParent "$STAGE" "$ZIP"
+
+          # Recompute SHA after stapling
+          SHA=$(shasum -a 256 "$ZIP" | awk '{print $1}')
+          echo "$SHA  $ZIP" > SHA256SUMS
+          echo "Repackaged after staple. SHA-256: $SHA"
+
+          # Write final SHA back to output — GHA doesn't allow updating step
+          # outputs after the fact, so publish job reads SHA from SHA256SUMS file.
+
+      # ── HMAC sign artifact ────────────────────────────────────────────────────
+      - name: Sign artifact with HMAC-SHA256
+        id: sign
+        env:
+          ARTIFACT_SIGNING_KEY: ${{ secrets.ARTIFACT_SIGNING_KEY }}
+        run: |
+          ZIP="${{ steps.pkg.outputs.zip }}"
+          if [[ -z "$ARTIFACT_SIGNING_KEY" ]]; then
+            echo "WARN: ARTIFACT_SIGNING_KEY not set — skipping HMAC signing"
+            echo "artifact_hmac=" >> "$GITHUB_OUTPUT"
+          else
+            HMAC=$(openssl dgst -sha256 -hmac "$ARTIFACT_SIGNING_KEY" -hex "$ZIP" | awk '{print $2}')
+            echo "$HMAC" > "$ZIP.hmac"
+            echo "artifact_hmac=$HMAC" >> "$GITHUB_OUTPUT"
+            echo "HMAC-SHA256: $HMAC"
+          fi
+
+      # Hard-fail if signing was EXPECTED but did not happen. Signing is expected
+      # on the canonical repo (not a fork); a missing HMAC there means
+      # ARTIFACT_SIGNING_KEY is unset, scoped away, or typo'd on the org secret
+      # - fail loudly rather than publishing an unsigned release (PAT-687, PAT-889).
+      - name: Assert artifact was signed when expected
+        id: assert_signed
+        env:
+          SIGNING_EXPECTED: ${{ github.repository == 'Patched-LTD/updater' }}
+          SIGN_HMAC: ${{ steps.sign.outputs.artifact_hmac }}
+        run: |
+          HAS_HMAC=false
+          [[ -n "$SIGN_HMAC" ]] && HAS_HMAC=true
+          echo "Signing gate: expected=$SIGNING_EXPECTED signed=$HAS_HMAC"
+          if [[ "$SIGNING_EXPECTED" == "true" && "$HAS_HMAC" != "true" ]]; then
+            echo "::error::ARTIFACT_SIGNING_KEY was expected but no HMAC was produced. The secret is likely unset, scoped away, or misconfigured - refusing to publish an unsigned release."
+            exit 1
+          fi
+
+      # ── Upload build artifact ─────────────────────────────────────────────────
+      # PAT-892: publish the .hmac signature alongside the zip and SHA256SUMS
+      # so verify-agent-release.py can fetch and check it. If signing was
+      # skipped (fork without ARTIFACT_SIGNING_KEY), the .hmac file will not
+      # exist - if-no-files-found: warn keeps that case from failing the
+      # upload; the signing-expected gate above already hard fails the
+      # canonical repo in that situation.
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: menubar-${{ steps.ver.outputs.version }}
+          path: |
+            ${{ steps.pkg.outputs.zip }}
+            ${{ steps.pkg.outputs.zip }}.hmac
+            SHA256SUMS
+          if-no-files-found: warn
+          retention-days: 7
+
+      # ── Cleanup ───────────────────────────────────────────────────────────────
+      - name: Delete temporary keychain and signing material
+        if: always()
+        run: |
+          [ -n "${KC_PATH:-}" ] && security delete-keychain "$KC_PATH" 2>/dev/null || true
+          # Remove the base64-decoded signing cert so no private-key material is
+          # left on the runner even if a later step failed before this point.
+          rm -f "$RUNNER_TEMP/app-cert.p12"
+
+  # ── Publish job (release-gate environment has no protection rules - PAT-1092) ─
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: release-gate   # PAT-1092: no protection rules configured (Team-plan billing limit) - does not pause for approval
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download release artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: menubar-${{ needs.build.outputs.version }}
+
+      - name: Read final SHA-256 (may have changed after staple)
+        id: sha
+        run: |
+          ZIP="${{ needs.build.outputs.zip }}"
+          # SHA256SUMS is the canonical source; recompute from downloaded file as check
+          SHA_FILE=$(awk '{print $1}' SHA256SUMS)
+          SHA_ACTUAL=$(shasum -a 256 "$ZIP" | awk '{print $1}')
+          if [[ "$SHA_FILE" != "$SHA_ACTUAL" ]]; then
+            echo "::error::SHA-256 mismatch between SHA256SUMS ($SHA_FILE) and downloaded artifact ($SHA_ACTUAL)"
+            exit 1
+          fi
+          echo "sha256=$SHA_ACTUAL" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${{ needs.build.outputs.version }}"
+          TAG="menubar-v$V"
+          ZIP="${{ needs.build.outputs.zip }}"
+          SHA="${{ steps.sha.outputs.sha256 }}"
+          HMAC="${{ needs.build.outputs.artifact_hmac }}"
+
+          # Ensure tag exists for manual runs
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            git tag "$TAG" 2>/dev/null || true
+            git push origin "$TAG" 2>/dev/null || true
+          fi
+
+          HMAC_LINE=""
+          if [[ -n "$HMAC" ]]; then
+            HMAC_LINE="**HMAC-SHA256:** \`${HMAC}\`"
+          fi
+
+          # Built line-by-line (rather than one multi-line literal) so every
+          # continuation line stays indented to this step's YAML block-scalar
+          # level — an unindented multi-line string here previously broke the
+          # workflow's own YAML parsing (unindented lines like "**SHA-256:**"
+          # terminated the `run: |` block early, and the leading `**` was then
+          # parsed as an invalid YAML alias).
+          NOTES="Patched menu bar app — PatchedUpdater."
+          NOTES+=$'\n\n'"**SHA-256:** \`${SHA}  ${ZIP}\`"
+          NOTES+=$'\n'"${HMAC_LINE}"
+          NOTES+=$'\n\n'"### Install"
+          NOTES+=$'\n\n'"\`\`\`sh"
+          NOTES+=$'\n'"# Verify integrity"
+          NOTES+=$'\n'"shasum -a 256 -c SHA256SUMS"
+          NOTES+=$'\n\n'"# Extract and install"
+          NOTES+=$'\n'"unzip ${ZIP} -d /tmp/patched-menubar-${V}"
+          NOTES+=$'\n'"cp -R /tmp/patched-menubar-${V}/PatchedUpdater.app /Applications/"
+          NOTES+=$'\n'"\`\`\`"
+          NOTES+=$'\n\n'"PatchedUpdater launches as a Login Item."
+          NOTES+=$'\n\n'"**PatchedSelfService is retired (PAT-1617/PAT-1618).** A Mac that already"
+          NOTES+=$'\n'"has \`/Applications/PatchedSelfService.app\` from an earlier release keeps it"
+          NOTES+=$'\n'"after this upgrade — nothing installed it, so nothing removes it"
+          NOTES+=$'\n'"automatically. Delete it by hand: \`rm -rf /Applications/PatchedSelfService.app\`."
+
+          # PAT-892: attach the .hmac signature asset when the sign step
+          # produced one. Not present on forks without ARTIFACT_SIGNING_KEY;
+          # the signing-expected gate in the build job already hard fails the
+          # canonical repo in that case, so a missing file here is never
+          # silent on Patched-LTD/updater.
+          ASSETS=("$ZIP" SHA256SUMS)
+          [[ -f "$ZIP.hmac" ]] && ASSETS+=("$ZIP.hmac")
+
+          gh release create "$TAG" \
+            "${ASSETS[@]}" \
+            --title "Patched menu bar $V" \
+            --notes "$NOTES" \
+            --verify-tag 2>/dev/null \
+          || gh release create "$TAG" \
+            "${ASSETS[@]}" \
+            --title "Patched menu bar $V" \
+            --notes "$NOTES"
+
+      # ── Dashboard registration (same pattern as macos-agent-release.yml) ──────
+      - name: Setup Tailscale
+        uses: tailscale/github-action@780049a30b6ff5c378a9e7b389d15ece7a204888 # v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret:    ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Configure SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/box_key
+          chmod 600 ~/.ssh/box_key
+
+      - name: Register artifact with dashboard
+        env:
+          ADMIN_API_URL: ${{ vars.ADMIN_API_URL }}
+        run: |
+          V="${{ needs.build.outputs.version }}"
+          ZIP="${{ needs.build.outputs.zip }}"
+          SHA="${{ steps.sha.outputs.sha256 }}"
+          HMAC="${{ needs.build.outputs.artifact_hmac }}"
+          RELEASE_URL="https://github.com/${{ github.repository }}/releases/download/menubar-v${V}/${ZIP}"
+
+          if [[ -z "$ADMIN_API_URL" ]]; then
+            echo "ADMIN_API_URL not set — skipping dashboard registration"
+            exit 0
+          fi
+
+          # Admin API is Tailscale-only; tag:ci cannot reach tag:api directly.
+          # SSH into prod-01 (tag:main, which can reach tag:api:8443) and curl from there.
+          # Caddy uses an internal CA cert — pass -k to skip cert verification.
+          PROD01_IP=$(sudo "$(command -v tailscale)" ip -4 patched-prod-01)
+
+          # PAT-987 / PAT-1233: POST /admin/agent-versions requires an
+          # Authorization header (requireAdminToken) - the old bare
+          # `curl -sk ... || echo WARN` pattern here sent no Authorization
+          # header at all (guaranteed 401) and swallowed any failure, so this
+          # workflow always stayed green regardless of registration outcome.
+          # Fix: same hardened pattern as macos-agent-release.yml (PAT-987) -
+          # the admin token never crosses the SSH boundary from CI. It is
+          # extracted on prod-01 itself from
+          # /etc/patched-dashboard/dashboard.env (root-only, mode 0600) and
+          # handed to curl via a 0600 config file - never as a CLI argument
+          # (so it never appears in `ps`), never echoed. All temp files are
+          # removed by trap on every exit path, including failure. The HTTP
+          # status is checked explicitly and any non-2xx response fails
+          # this job.
+          # NOTE: this heredoc is redirected to a file, not wrapped in
+          # $(cat <<'EOF' ... EOF). Bash's command-substitution parser does
+          # naive parenthesis counting even inside a quoted heredoc body -
+          # the unbalanced `)` characters in the `case` patterns below
+          # (e.g. \"*\") would be misread as closing the $( ) early,
+          # truncating the script and leaving the rest parsed as top-level
+          # shell code (syntax error at the first stray `;;`). A plain
+          # redirect has no such parsing risk; the file is read back into a
+          # variable via $(cat "$file") afterwards, which is safe because
+          # that substitution's body is just a path, not the script text.
+          REMOTE_SCRIPT_FILE="$RUNNER_TEMP/pat987-remote-register.sh"
+          cat <<'REMOTE_EOF' > "$REMOTE_SCRIPT_FILE"
+            set -eu
+            umask 0077
+            BODY_FILE=""
+            CFG_FILE=""
+            RESP_FILE=""
+            trap 'rm -f "$BODY_FILE" "$CFG_FILE" "$RESP_FILE"' EXIT
+            BODY_FILE=$(mktemp)
+            CFG_FILE=$(mktemp)
+            RESP_FILE=$(mktemp)
+
+            cat > "$BODY_FILE"
+
+            # dashboard.env is systemd EnvironmentFile= format, not shell
+            # syntax - other keys in it (e.g. TURNSTILE_SECRET) hold values
+            # with unescaped shell metacharacters, so `. dashboard.env`
+            # aborts under `set -eu` before ADMIN_API_TOKEN is ever set.
+            # Extract just this one key instead: no sourcing, no eval, no
+            # word splitting. Strip a single layer of surrounding quotes
+            # (systemd permits quoted values); tr -d '\r' clears any CR
+            # byte in the value (there's normally at most one, trailing,
+            # picked up from a CRLF-terminated file).
+            ADMIN_API_TOKEN=$(sed -n 's/^ADMIN_API_TOKEN=//p' /etc/patched-dashboard/dashboard.env | head -n 1 | tr -d '\r')
+            case "$ADMIN_API_TOKEN" in
+              \"*\") ADMIN_API_TOKEN=${ADMIN_API_TOKEN#\"}; ADMIN_API_TOKEN=${ADMIN_API_TOKEN%\"} ;;
+              \'*\') ADMIN_API_TOKEN=${ADMIN_API_TOKEN#\'}; ADMIN_API_TOKEN=${ADMIN_API_TOKEN%\'} ;;
+            esac
+            if [ -z "${ADMIN_API_TOKEN:-}" ]; then
+              echo "::error::ADMIN_API_TOKEN not found (or empty) in /etc/patched-dashboard/dashboard.env on prod-01"
+              exit 1
+            fi
+
+            # Defence in depth: refuse a credential outside a conservative
+            # expected alphabet rather than risk sending a header corrupted
+            # by curl's config-file quoting rules. A malformed token should
+            # be a loud failure here, not a 401 rediscovered later.
+            case "$ADMIN_API_TOKEN" in
+              *[!A-Za-z0-9._~-]*)
+                echo "::error::ADMIN_API_TOKEN contains unexpected characters - refusing to send a possibly-corrupted credential"
+                exit 1
+                ;;
+            esac
+
+            # curl's config-file grammar interprets backslash escapes
+            # inside double-quoted values (\\, \", \t, \n, \r, \v); an
+            # un-escaped token containing a backslash or double quote would
+            # be silently corrupted or inject control characters into the
+            # header. The alphabet check above already excludes both
+            # characters, but escape defensively anyway in case that check
+            # is ever loosened. (curl's unquoted config-value form was
+            # considered instead but rejected: it splits on whitespace, so
+            # a multi-word value like "Authorization: Bearer <token>"
+            # silently loses the header entirely - verified against a real
+            # curl binary during review.)
+            ESCAPED_TOKEN=$(printf '%s' "$ADMIN_API_TOKEN" | sed 's/\\/\\\\/g; s/"/\\"/g')
+
+            {
+              printf 'url = "__ADMIN_API_URL__/admin/agent-versions"\n'
+              printf 'request = "POST"\n'
+              printf 'header = "Content-Type: application/json"\n'
+              printf 'header = "Authorization: Bearer %s"\n' "$ESCAPED_TOKEN"
+              printf 'data-binary = @%s\n' "$BODY_FILE"
+              printf 'silent\n'
+              printf 'show-error\n'
+              printf 'insecure\n'
+            } > "$CFG_FILE"
+            chmod 600 "$CFG_FILE"
+
+            HTTP_CODE=$(curl -K "$CFG_FILE" -o "$RESP_FILE" -w '%{http_code}')
+            if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+              RESP_SIZE=$(wc -c < "$RESP_FILE" 2>/dev/null | tr -d ' ' || echo 0)
+              SNIPPET=$(head -c 300 "$RESP_FILE" 2>/dev/null | LC_ALL=C tr -c '[:print:]' ' ' | sed 's/::/: :/g')
+              echo "::error::Dashboard registration failed with HTTP $HTTP_CODE"
+              echo "Response snippet (first 300 bytes, sanitised): $SNIPPET"
+              if [ "$RESP_SIZE" -gt 300 ]; then
+                echo "(response truncated - $RESP_SIZE bytes total)"
+              fi
+              exit 1
+            fi
+            echo "Dashboard registration succeeded: HTTP $HTTP_CODE"
+          REMOTE_EOF
+          REMOTE_SCRIPT=$(cat "$REMOTE_SCRIPT_FILE")
+          rm -f "$REMOTE_SCRIPT_FILE"
+          REMOTE_SCRIPT="${REMOTE_SCRIPT/__ADMIN_API_URL__/$ADMIN_API_URL}"
+
+          python3 -c "import json,sys; print(json.dumps({
+            'platform':'macos-menubar','channel':'stable','version':sys.argv[1],
+            'artifact_url':sys.argv[2],'artifact_sha256':sys.argv[3],
+            'artifact_hmac':sys.argv[4],'released_by':'ci-github-actions'
+          }))" "$V" "$RELEASE_URL" "$SHA" "$HMAC" \
+          | ssh -i ~/.ssh/box_key \
+                -o StrictHostKeyChecking=accept-new \
+                -o IdentitiesOnly=yes \
+                root@"$PROD01_IP" \
+              "$REMOTE_SCRIPT"

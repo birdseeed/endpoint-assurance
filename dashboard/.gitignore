@@ -1,0 +1,19 @@
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+dashboard.db*
+dashboard.db-journal
+.venv-local/
+.venv/
+reports/
+*.tar.gz
+.env
+*.env
+nvd.db
+# PAT-992: written on the box by scripts/deploy.sh, one copy per checkout —
+# never meant to be tracked or shipped as repo content.
+DEPLOYED_SHA
+# PAT-1502: evidence bundles and drafted reports contain real tenant data -
+# never tracked. The scripts that produce them (scripts/*.sh, *.md) are.
+docs/endpoint-assurance/runs/

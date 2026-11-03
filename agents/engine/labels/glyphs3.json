@@ -1,0 +1,23 @@
+{
+  "label": "glyphs3",
+  "name": "Glyphs 3",
+  "type": "zip",
+  "app_path": "/Applications/Glyphs 3.app",
+  "expected_team_id": "X2L8375ZQ7",
+  "download": {
+    "method": "static",
+    "url": "https://updates.glyphsapp.com/latest3.php"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "label": "gosign",
+  "name": "GoSign-Desktop",
+  "type": "dmg",
+  "app_path": "/Applications/GoSign-Desktop.app",
+  "expected_team_id": "QC25859FX9",
+  "download": {
+    "method": "static",
+    "url": "https://rinnovofirma.infocert.it/gosign/download/darwin/latest/"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

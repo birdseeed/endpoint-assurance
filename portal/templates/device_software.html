@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% from "_macros.html" import approval_form_cell, decision_provenance, device_page_head %}
+{% block content %}
+{{ device_page_head(device, tabs, cve_tile, issues_tile) }}
+
+{#- PAT-2164: Software tab - the PAT-2156 view's content, unchanged other
+    than losing its own page head (now the shared one above) and the old
+    "Software installed" breadcrumb/back-link, both superseded by the
+    Overview tab in the bar. -#}
+<p class="meta">Every application and browser extension Patched has evidence of on this device.</p>
+
+{% if approval_result %}
+<div class="notice approval-result{% if not approval_result.error %} notice-ok{% endif %}" id="approval-result" role="status" tabindex="-1" data-approval-result>
+  {% if approval_result.error %}
+  <p><strong>{{ approval_result.error }}</strong></p>
+  {% if approval_result.error_lines %}<ul class="approval-result__lines">{% for line in approval_result.error_lines %}<li>{{ line }}</li>{% endfor %}</ul>{% endif %}
+  {% else %}
+  <p><strong>{% if approval_result.changed is not none %}{{ approval_result.changed }} of {{ approval_result.requested }} product{{ '' if approval_result.requested == 1 else 's' }} changed to {{ approval_result.state_label }}.{% else %}Marked {{ approval_result.requested }} product{{ '' if approval_result.requested == 1 else 's' }} {{ approval_result.state_label }}.{% endif %}</strong>{% if approval_result.changed is not none and approval_result.changed < approval_result.requested %} The rest were already {{ approval_result.state_label }}.{% endif %}{% if approval_result.resolved_alerts %} {{ approval_result.resolved_alerts }} open Unapproved alert{{ '' if approval_result.resolved_alerts == 1 else 's' }} resolved.{% endif %}</p>
+  {% if approval_result.protected %}
+  <p class="approval-result__warning"><strong>Protected product marked Unapproved.</strong> Check this was intended: {{ approval_result.protected | join(', ') }}.</p>
+  {% endif %}
+  {% endif %}
+  <button type="button" class="approval-result__close" data-approval-result-close aria-label="Dismiss this notice" hidden>Dismiss</button>
+</div>
+{% endif %}
+
+<section class="approval-tools device-software-toolbar-row" aria-label="Software kind and search">
+  <nav class="view-tabs" aria-label="Software kind">
+    <a href="/devices/{{ device_id }}/software?tab=application"{% if tab == 'application' %} class="tab-active" aria-current="true"{% endif %}>Applications ({{ apps.total }})</a>
+    <a href="/devices/{{ device_id }}/software?tab=extension"{% if tab == 'extension' %} class="tab-active" aria-current="true"{% endif %}>Browser extensions ({{ ext_total }})</a>
+  </nav>
+  {% if tab == 'application' %}
+  <form method="get" class="device-software-search" aria-label="Search applications">
+    <input type="hidden" name="tab" value="application">
+    <input type="search" name="search" class="search" value="{{ search }}" placeholder="Search applications" aria-label="Search applications" data-table-search=".device-software-table">
+    <button type="submit" class="btn btn-small">Search</button>
+    {% if search %}<a class="btn btn-small" href="/devices/{{ device_id }}/software?tab=application">Clear</a>{% endif %}
+  </form>
+  {% else %}
+  <input type="search" id="device-extension-search" class="search device-extension-search" data-table-search=".device-extension-table" placeholder="Search browser extensions" aria-label="Search browser extensions">
+  {% endif %}
+</section>
+
+{% if not can_edit %}
+{% if role_unavailable %}
+<p class="toolbar-hint">Approval controls are unavailable right now because your account role could not be checked. Decisions and their history are still shown.</p>
+{% else %}
+<p class="toolbar-hint">Your account can view approval decisions and their history. An administrator on your account can change them.</p>
+{% endif %}
+{% endif %}
+
+{% if tab == 'application' %}
+<div class="card group-card">
+  <div class="table-scroll" role="region" aria-label="Applications table" tabindex="0">
+    <table class="data-table device-software-table table-stack">
+      <colgroup>
+        <col class="device-software-col-product"><col class="device-software-col-versions">
+        <col class="device-software-col-approval"><col class="device-software-col-cve">
+        <col class="device-software-col-date"><col class="device-software-col-date">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Application</th>
+          <th>Version(s)</th>
+          <th>Approval</th>
+          <th title="Assessed: a CPE mapping matched the installed version. Checking: mapped, not matched yet. Not yet assessed: Patched has not yet identified this product's vulnerability source.">CVE assessment</th>
+          <th>Usage</th>
+          <th>First seen on this device</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in apps.products %}
+        <tr>
+          <td data-label="Application">
+            <strong>{{ p.name }}</strong>
+            {% if p.identifier %}<span class="cell-subtle mono cell-truncate" title="{{ p.identifier }}">{{ p.identifier }}</span>{% endif %}
+          </td>
+          <td data-label="Version(s)" class="mono">
+            {% for version in p.versions %}<span class="device-software-version" title="{{ version }}">{{ version }}{% if not loop.last %},{% endif %}</span>{% if not loop.last %} {% endif %}{% else %}Unknown{% endfor %}
+            {%- if p.unknown_version_installation_count %}<span class="cell-subtle">{{ p.unknown_version_installation_count }} installation{{ '' if p.unknown_version_installation_count == 1 else 's' }} without a version</span>{% endif %}
+          </td>
+          {{ approval_form_cell(p, can_edit, csrf_token, return_to, 'Approval') }}
+          <td data-label="CVE assessment">
+            <span class="pill {{ p.cve_assessment.pill_class }}"{% if p.cve_assessment.explanation %} title="{{ p.cve_assessment.explanation }}"{% endif %}>{{ p.cve_assessment.display_label }}</span>
+            {% if p.cve_assessment.state == 'assessed' %}<span class="cell-subtle mono">{% if p.cve_assessment.last_matched_at %}{{ p.cve_assessment.last_matched_at | humandate_nowrap(true) }} UTC{% else %}-{% endif %}</span>{% endif %}
+          </td>
+          <td data-label="Usage" class="cell-evidence">
+            {%- if p.usage_state == 'unmetered' -%}
+            <span class="cell-evidence__main">{{ 'No usage evidence' if p.no_evidence_installation_count else 'Not metered' }}</span>
+            {%- elif p.last_used_at -%}
+            <span class="cell-evidence__main nowrap">{{ p.last_used_at | humandate }}</span><span class="cell-subtle">{{ p.last_used_at | humantime }} UTC</span>
+            {%- else -%}
+            <span class="cell-evidence__main">{{ p.usage_label }}</span>
+            {%- endif -%}
+          </td>
+          <td data-label="First seen on this device" class="mono cell-evidence">
+            {%- if p.first_seen_on_device -%}
+            <span class="cell-evidence__main nowrap">{{ p.first_seen_on_device | humandate }}</span><span class="cell-subtle">{{ p.first_seen_on_device | humantime }} UTC</span>
+            {%- else -%}-{%- endif -%}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if not apps.products %}<p class="empty">{% if search %}No applications match this search.{% else %}No applications recorded for this device.{% endif %}</p>{% endif %}
+</div>
+
+{% if apps.previous_url or apps.next_url %}
+<nav class="inventory-pagination" aria-label="Applications pages">
+  <span class="meta">Showing {{ apps.offset + 1 if apps.products else 0 }} to {{ apps.offset + (apps.products | length) }} of {{ apps.total }} applications.</span>
+  <span>{% if apps.previous_url %}<a class="btn btn-small" href="{{ apps.previous_url }}">Previous</a>{% endif %}{% if apps.next_url %}<a class="btn btn-small" href="{{ apps.next_url }}">Next</a>{% endif %}</span>
+</nav>
+{% endif %}
+
+{% else %}
+
+{% if extensions_error %}
+<aside class="notice" aria-label="Browser extensions unavailable">
+  <p><strong>Browser extensions are temporarily unavailable for this device.</strong> Applications above are unaffected.</p>
+</aside>
+{% endif %}
+
+<div class="card group-card">
+  <div class="table-scroll" role="region" aria-label="Browser extensions table" tabindex="0">
+    <table class="data-table device-extension-table table-stack">
+      <thead>
+        <tr>
+          <th>Extension</th>
+          <th>Version(s)</th>
+          <th>Approval</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in extensions %}
+        <tr>
+          <td data-label="Extension">
+            <strong>{{ e.name }}</strong>
+            {% if e.browser %}<span class="cell-subtle">{{ e.browser | capitalize }}</span>{% endif %}
+            {% if e.group == 'not_wanted' %}<span class="cell-subtle removal-state">{{ e.removal_label }}</span>{% endif %}
+            <span class="cell-subtle">{{ decision_provenance(e) }}</span>
+          </td>
+          <td data-label="Version(s)" class="mono">{{ e.versions | join(', ') if e.versions else 'Unknown' }}</td>
+          {{ approval_form_cell(e, can_edit, csrf_token, return_to, 'Approval') }}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if not extensions and not extensions_error %}<p class="empty">No browser extensions recorded for this device.</p>{% endif %}
+</div>
+
+{% endif %}
+
+<aside class="history-drawer" id="history-drawer" role="dialog" aria-modal="false" aria-labelledby="history-drawer-title" hidden data-history-panel>
+  <div class="history-drawer__head">
+    <h2 id="history-drawer-title">Approval history</h2>
+    <button type="button" class="btn btn-small" data-history-close>Close</button>
+  </div>
+  <div class="history-drawer__body" data-history-body></div>
+</aside>
+{% endblock %}
+{% block scripts %}<script src="{{ static_url('js/portal.js') }}"></script>{% endblock %}

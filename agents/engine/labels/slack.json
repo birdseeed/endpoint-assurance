@@ -1,0 +1,35 @@
+{
+  "label": "slack",
+  "name": "Slack",
+  "type": "pkg",
+  "app_path": "/Applications/Slack.app",
+  "expected_team_id": "BQR82RBBHL",
+  "download": {
+    "method": "static",
+    "url": "https://slack.com/api/desktop.latestRelease?redirect=1&variant=pkg&arch=universal"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [
+    "Slack"
+  ],
+  "pinned_sha256": null,
+  "cross_hash_sources": [
+    {
+      "type": "homebrew_cask",
+      "id": "slack"
+    }
+  ],
+  "patched": {
+    "allowlisted": true,
+    "mirror": false,
+    "mirror_eula_approved": false,
+    "tier": "core",
+    "reviewed_by": "andy",
+    "reviewed_at": null,
+    "notes": "Stable Slack URL redirecting to the universal DMG. PAT-500: in scope for Phase 2 mirror pipeline; EULA review pending.",
+    "smoke_test_exempt": true,
+    "smoke_test_exempt_reason": "Requires Slack account login before reaching stable state; headless launch without credentials exits immediately with auth-required state."
+  }
+}

@@ -1,0 +1,714 @@
+# truth_manifest.yaml — PAT-1303 declared inventory
+#
+# This file is the operational truth page's SOURCE OF WHAT SHOULD EXIST. It is
+# never derived from what happens to report in — that is the exact failure
+# this page exists to catch (PAT-1086: a LaunchDaemon listed in install.sh but
+# never installed). Every entry here is joined against observed evidence
+# (truth.py::collect_observation); an entry with no evidence renders amber,
+# never green, and is never silently dropped from the page.
+#
+# Populated by a real read-only sweep on 2026-08-13:
+#   - `systemctl list-timers --all` + unit-file inventory on patched-prod-01,
+#     patched-api-01, patched-portal-01 (key-based SSH)
+#   - root crontabs + /etc/cron.d on the same three boxes
+#   - every .github/workflows/*.yml with a `schedule:` trigger in
+#     ../updater and ../patched.im (none found with a schedule in
+#     ../dashboard, ../portal; ../website has no workflows directory at all)
+#   - AgentHealthStore (kind, subject) pairs in ../updater, both the Windows
+#     C# side (windows/src/Service/AgentHealthStore.cs) and the macOS shell
+#     side (macos/lib/agent_health.sh + the endpoint/ inlined copies)
+#   - the LaunchDaemon plists endpoint/install.sh and macos/install.sh lay down
+#   - this app's own `check_statuses` table (main.py)
+#
+# `proves` is deliberately narrow. Per the ticket brief: "signing a catalogue
+# is not publishing it, publishing it is not verifying it, running a verifier
+# is not comparing a hash." Write what success genuinely demonstrates.
+#
+# Required fields on every entry: id, scope, name, proves, cadence_seconds,
+# stale_after_seconds, evidence.kind. evidence.locator is required for every
+# kind except `absent` (which instead carries evidence.reason). See
+# truth.py::load_manifest for the full validation rule set — a malformed
+# entry is a loud error at load, never a silently skipped row.
+#
+# scope values in use: prod-01 | api-01 | portal-01 | tenant-zero |
+#   github:updater | github:patched.im | agent:windows | agent:macos
+#
+# Optional `retired: {at, reason}` block (PAT-1342): mark a decommissioned
+# job here instead of deleting its entry — deleting it would make it
+# indistinguishable from a job that was never declared, the exact failure
+# this page exists to catch. A retired entry renders its own "retired" state
+# (never amber/red/green) and is excluded from evidence collection entirely.
+
+# ─────────────────────────────────────────────────────────────────────────
+# prod-01 — this app's own box. Evidence collected locally (systemd, files,
+# this app's own check_statuses table) — no reporter needed.
+# ─────────────────────────────────────────────────────────────────────────
+
+- id: prod01-alerts-timer
+  scope: prod-01
+  name: patched-prod-alerts.timer
+  proves: "the Slack alert check ran and exited zero, not that any alert condition was evaluated correctly"
+  notes: >
+    /var/lib/patched-alerts/ is empty on prod-01 (swept 2026-08-13) — no alert
+    has ever fired in production. A clean exit here is consistent with either
+    "nothing has been wrong yet" or "the alerting path itself is silently
+    broken downstream of this script" — this check cannot distinguish the two,
+    which is exactly why the proves text above is written the way it is.
+  cadence_seconds: 600
+  stale_after_seconds: 1800
+  evidence:
+    kind: systemd
+    locator: patched-prod-alerts.service
+
+- id: prod01-edge-firewall-timer
+  scope: prod-01
+  name: hetzner-firewall-apply.timer
+  proves: "the daily refresh of prod-01's OWN Hetzner edge firewall ruleset is scheduled to run — not that it has ever successfully applied a ruleset"
+  notes: >
+    PAT-1345 established from the live journal that this timer was explicitly
+    disabled on 2026-07-05 after five consecutive failures in the then-deployed
+    script's jq construction. That disable was deliberate containment, not an
+    accident. The corrected script (--argjson cf) subsequently applied the real
+    ruleset successfully twice on 2026-07-27. Re-enabled on 2026-08-19 once the
+    fail-closed maintenance-health check had deployed, so the control came back
+    with a guard rather than back into the silent-regression path: the run at
+    01:45:46 BST fetched 15 IPv4 + 7 IPv6 Cloudflare ranges and applied the
+    five-rule set, and the firewall content was byte-identical before and
+    after, confirming no drift had accumulated. It is required, not superseded
+    by the separate api/portal timers; any disabled or absent state must remain
+    visible as degraded.
+  cadence_seconds: 86400
+  stale_after_seconds: 172800
+  evidence:
+    kind: systemd
+    locator: hetzner-firewall-apply.timer
+
+- id: prod01-firewall-apply-api
+  scope: prod-01
+  name: "hetzner-firewall-apply-api.service (runs on prod-01, targets api-01's edge firewall)"
+  proves: "the api-01 Hetzner edge firewall ruleset was refreshed from prod-01, not that the ruleset content is correct"
+  notes: >
+    Swept 2026-08-13: no local copy of this unit exists on patched-api-01
+    itself (checked systemctl list-unit-files there — none). It runs only
+    from prod-01. Modelled as one entry (not duplicated on api-01) so the
+    page shows two firewall-apply jobs (this + the portal twin below), not
+    six.
+  cadence_seconds: 86400
+  stale_after_seconds: 172800
+  evidence:
+    kind: systemd
+    locator: hetzner-firewall-apply-api.service
+
+- id: prod01-firewall-apply-portal
+  scope: prod-01
+  name: "hetzner-firewall-apply-portal.service (runs on prod-01, targets portal-01's edge firewall)"
+  proves: "the portal-01 Hetzner edge firewall ruleset was refreshed from prod-01, not that the ruleset content is correct"
+  notes: >
+    Swept 2026-08-13: no local copy of this unit exists on patched-portal-01
+    itself (checked systemctl list-unit-files there — none). Runs only from
+    prod-01, same "two jobs not six" modelling as the api-01 twin above.
+  cadence_seconds: 86400
+  stale_after_seconds: 172800
+  evidence:
+    kind: systemd
+    locator: hetzner-firewall-apply-portal.service
+
+- id: prod01-backup
+  scope: prod-01
+  name: patched-prod-backup.service
+  proves: "the restic backup of dashboard.db + reports/ to Cloudflare R2 completed and exited zero, not that the backup is restorable"
+  cadence_seconds: 86400
+  stale_after_seconds: 172800
+  evidence:
+    kind: systemd
+    locator: patched-prod-backup.service
+
+- id: prod01-restore-drill
+  scope: prod-01
+  name: patched-prod-restore-test.service
+  proves: "the quarterly restic restore drill actually restored dashboard.db from R2 and exited zero — this is the one check in this manifest that DOES verify a backup is restorable, not merely that a backup job ran"
+  cadence_seconds: 7776000
+  stale_after_seconds: 10368000
+  evidence:
+    kind: systemd
+    locator: patched-prod-restore-test.service
+
+- id: prod01-prune-reports
+  scope: prod-01
+  name: patched-dashboard-prune-reports.service
+  proves: "generated .docx reports older than the retention window were pruned, not that disk usage is actually under control"
+  cadence_seconds: 86400
+  stale_after_seconds: 172800
+  evidence:
+    kind: systemd
+    locator: patched-dashboard-prune-reports.service
+
+- id: prod01-catalogue-suggestions-sync
+  scope: prod-01
+  name: "root crontab: catalogue/suggestions/sync (0 7 * * *) — RETIRED"
+  proves: "the daily catalogue-suggestions sync call to the local API returned a 2xx-shaped ok:true body, not that any suggestions were actually correct"
+  notes: >
+    Retired by PAT-1342 (2026-08-16): the crontab entry and its log file
+    were removed from patched-prod-01. Root-caused as a compound failure —
+    PAT-695 (2026-07-03) put session/Bearer auth in front of every
+    /admin/* path and this cron's curl never sent an Authorization header,
+    so it started 401ing; then PAT-852 (2026-07-13) removed the
+    /admin/catalogue/suggestions/sync route from main.py entirely, replaced
+    by the platform-side unified Approvals surface (see main.py's own
+    comment above the catalogue/products proxies). The job ran orphaned and
+    401ing for six weeks before PAT-1303's estate census caught it.
+    Verbatim crontab entry as recorded before removal (`crontab -l` on
+    patched-prod-01, 2026-08-16) — kept here so it is recoverable:
+      # Notion tasks sync - daily at 09:00 UTC
+      0 7 * * * curl -s -X POST http://localhost:8000/admin/catalogue/suggestions/sync >> /var/log/patched-catalogue-sync.log 2>&1
+    The comment was wrong on two counts, not just the one the ticket named:
+    it mislabelled the job "Notion tasks sync" (unrelated to what the line
+    actually does) and mis-stated the fire time as 09:00 UTC when
+    `0 7 * * *` fires at 07:00 UTC — confirmed against six weeks of log
+    timestamps, all 07:00. Not repointed at the Approvals surface: PAT-852
+    made the daily sync redundant by design (the platform now reads/writes
+    review state directly, so there is nothing left for a local sync to
+    reconcile), so removal rather than repair is correct.
+  cadence_seconds: 86400
+  stale_after_seconds: 172800
+  evidence:
+    kind: log_tail
+    locator: /var/log/patched-catalogue-sync.log
+    success_pattern: '"ok":true'
+    failure_pattern: '"error"'
+  retired:
+    at: "2026-08-16"
+    reason: >
+      PAT-852 (2026-07-13) retired the /admin/catalogue/suggestions/sync
+      route; PAT-1342 (2026-08-16) removed the orphaned root crontab entry
+      and /var/log/patched-catalogue-sync.log from patched-prod-01. See
+      notes above for the verbatim removed crontab line and full history.
+
+- id: prod01-maintenance-drift
+  scope: prod-01
+  name: "maintenance_prod01 (check_statuses row, PAT-989/990)"
+  proves: "prod-01's patch/reboot/timer drift snapshot was evaluated this tick and found nothing wrong, not that the box is fully patched (a clean read just means nothing tracked is currently pending)"
+  cadence_seconds: 3600
+  stale_after_seconds: 10800
+  evidence:
+    kind: check_status
+    locator: maintenance_prod01
+
+- id: prod01-deploy-provenance
+  scope: prod-01
+  name: "deploy_drift (check_statuses row, PAT-992)"
+  proves: "the box's checkout HEAD matches the last commit scripts/deploy.sh positively confirmed as running (DEPLOYED_SHA) — not that the box has the LATEST commit on origin/main, which this check cannot see (PAT-617, deploy keys disabled org-wide)"
+  cadence_seconds: 3600
+  stale_after_seconds: 10800
+  evidence:
+    kind: check_status
+    locator: deploy_drift
+
+- id: prod01-rbac-operators
+  scope: prod-01
+  name: "rbac_operators (check_statuses row, PAT-979/1045)"
+  proves: "DASHBOARD_OPERATORS contains session-owner assignments — not that every operator's role assignment is correct"
+  cadence_seconds: 3600
+  stale_after_seconds: 10800
+  evidence:
+    kind: check_status
+    locator: rbac_operators
+
+- id: prod01-portal-auth
+  scope: prod-01
+  name: "portal_auth (check_statuses row, PAT-837/988)"
+  proves: "the portal's Cloudflare Access AUD configuration was checked this tick and matches expectations, not that portal login actually works end-to-end for a real user"
+  cadence_seconds: 3600
+  stale_after_seconds: 10800
+  evidence:
+    kind: check_status
+    locator: portal_auth
+
+- id: prod01-email-delivery
+  scope: prod-01
+  name: "email_delivery (check_statuses row, PAT-1010)"
+  proves: "outbound email is either genuinely deliverable or a deliberate, visible dry-run — not silently swallowed"
+  notes: >
+    PAT-1346 (2026-09-03): outbound email is now LIVE. EMAIL_DRY_RUN has been
+    removed from /etc/patched-dashboard/dashboard.env and the deploy gate has
+    been inverted in the same change: scripts/smoke/email_delivery.py (renamed
+    from email_dry_run.py, since the old name asserted the opposite of what it
+    now checks) FAILS THE DEPLOY, triggering PAT-909 auto-rollback, unless
+    /api/smoke/health reports email_delivery == "live". It asserts "live"
+    rather than "not dry-run" deliberately: with suppression off and no
+    provider configured, every send would fail while a naive not-dry-run check
+    still passed. Note the honest limit — "live" is configuration presence, not
+    verified credentials; invalid keys read identically to good ones, so this
+    hourly check_statuses row remains the runtime signal and the smoke gate is
+    only the deploy-time one. Evidence for the switch: Microsoft Graph
+    sendMail delivered end to end from prod-01 on 2026-09-03 to an external
+    recipient and to Andy@patched.im (received 11:30:35Z, message-id
+    PAXPR04MB9641E37E539F057A039CC76CCCB62), sent from a one-shot process so
+    the service environment was untouched. Burst risk was assessed as empty
+    rather than merely mitigated: 0 report_subscriptions, 0 calendly_leads,
+    and all 3 clients rows had cert_digest_recipient unset, so there was no
+    configured recipient to receive a stale send. That sits on top of
+    PAT-1010's six rounds of hardening, which leave each call site's
+    "already sent" state unmarked under dry-run so a real send fires once per
+    naturally-due occurrence rather than once per missed period. Prior state,
+    for anyone reading history: EMAIL_DRY_RUN=1 was structurally deliberate
+    from PAT-228 and gated deploys from ~2026-07-17; it was never
+    a stalled SPF/DKIM setup. Microsoft Graph is the sole configured sender;
+    the former provider path was removed under PAT-1507.
+    If suppression is ever reinstated, invert the smoke module in the SAME
+    commit as the env change and rewrite this entry; a deploy gate that
+    contradicts the intended state is worse than no gate.
+  cadence_seconds: 3600
+  stale_after_seconds: 10800
+  evidence:
+    kind: check_status
+    locator: email_delivery
+
+# ─────────────────────────────────────────────────────────────────────────
+# api-01 — Go ingestion API box. systemd/file evidence needs the reporter in
+# deploy/truth-report.{sh,service,timer} (NOT installed — see report below).
+# maintenance_api01 is the one exception: this app already pulls that fact
+# centrally via the existing PAT-989/990 drift-check tick, so it is
+# collectible today with no new machinery.
+# ─────────────────────────────────────────────────────────────────────────
+
+- id: api01-cve-sync
+  scope: api-01
+  name: patched-cve-sync.service
+  proves: "the NVD CVE feed sync completed and exited zero, not that the local CVE dataset is complete or current"
+  notes: >
+    SSH-swept 2026-08-13: currently FAILED (exit 1, "read tcp ...: connection
+    reset by peer" fetching the NVD feed) — this is the "currently red" entry
+    named in the ticket brief. That live SSH observation is NOT wired into
+    this manifest's evaluated state: per this page's own architecture, state
+    comes only from the declared collector (the reporter below), which is not
+    yet installed, so this entry evaluates amber ("no report received from
+    api-01") until it is. Recording the SSH finding here as a note, not as a
+    fabricated state, keeps the join honest — see PAT-1303 implementation
+    report for why.
+  cadence_seconds: 86400
+  stale_after_seconds: 172800
+  evidence:
+    kind: systemd
+    locator: patched-cve-sync.service
+
+- id: api01-backup
+  scope: api-01
+  name: patched-backup.service
+  proves: "the restic backup of the patched.im Postgres DB to Cloudflare R2 completed and exited zero, not that the backup is restorable"
+  cadence_seconds: 86400
+  stale_after_seconds: 172800
+  evidence:
+    kind: systemd
+    locator: patched-backup.service
+
+- id: api01-partitions
+  scope: api-01
+  name: patched-partitions.service
+  proves: "monthly raw_payloads partition maintenance completed and exited zero, not that partition pruning kept disk usage under any particular threshold"
+  cadence_seconds: 2592000
+  stale_after_seconds: 3888000
+  evidence:
+    kind: systemd
+    locator: patched-partitions.service
+
+- id: api01-alert-metrics
+  scope: api-01
+  name: patched-alert-metrics.service
+  proves: "the domain alert metrics textfile collector ran and exited zero, not that any alert threshold was correctly evaluated"
+  cadence_seconds: 600
+  stale_after_seconds: 1800
+  evidence:
+    kind: systemd
+    locator: patched-alert-metrics.service
+
+- id: api01-maintenance-drift
+  scope: api-01
+  name: "maintenance_api01 (check_statuses row, PAT-989/990)"
+  proves: "api-01's patch/reboot/timer drift snapshot was evaluated this tick, not that the box is fully patched"
+  notes: >
+    Collectible today with no new machinery — this app's existing
+    maintenance-drift-check tick already pulls this fact from api-01
+    centrally. Currently degraded (1 timer failed, 1 third-party package
+    pending) per the live check_statuses row read 2026-08-13.
+  cadence_seconds: 3600
+  stale_after_seconds: 10800
+  evidence:
+    kind: check_status
+    locator: maintenance_api01
+
+- id: api01-deploy-provenance
+  scope: api-01
+  name: "deploy provenance (PAT-992 pattern), api-01"
+  proves: "the running patched-api binary matches a positively-confirmed deploy record"
+  notes: >
+    Swept 2026-08-13: no DEPLOYED_SHA file, and no git checkout, exist
+    anywhere under /opt on api-01 — the PAT-992 provenance mechanism was
+    never wired up on this box at all. This is one of the "two of three
+    boxes" the ticket brief names as broken/absent; api-01 is the ABSENT
+    half.
+  cadence_seconds: 86400
+  stale_after_seconds: 259200
+  evidence:
+    kind: absent
+    reason: "no DEPLOYED_SHA file or git checkout found on api-01 (swept 2026-08-13) — PAT-992 provenance was never wired up on this box"
+
+# ─────────────────────────────────────────────────────────────────────────
+# portal-01 — customer portal + public scan funnel box. Same reporter
+# situation as api-01.
+# ─────────────────────────────────────────────────────────────────────────
+
+- id: portal01-backup
+  scope: portal-01
+  name: patched-portal-backup.service
+  proves: "the restic backup of scan.db + uploads/ + reports/ + config to Cloudflare R2 completed and exited zero, not that the backup is restorable"
+  cadence_seconds: 86400
+  stale_after_seconds: 172800
+  evidence:
+    kind: systemd
+    locator: patched-portal-backup.service
+
+- id: portal01-scan-nvd-refresh
+  scope: portal-01
+  name: patched-scan-nvd-refresh.service
+  proves: "the public scan funnel's daily NVD dataset refresh completed and exited zero, not that the dataset is complete or current"
+  cadence_seconds: 86400
+  stale_after_seconds: 172800
+  evidence:
+    kind: systemd
+    locator: patched-scan-nvd-refresh.service
+
+- id: portal01-maintenance-drift
+  scope: portal-01
+  name: "maintenance_portal01 (check_statuses row, PAT-989/990)"
+  proves: "portal-01's patch/reboot/timer drift snapshot was evaluated this tick, not that the box is fully patched"
+  notes: >
+    Collectible today, same as api-01's twin. Currently degraded (1
+    third-party package pending) per the live check_statuses row read
+    2026-08-13.
+  cadence_seconds: 3600
+  stale_after_seconds: 10800
+  evidence:
+    kind: check_status
+    locator: maintenance_portal01
+
+- id: portal01-deploy-provenance
+  scope: portal-01
+  name: "deploy provenance (PAT-992 pattern), portal-01"
+  proves: "the running patched-portal / patched-scan code matches a positively-confirmed deploy record"
+  notes: >
+    Swept 2026-08-13: a DEPLOYED_SHA file DOES exist for both
+    /opt/patched-portal and /opt/patched-scan (identical SHA + timestamp,
+    2026-08-10), but neither directory is a git checkout — there is nothing
+    on the box to verify that recorded SHA against, and no drift-check tick
+    like prod-01's deploy_drift exists for portal-01. A file existing is not
+    the same as a claim being verified; this is the BROKEN half of the "two
+    of three boxes" the ticket brief names (as distinct from api-01's
+    ABSENT half).
+  cadence_seconds: 86400
+  stale_after_seconds: 259200
+  evidence:
+    kind: absent
+    reason: "DEPLOYED_SHA file exists on portal-01 but nothing verifies it against running code — no git checkout to diff, no drift-check tick (swept 2026-08-13)"
+
+# ─────────────────────────────────────────────────────────────────────────
+# tenant-zero
+# ─────────────────────────────────────────────────────────────────────────
+
+- id: tenant-zero-reachability
+  scope: tenant-zero
+  name: "tenant-zero endpoint state"
+  proves: "tenant-zero's agent health and inventory freshness can be independently verified"
+  notes: >
+    tenant-zero was not reachable by hostname during the 2026-08-13 sweep for
+    this ticket (`ssh root@tenant-zero` — nodename nor servname provided).
+    Rather than omit tenant-zero from this page (which would be the exact
+    silent-absence failure this page exists to catch), it gets this one
+    explicit amber entry stating plainly that its state is unverified. A
+    fuller per-check breakdown for tenant-zero is follow-up work, not
+    something to invent here.
+  cadence_seconds: 3600
+  stale_after_seconds: 10800
+  evidence:
+    kind: absent
+    reason: "tenant-zero not reachable by hostname (swept 2026-08-13) — endpoint state is unverified, not assumed healthy"
+
+# ─────────────────────────────────────────────────────────────────────────
+# github:updater — every .github/workflows/*.yml in ../updater with a
+# schedule: trigger, swept 2026-08-13. Evidence kind github_workflow reads
+# GITHUB_TOKEN from the app's own environment; this app has no such token
+# configured today (confirmed: no GITHUB_TOKEN/GH_TOKEN reference anywhere
+# in main.py/shared.py, no .env on the box) — every entry below renders
+# amber "no GitHub token configured" until one is added. Per the ticket
+# brief, that is the honest state; no new secret was added to get these
+# green.
+# ─────────────────────────────────────────────────────────────────────────
+
+- id: updater-codeql-csharp
+  scope: github:updater
+  name: codeql-csharp.yml
+  proves: "the CodeQL C# static-analysis workflow completed on its weekly schedule, not that it found (or ruled out) any vulnerability"
+  cadence_seconds: 604800
+  stale_after_seconds: 1209600
+  evidence:
+    kind: github_workflow
+    locator: "codeql-csharp.yml"
+
+- id: updater-semgrep-swift
+  scope: github:updater
+  name: semgrep-swift.yml
+  proves: "the Semgrep Swift static-analysis workflow completed on its weekly schedule, not that it found (or ruled out) any issue"
+  cadence_seconds: 604800
+  stale_after_seconds: 1209600
+  evidence:
+    kind: github_workflow
+    locator: "semgrep-swift.yml"
+
+- id: updater-installomator-upstream-review
+  scope: github:updater
+  name: "installomator-upstream-review.yml"
+  proves: "the quarterly Installomator upstream-label review ran as a scheduled event, not that it ran at all, since it also had a push trigger"
+  notes: >
+    Swept 2026-08-13: this workflow had never fired as a scheduled event,
+    only via push. Retirement is release-ordered: updater commit efc91099 must
+    reach updater main before this Dashboard declaration can become retired.
+  cadence_seconds: 7776000
+  stale_after_seconds: 10368000
+  evidence:
+    kind: github_workflow
+    locator: "installomator-upstream-review.yml"
+    event_filter: schedule
+  retired:
+    at: "2026-09-08"
+    reason: >
+      PAT-1474 retired broad scheduled catalogue maintenance. PAT-1481 keeps
+      this declaration as history without restoring a schedule or trigger path.
+    requires_github_commit:
+      repo: "Patched-LTD/updater"
+      sha: "efc910994cdd05c60f946eb0836955f109d2a8fb"
+      branch: "main"
+
+- id: updater-daily-vendor-verify
+  scope: github:updater
+  name: "daily-vendor-verify.yml (RETIRED)"
+  proves: "the daily vendor-signature verification workflow ran and passed, not that every vendor's software is genuinely safe"
+  notes: "Swept 2026-08-13: the workflow was red for three consecutive nights before retirement."
+  cadence_seconds: 86400
+  stale_after_seconds: 172800
+  evidence:
+    kind: github_workflow
+    locator: "daily-vendor-verify.yml"
+  retired:
+    at: "2026-09-08"
+    reason: >
+      PAT-1474 retired broad daily vendor verification. PAT-1481 keeps this
+      declaration as history without treating it as active automation.
+
+- id: updater-mirror-pipeline-windows
+  scope: github:updater
+  name: "mirror-pipeline-windows.yml (QUARANTINED)"
+  proves: "manual Windows mirror compatibility can report run history, not that a scheduled or triggerable mirror pipeline exists"
+  notes: "Unscheduled, non-triggerable historical/manual compatibility only."
+  cadence_seconds: 86400
+  stale_after_seconds: 172800
+  evidence:
+    kind: github_workflow
+    locator: "mirror-pipeline-windows.yml"
+  quarantined:
+    at: "2026-09-08"
+    reason: >
+      PAT-1474 retired the Windows package-mirror schedule. PAT-1481 preserves
+      manual run history only, without restoring a schedule, trigger or execution UI.
+
+- id: updater-done-audit
+  scope: github:updater
+  name: done-audit.yml
+  proves: "the daily done-audit workflow ran and completed, not that every audited item is actually correct"
+  cadence_seconds: 86400
+  stale_after_seconds: 172800
+  evidence:
+    kind: github_workflow
+    locator: "done-audit.yml"
+
+- id: updater-catalogue-pin-guard
+  scope: github:updater
+  name: catalogue-pin-guard.yml
+  proves: "the daily catalogue-pin-guard workflow ran and completed, not that no pin has drifted"
+  cadence_seconds: 86400
+  stale_after_seconds: 172800
+  evidence:
+    kind: github_workflow
+    locator: "catalogue-pin-guard.yml"
+
+- id: updater-dep-audit
+  scope: github:updater
+  name: dep-audit.yml
+  proves: "the weekly dependency-audit workflow ran and completed, not that no dependency has a known vulnerability"
+  cadence_seconds: 604800
+  stale_after_seconds: 1209600
+  evidence:
+    kind: github_workflow
+    locator: "dep-audit.yml"
+
+- id: updater-upstream-label-diff
+  scope: github:updater
+  name: "upstream-label-diff.yml (RETIRED)"
+  proves: "the daily upstream-label-diff workflow ran and completed, not that no label silently drifted from upstream"
+  cadence_seconds: 86400
+  stale_after_seconds: 172800
+  evidence:
+    kind: github_workflow
+    locator: "upstream-label-diff.yml"
+  retired:
+    at: "2026-09-08"
+    reason: >
+      PAT-1474 retired automatic full-catalogue label maintenance. PAT-1481
+      preserves the declaration as history without resuming broad replication.
+
+- id: updater-mirror-pipeline
+  scope: github:updater
+  name: "mirror-pipeline.yml (QUARANTINED)"
+  proves: "manual macOS mirror compatibility can report run history, not that a scheduled or triggerable mirror pipeline exists"
+  notes: "Unscheduled, non-triggerable historical/manual compatibility only."
+  cadence_seconds: 86400
+  stale_after_seconds: 172800
+  evidence:
+    kind: github_workflow
+    locator: "mirror-pipeline.yml"
+  quarantined:
+    at: "2026-09-08"
+    reason: >
+      PAT-1474 retired hosted package mirroring. PAT-1481 retains manual run
+      history only, without restoring a schedule, trigger or execution UI,
+      while the bounded macOS design remains vendor-direct.
+
+# ─────────────────────────────────────────────────────────────────────────
+# github:patched.im
+# ─────────────────────────────────────────────────────────────────────────
+
+- id: patchedim-e2e-windows
+  scope: "github:patched.im"
+  name: e2e-windows.yml
+  proves: "the weekly Windows end-to-end test workflow ran and its suite passed, not that the feature under test is bug-free"
+  notes: "Swept 2026-08-13: currently red 4 consecutive weeks, per the ticket brief."
+  cadence_seconds: 604800
+  stale_after_seconds: 1209600
+  evidence:
+    kind: github_workflow
+    locator: "e2e-windows.yml"
+
+- id: patchedim-nightly-uninstall-e2e-macos
+  scope: "github:patched.im"
+  name: "nightly_uninstall_e2e_macos (check_statuses row, PAT-1716)"
+  proves: "the nightly macOS uninstall end-to-end job (level 1) reported a result within the last 36h and that result passed, not that every uninstall path on every macOS version is covered"
+  notes: >
+    PAT-1716: the workflow (nightly-uninstall-e2e-macos.yml, PAT-1714) reports
+    every run, pass or fail, via POST /admin/nightly-checks/report over the
+    same Tailscale+SSH relay updater's daily-vendor-verify.yml already uses to
+    reach this app -- no new secret. A job that stops reporting entirely
+    (workflow disabled, runner never dispatches) is caught by the hourly
+    scheduler tick re-evaluating staleness even with no new report, same as
+    every other check_status entry here.
+  cadence_seconds: 3600
+  stale_after_seconds: 10800
+  evidence:
+    kind: check_status
+    locator: nightly_uninstall_e2e_macos
+
+- id: patchedim-nightly-uninstall-e2e-windows
+  scope: "github:patched.im"
+  name: "nightly_uninstall_e2e_windows (check_statuses row, PAT-1716)"
+  proves: "the nightly Windows uninstall end-to-end job (level 1) reported a result within the last 36h and that result passed, not that every uninstall path on every Windows version is covered"
+  notes: >
+    PAT-1716: the workflow (nightly-uninstall-e2e-windows.yml, PAT-1715)
+    reports every run, pass or fail, via the same POST /admin/nightly-checks/report
+    relay as the macOS job above.
+  cadence_seconds: 3600
+  stale_after_seconds: 10800
+  evidence:
+    kind: check_status
+    locator: nightly_uninstall_e2e_windows
+
+# ─────────────────────────────────────────────────────────────────────────
+# agent:macos / agent:windows — AgentHealthStore (kind, subject) pairs and
+# LaunchDaemon load state, swept from ../updater 2026-08-13. No server-side
+# collector reads these today (agent_health is push-based: the endpoint
+# posts its own local sidecar file as part of /v1/inventory; there is no
+# puller). Every entry below is a deliberate placeholder declaring the
+# check exists, evaluating amber until a collector is built — see PAT-1086,
+# the ticket this page exists to make impossible to repeat.
+# ─────────────────────────────────────────────────────────────────────────
+
+- id: macos-catalogue-sync
+  scope: agent:macos
+  name: "agent_health(sync_never_succeeded, catalogue) — macOS"
+  proves: "a macOS endpoint's signed software catalogue was freshly fetched, Ed25519-verified, and cached (or a 304 was confirmed against a still-usable cache) — not that every app in it is actually installed correctly"
+  notes: >
+    Recorded by endpoint/patched-fetch-catalogue.sh into the local
+    /Library/Application Support/Patched/.agent-health.json sidecar, folded
+    into /v1/inventory by macos/patched-upload.sh. The Windows agent uses
+    the IDENTICAL (kind, subject) string for the same concept
+    (windows-catalogue-sync, below) — deliberately modelled as two SEPARATE
+    manifest entries with two separate scopes, because they are two separate
+    files on two separate systems and must never be conflated into one row.
+  cadence_seconds: 14400
+  stale_after_seconds: 43200
+  evidence:
+    kind: agent_health
+    locator: "sync_never_succeeded:catalogue"
+
+- id: macos-decommission-daemon-loaded
+  scope: agent:macos
+  name: "agent_health(capability_missing, endpoint_decommission_daemon) — macOS"
+  proves: "com.patched.config-poll.plist exists on disk AND launchctl print system/com.patched.config-poll confirms it is actually loaded — not merely that the installer once shipped the file"
+  notes: >
+    This is precisely the PAT-1086 shape (a LaunchDaemon listed in install.sh
+    but never installed/loaded) applied to a different daemon — recorded as
+    its own agent_health entry because the agent itself already checks
+    launchctl-load state, not just file presence.
+  cadence_seconds: 14400
+  stale_after_seconds: 43200
+  evidence:
+    kind: agent_health
+    locator: "capability_missing:endpoint_decommission_daemon"
+
+- id: macos-catalogue-poll-launchdaemon-installed
+  scope: agent:macos
+  name: com.patched.catalogue-poll LaunchDaemon install/load state
+  proves: "the 4-hourly signed-catalogue-fetch LaunchDaemon is actually loaded on a given macOS endpoint — not merely that endpoint/install.sh lists it"
+  notes: >
+    This is the literal PAT-1086 scenario: a LaunchDaemon can be listed in
+    install.sh and never installed on a real device, and nothing today
+    would notice. No server-side collector confirms per-device
+    launchd-load state at estate scale (this differs from the
+    agent_health-backed entries above, which the AGENT itself observes and
+    reports — this one has no reporter of any kind yet on either side).
+  cadence_seconds: 14400
+  stale_after_seconds: 43200
+  evidence:
+    kind: absent
+    reason: "no collector exists yet to confirm LaunchDaemon load state across the macOS estate — declared here so PAT-1086 cannot recur invisibly"
+
+- id: windows-catalogue-sync
+  scope: agent:windows
+  name: "agent_health(sync_never_succeeded, catalogue) — Windows"
+  proves: "a Windows endpoint's signed software catalogue was freshly fetched, Ed25519-verified, and cached (or a 304 was confirmed against a still-usable cache) — not that every app in it is actually installed correctly"
+  notes: >
+    Recorded by AgentHealthStore into %ProgramData%\\Patched\\agent-health.json,
+    folded into /v1/inventory by InventoryPoster.cs. See macos-catalogue-sync
+    above for why this is a separate entry rather than merged with it.
+  cadence_seconds: 14400
+  stale_after_seconds: 43200
+  evidence:
+    kind: agent_health
+    locator: "sync_never_succeeded:catalogue"
+
+- id: windows-self-update-apply
+  scope: agent:windows
+  name: "agent_health(self_update, apply) — Windows"
+  proves: "a staged Windows self-update's marker version matches what is actually running — not that the update contained no regression"
+  cadence_seconds: 14400
+  stale_after_seconds: 43200
+  evidence:
+    kind: agent_health
+    locator: "self_update:apply"

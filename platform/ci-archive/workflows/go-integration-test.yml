@@ -1,0 +1,208 @@
+name: go-integration-test
+
+on:
+  pull_request:
+    paths:
+      - 'go-service/**'
+      - 'go-service/migrations/**'
+      - '.github/workflows/go-integration-test.yml'
+      # PAT-1316: this job's "internal/handlers DB-gated tests" step runs
+      # internal/handlers/extension_removal_scope_contract_test.go, which
+      # reads contracts/extension-removal-scopes.json at test time. That
+      # file lives outside go-service/, so it needs its own path trigger.
+      - 'contracts/extension-removal-scopes.json'
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: go-service
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: patched
+          POSTGRES_PASSWORD: patched_test
+          POSTGRES_DB: patched_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+
+    env:
+      TEST_DATABASE_URL: postgres://patched:patched_test@localhost:5432/patched_test?sslmode=disable
+      # Throwaway Ed25519 seed for the integration-test HTTP servers.
+      # Not a real secret — used only inside the ephemeral CI DB.
+      AGENT_CONFIG_SIGNING_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go-service/go.mod
+          cache-dependency-path: go-service/go.sum
+
+      - name: go build
+        run: go build ./...
+
+      # PAT-1064 review round 3, FIX 12: every `go test` invocation below now
+      # carries -count=1. Go's test result cache is keyed on package source +
+      # build flags, NOT on the Postgres schema/migration state or fixture
+      # data these DB-gated steps depend on — without -count=1, a step here
+      # could report a cached PASS from a previous CI run against a database
+      # that this run never actually touched. This was a real, repo-wide gap
+      # (found while adding the internal/extractor step below): none of the
+      # five DB-gated steps in this file had it before this fix, not just the
+      # one this ticket added.
+      #
+      # PAT-938: run integration first — its TestMain applies every
+      # migrations/*.sql file to the shared Postgres service (raw DDL, no
+      # IF NOT EXISTS guard, so it can only run once per fresh DB). The
+      # internal/handlers DB-gated tests below (health_admin_test.go etc.,
+      # TEST_DATABASE_URL-gated, with no migration setup of their own) then
+      # reuse that same already-migrated schema — the
+      # Postgres service persists for the whole job, not just one step.
+      # Don't reorder these or add a second migration pass; see the
+      # explanation above.
+      - name: integration tests
+        # PAT-2095 adds eight 60-state resolver-equivalence runs (~52s in
+        # CI) to a suite already taking ~69s. This is a suite watchdog,
+        # not the per-operation budgets or the separate 10k/500 perf gate.
+        run: go test -tags=integration -count=1 -v -timeout=300s ./integration/
+
+      # PAT-1697: cmd/patched-kek-backfill's DB-gated tests (integration_test.go)
+      # have their own TestMain that applies every migrations/*.sql file from
+      # scratch, same as the "integration tests" step above — but that step
+      # already migrated patched_test, and the raw DDL has no IF NOT EXISTS
+      # guard, so re-running TestMain against patched_test would fail on the
+      # first CREATE TABLE. Give this step its own fresh database on the same
+      # Postgres service container instead of reusing patched_test, and point
+      # TEST_DATABASE_URL at it for this step only. Before this step existed,
+      # cmd/patched-kek-backfill had no DB coverage in CI at all — the exact
+      # silent-skip shape PAT-912/PAT-837/PAT-960 already cost this repo.
+      - name: cmd/patched-kek-backfill DB-gated tests
+        env:
+          PGPASSWORD: patched_test
+          TEST_DATABASE_URL: postgres://patched:patched_test@localhost:5432/patched_kek_backfill_test?sslmode=disable
+        run: |
+          createdb -h localhost -U patched patched_kek_backfill_test
+          go test -tags=integration -count=1 -v -timeout=120s ./cmd/patched-kek-backfill/...
+
+      # PAT-2095: the 10,000-device latency test for the Unapproved-present
+      # summary (overview p95, a 500-product bulk mark, ingest while the marked
+      # alert is raised). Opt-in (PATCHED_PERF_TESTS=1) because it builds
+      # 200,000 inventory rows; it gets its own fresh database for the same
+      # reason as the kek-backfill step above: the integration TestMain
+      # applies every migration and cannot run twice against patched_test.
+      - name: unapproved summary latency (10k devices)
+        env:
+          PGPASSWORD: patched_test
+          PATCHED_PERF_TESTS: "1"
+          TEST_DATABASE_URL: postgres://patched:patched_test@localhost:5432/patched_perf_test?sslmode=disable
+        run: |
+          createdb -h localhost -U patched patched_perf_test
+          go test -tags=integration -count=1 -v -timeout=600s -run 'TestUnapprovedPresenceLatency' ./integration/
+
+      # PATCHED_DB_TESTS_REQUIRED tells the DB-gated tests in this package that
+      # a database was genuinely promised to this step, so an unset
+      # TEST_DATABASE_URL is a broken-wiring bug and must fail rather than skip
+      # (PAT-1108 finding 6). It is set only in DB-promised package steps:
+      # go-test.yml's build-test-vet job has no Postgres service by design, and
+      # keying the guard on the generic CI env var instead made that job fail.
+      - name: internal/handlers DB-gated tests
+        env:
+          PATCHED_DB_TESTS_REQUIRED: "1"
+        run: go test -count=1 -v -timeout=120s ./internal/handlers/...
+
+      # PAT-2035/PAT-2036: reuse the shared DB already migrated by integration
+      # above; feedback intake, webhook transition, email outbox and reconcile
+      # acceptance must not silently skip or apply migrations again.
+      - name: internal/feedback DB-gated tests
+        env:
+          PATCHED_DB_TESTS_REQUIRED: "1"
+        run: go test -count=1 -v -timeout=120s ./internal/feedback/...
+
+      # PAT-995: internal/rings has its own DB-gated regression test
+      # (advance_db_test.go, TEST_DATABASE_URL-skipped like internal/auth's
+      # bearer_db_test.go) that runs ObserveNewVersions' SQL against a real
+      # Postgres in an isolated schema — no migration dependency, safe to run
+      # here. It previously had zero DB coverage, which is how a
+      # syntactically invalid DISTINCT ON query shipped with a fully green
+      # `go test ./...`.
+      - name: internal/rings DB-gated tests
+        run: go test -count=1 -v -timeout=120s ./internal/rings/...
+
+      # PAT-1007: internal/report has its own DB-gated tests
+      # (report_db_test.go, TEST_DATABASE_URL-skipped like internal/auth's
+      # bearer_db_test.go and internal/rings' advance_db_test.go) that build
+      # their own isolated schema directly — no migration dependency, safe to
+      # run here. This had zero CI coverage before now (pre-existing gap,
+      # not introduced by PAT-1007) — every test in the file, including the
+      # pre-existing PAT-709/PAT-744 ones, always silently skipped.
+      - name: internal/report DB-gated tests
+        run: go test -count=1 -v -timeout=120s ./internal/report/...
+
+      # PAT-2272: internal/evidencecatalogue has its own DB-gated test
+      # (delivery_store_test.go, TestWindowsDeliveryLedgerDatabase) that
+      # builds its own isolated schema and applies migration 0155 directly —
+      # no dependency on the "integration tests" step's already-migrated
+      # schema, same pattern as internal/rings and internal/report above.
+      # It asserts the Windows installation evidence ledger's append-only
+      # guarantee (the ACL revoke and the BEFORE trigger migration 0155
+      # both add) actually refuses UPDATE/DELETE/TRUNCATE; it had zero CI
+      # coverage before now, so that guarantee was unverified.
+      - name: internal/evidencecatalogue DB-gated tests
+        run: go test -count=1 -v -timeout=120s ./internal/evidencecatalogue/...
+
+      # PAT-1064: internal/extractor's DB-gated tests (agent_health_test.go —
+      # upsert-in-place, clear-on-recovery, absent-is-a-no-op, empty-array-
+      # clear for the agent_health degraded-capability channel) insert
+      # directly into tenants/devices/device_agent_health, so — unlike
+      # internal/rings and internal/report above, which build their own
+      # isolated schema — this step DOES depend on the migrations the
+      # "integration tests" step already applied (device_agent_health is
+      # migration 0090). Must run after that step, not standalone. Before
+      # this step existed, ./internal/extractor/... was never run in CI at
+      # all, so every one of its TEST_DATABASE_URL-gated tests — including
+      # TestUpsertAgentHealth_ClearOnRecovery, the regression test for this
+      # ticket's core guarantee — silently skipped forever.
+      - name: internal/extractor DB-gated tests
+        run: go test -count=1 -v -timeout=120s ./internal/extractor/...
+
+      # PAT-2029: both CVE matchers carry DB-gated tests (the event-driven
+      # internal/cvepipeline path and the nightly cmd/patched-cve-sync path,
+      # including the platform-scoping and NULL-os regressions) that were
+      # never run in CI, so they silently skipped. Run after the integration
+      # step: cvepipeline's tests use the migrated schema.
+      - name: CVE matcher DB-gated tests
+        run: go test -count=1 -v -timeout=180s ./internal/cvepipeline/... ./cmd/patched-cve-sync/...
+
+      # PAT-2263: vulnerable driver list storage, fail-closed refresh, hash
+      # matching and tenant isolation. The global list tables are copied into
+      # a per-package schema (driverblocktest), so this reuses the migrated
+      # database without colliding with the extractor, handlers and cve-sync
+      # steps that also write lists.
+      - name: internal/driverblock DB-gated tests
+        env:
+          PATCHED_DB_TESTS_REQUIRED: "1"
+        run: go test -count=1 -v -timeout=120s ./internal/driverblock/...
+
+      # PAT-2393: software declaration acceptance through the production
+      # router (JWT, tenant, role and declaration contracts), which no other
+      # step runs: ./cmd/patched-api is outside every package list above. It
+      # reuses the schema the "integration tests" step migrated, so it must
+      # stay after that step, and it is last because it leaves synthetic
+      # tenants and catalogue rows behind in patched_test. It only ever
+      # connects to a local database whose name contains "test".
+      # PATCHED_DB_TESTS_REQUIRED makes a missing TEST_DATABASE_URL fail
+      # rather than skip every test and report green.
+      - name: cmd/patched-api DB-gated acceptance tests
+        env:
+          PATCHED_DB_TESTS_REQUIRED: "1"
+        run: go test -count=1 -v -timeout=120s ./cmd/patched-api/...

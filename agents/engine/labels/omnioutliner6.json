@@ -1,0 +1,24 @@
+{
+  "label": "omnioutliner6",
+  "name": "OmniOutliner",
+  "type": "dmg",
+  "app_path": "/Applications/OmniOutliner.app",
+  "expected_team_id": "34YW5XSRB7",
+  "download": {
+    "method": "resolved",
+    "strategy": "sparkle-appcast",
+    "source": "https://update.omnigroup.com/appcast/com.omnigroup.OmniOutliner6"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

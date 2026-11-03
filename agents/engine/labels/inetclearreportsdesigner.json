@@ -1,0 +1,26 @@
+{
+  "label": "inetclearreportsdesigner",
+  "name": "i-Net Clear Reports Designer",
+  "type": "appindmg",
+  "app_path": "/Applications/i-Net Clear Reports Designer.app",
+  "expected_team_id": "9S2Y97K3D9",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.inetsoftware.de/products/clear-reports/designer"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "clear-reports-designer"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "pat-1328",
+    "reviewed_at": "2026-08-13",
+    "notes": "PAT-1328 (2026-08-13): that human review has now happened and its outcome is NEGATIVE — keep allowlisted=false. The vendor restructured the site, so no download URL can be resolved: `source` below 301s to /en/i-net-clear-reports/, and the current download page carries neither a version string nor a static .dmg link. Downloads are served by an obfuscated JSON API (POST ?method=download.getAvailableDownloads, Kytos-encrypted application/binary-json body) with no resolver in verifier/verify.py, so `strategy: vendor-api` classifies as 'unsupported' and is never probed. Because the artifact has never been obtained, BOTH `type` (appindmg here / dmg in the shell stanza — could still be pkgInDmg) and `expected_team_id` are unverified vendor facts. Per AGENTS.md an unverified label stays out of the allowlist. Not in the Dashboard Software Catalogue either, so nothing manages this app today."
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "label": "flowjo",
+  "name": "FlowJo 11",
+  "type": "dmg",
+  "app_path": "/Applications/FlowJo 11.app",
+  "expected_team_id": "C79HU5AD9V",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.flowjo.com/flowjo/download"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

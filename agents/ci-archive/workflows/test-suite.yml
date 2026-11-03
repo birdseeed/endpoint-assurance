@@ -1,0 +1,59 @@
+name: test-suite
+
+# PAT-1516: run the whole Python test suite on every pull request, and on main
+# after merge. Deliberately no `paths:` filter.
+#
+# Why unfiltered. Before this, CI ran an allowlist of test files named
+# individually inside path-filtered workflows. 18 of the repository's 32 test
+# files were named nowhere, so ~2/3 of the suite never executed on any pull
+# request. A Windows evidence test sat failing on main from
+# 1 September 2026 and no check reported it, because no check ran it
+# (PAT-1511). Among the ungated files were the retained verification
+# controls: Team ID pinning, Windows artifact signing and upload, and signed
+# attestation evidence.
+#
+# An allowlist has to be maintained and its failure mode is silent: every new
+# test file is ungated until someone remembers to add it, which is how 18
+# accumulated. This job cannot drift.
+#
+# The pre-existing named jobs are kept as-is. Their granular check names are
+# useful for triage; they are simply no longer the only coverage.
+#
+# Cost: the full suite runs in well under a minute, which matters under
+# PAT-1443's Actions budget. `push` is limited to main so a pull-request branch
+# is not billed twice for the same commit.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    name: Python test suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --disable-pip-version-check --quiet \
+            -r requirements.txt -r requirements-test.txt
+
+      # Some tests exercise zsh-specific behaviour (Installomator argument
+      # handling) by shelling out to `zsh`, which is not on ubuntu-latest.
+      # Install the real binary rather than skipping them: per the
+      # no-zsh-skip-guard convention in validate-labels.yml, a skip guard would
+      # silently drop the assertions this coverage exists for.
+      - name: Install zsh for macOS script and Installomator contract tests
+        run: sudo apt-get update -qq && sudo apt-get install -y zsh
+
+      - name: Run the full Python test suite
+        run: python3 -m pytest -q

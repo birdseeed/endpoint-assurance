@@ -1,0 +1,24 @@
+{
+  "label": "debookee",
+  "name": "Debookee",
+  "type": "zip",
+  "app_path": "/Applications/Debookee.app",
+  "expected_team_id": "AATLWWB4MZ",
+  "download": {
+    "method": "resolved",
+    "strategy": "sparkle-appcast",
+    "source": "https://www.iwaxx.com/debookee/appcast.xml"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

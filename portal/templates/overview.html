@@ -1,0 +1,705 @@
+{% extends "base.html" %}
+{% from "_macros.html" import kpi_summary %}
+{% block content %}
+<div class="page-head">
+  <p class="page-kicker">Endpoint assurance</p>
+  <div class="page-head__title">
+    <h1>Overview</h1>
+  </div>
+  {#- PAT-2254: the tenant name (cleaned of internal identifiers in main.py's
+     _customer_facing_tenant_name) is the subline, not the page title. -#}
+  <p class="meta">{{ tenant_name }} &middot; Snapshot generated {{ data.generated_at | humandate_nowrap(true) }} (UTC)</p>
+</div>
+
+{# PAT-2160: "Top 3 actions" + "Your estate at a glance" welcome block,
+   deliberately above the "Needs attention" pill card (PAT-2159) rather
+   than folded into it - this block links out to the fuller detail the
+   pill card and other pages already carry; it never recomputes their
+   severity counts as a second scoring surface (rules-based only, no LLM -
+   Andy's ruling on this ticket). Andy's follow-up ruling (2026-09-25,
+   "Actions only, trim duplicates"): actions are the headline, so they
+   render first/left with the stronger visual weight (portal.css's
+   PAT-2160 block); the glance list is trimmed to facts Needs attention
+   does not already carry (device count, CVE assessment coverage,
+   software waiting on a decision - reporting loss, confirmed CVE counts
+   and open alerts are dropped, since each already has its own row, with
+   its own stale/unavailable handling, immediately below) and renders as
+   a compact, muted secondary column. Two columns from 1024px, stacked
+   below that (actions still first), kept compact so it does not push the
+   Needs attention card below the fold at 1280x800. See main.py's
+   _estate_glance_view/rank_top_actions docstrings for the source rules
+   behind each line: a line only ever appears when its own source read
+   succeeded and is current (root AGENTS.md - absence requires authority -
+   never a fabricated zero), and no action here is ever invented from
+   absent data. #}
+<section class="card welcome-block overview-hero" aria-label="Recommended actions and your estate summary">
+  <div class="welcome-grid">
+    <div class="welcome-col welcome-col--actions">
+      <h2>Top 3 actions</h2>
+      {% if top_actions.actions %}
+      <ol class="welcome-list welcome-list--actions">
+        {% for action in top_actions.actions %}
+        <li><a href="{{ action.link }}">{{ action.text }}</a></li>
+        {% endfor %}
+      </ol>
+      {% elif top_actions.all_fresh %}
+      <p class="welcome-empty">Nothing needs action right now.</p>
+      {% else %}
+      <p class="empty">Some sources are stale or unavailable, so this list may be incomplete.</p>
+      {% endif %}
+    </div>
+    <div class="welcome-col welcome-col--glance">
+      <h2>Your estate at a glance</h2>
+      {% if glance_lines %}
+      <ul class="welcome-list">
+        {% for line in glance_lines %}
+        <li>{{ line.text }} <a href="{{ line.link }}">{{ line.link_label }}</a></li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="empty">Your estate summary is temporarily unavailable.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{# Coverage as the hero (PAT-1602 ruling, 2026-09-13; PAT-2177 moved it
+   directly under the welcome block - stale evidence invalidates every
+   card below it, so freshness is read first): stated as a fraction,
+   never a bare percentage, with a standing statement that unseen devices
+   are never counted as compliant - not one tile among six. #}
+<section class="card coverage-hero">
+  <div class="coverage-hero__head">
+    <div>
+      <h2>What we can see of your estate</h2>
+      <div class="coverage-hero__figure">
+        <span class="coverage-hero__count">{{ coverage.reporting }}<span class="coverage-hero__of"> of {{ coverage.total }}</span></span>
+        {% if coverage.pct is not none %}
+        <span class="coverage-hero__pct {{ 'ok-text' if coverage.pct >= 95 else ('warn-text' if coverage.pct >= 80 else 'bad-text') }}">{{ coverage.pct }}%</span>
+        {% endif %}
+      </div>
+    </div>
+    {% if data.oldest_successful_ingest %}<p class="meta coverage-hero__since">Oldest successful ingest: <span class="nowrap">{{ data.oldest_successful_ingest | humandate }}</span><br>Not a claim of continuous coverage</p>{% endif %}
+  </div>
+
+  <div class="bar-stack" role="img" aria-label="{{ coverage.reporting }} of {{ coverage.total }} devices reporting in the last 24 hours{% if coverage.retired %}, {{ coverage.retired }} retired{% endif %}">
+    <span class="bar-stack__seg bar-stack__seg--ok" style="width:{{ coverage.reporting_pct }}%"></span>
+    <span class="bar-stack__seg bar-stack__seg--bad" style="width:{{ coverage.missing_pct }}%"></span>
+    {% if coverage.retired %}<span class="bar-stack__seg bar-stack__seg--muted" style="width:{{ coverage.retired_pct }}%"></span>{% endif %}
+  </div>
+  <div class="coverage-hero__legend">
+    <span class="coverage-hero__legend-item"><i class="legend-dot legend-dot--ok"></i>Reporting (24h) <strong>{{ coverage.reporting }}</strong></span>
+    <span class="coverage-hero__legend-item"><i class="legend-dot legend-dot--bad"></i>Not seen in 24h <strong>{{ coverage.missing }}</strong></span>
+    {#- PAT-2135: retired devices are the customer's own decision, never a
+       coverage gap (D1/D2) - shown here whenever the platform reports any,
+       carved out of "Not seen in 24h" above by coverage_geometry itself. -#}
+    {% if coverage.retired %}<span class="coverage-hero__legend-item"><i class="legend-dot legend-dot--muted"></i>Retired <strong>{{ coverage.retired }}</strong></span>{% endif %}
+  </div>
+
+  <p class="coverage-hero__note">Devices we cannot currently see are <strong>not counted as compliant</strong> anywhere in this portal or in any report.</p>
+  {% if data.devices_degraded %}<p class="meta"><span class="pill pill-warn">{{ data.devices_degraded }}</span> device{{ '' if data.devices_degraded == 1 else 's' }} reporting a collection issue - included in the counts above, but {{ 'its' if data.devices_degraded == 1 else 'their' }} data may be incomplete.</p>{% endif %}
+  <p class="card-foot"><a href="/devices">View device roster</a></p>
+</section>
+
+{# PAT-2159: one "Needs attention" card, one row per source, replacing the
+   old two-card split (separate "Needs attention"/"CVE attention" cards,
+   each one red prose sentence). Reporting loss (PAT-1951) and unapproved-
+   software alerts (PAT-2097) keep their place above the CIS/CVE rows.
+   CIS and CVE severity counts render as pills reusing the existing
+   pill-critical/pill-high tones (D4: still two distinct rows with two
+   distinct counts, never blended into one) - a zero pill uses pill-muted
+   rather than the alert tone, and colour is never the only signal, so the
+   label and count stay regardless (PAT-2140's lesson). "Nothing needs
+   attention" only renders when attention.all_clear - see
+   main.py:_attention_view for why that requires every source to be both
+   zero and fresh, never just zero (root AGENTS.md - absence requires
+   authority). #}
+<section class="card attention-summary" aria-labelledby="attention-heading">
+  <div class="attention-summary__head">
+    <h2 id="attention-heading">Needs attention</h2>
+  </div>
+  <div class="attention-summary__items">
+    {% if not coverage.total %}
+    <p class="attention-summary__unknown">No known devices are currently returned, so no current estate posture can be confirmed.</p>
+    {% endif %}
+    {% if coverage.missing %}
+    <div class="attention-summary__item attention-summary__item--bad">
+      <strong>{{ coverage.missing }} device{{ '' if coverage.missing == 1 else 's' }} not reporting in 24 hours</strong>
+      <span>{% if coverage.total and not coverage.reporting %}Current estate posture cannot be confirmed.{% else %}Current assurance evidence may be incomplete.{% endif %}</span>
+      <a href="/devices?view=not_reporting_24h">View affected devices and last seen times</a>
+    </div>
+    {% endif %}
+    {% if alert_counts.available and alert_counts.open %}
+    {#- PAT-2097: kept small, per the ticket - one item in the existing
+       Needs attention section, not a new card. #}
+    <div class="attention-summary__item attention-summary__item--bad">
+      <strong>{{ alert_counts.open }} unapproved software alert{{ '' if alert_counts.open == 1 else 's' }} open{% if alert_counts.acknowledged %}, {{ alert_counts.acknowledged }} acknowledged{% endif %}</strong>
+      <span>Unapproved software has been observed on your estate since your last decision.</span>
+      <a href="/software/alerts">View alerts</a>
+    </div>
+    {% endif %}
+
+    <div class="attention-row">
+      <div class="attention-row__head">
+        <span class="attention-row__label">CIS checks failing</span>
+        <div class="attention-pills">
+          <span class="pill {{ attention.cis_pill_critical }}">{{ findings.critical }} critical</span>
+          <span class="pill {{ attention.cis_pill_high }}">{{ findings.high }} high</span>
+        </div>
+        <a href="/findings#cis-compliance-findings">View CIS checks</a>
+      </div>
+      {% if attention.cis_stale %}
+      <p class="attention-row__meta attention-row__meta--warn">Latest recorded counts. No device has reported in the last 24 hours, so this is historical, not confirmed current posture.</p>
+      {% endif %}
+    </div>
+
+    {# PAT-1953: CVE attention remains a separate platform read model from
+       CIS findings_open, and stays its own row with its own resolution
+       path (D4 - never blended into the CIS row or its count). available:
+       false (including the key being entirely absent, e.g. before the
+       platform PR ships) must render as genuinely unknown, never as a
+       false "0 critical, 0 high" clean read. #}
+    <div class="attention-row">
+      <div class="attention-row__head">
+        <span class="attention-row__label">Confirmed CVEs</span>
+        {% if cve_attention.available %}
+        <div class="attention-pills">
+          <span class="pill {{ attention.cve_pill_critical }}">{{ cve_attention.critical }} critical</span>
+          <span class="pill {{ attention.cve_pill_high }}">{{ cve_attention.high }} high</span>
+        </div>
+        <a href="/findings#cve-findings">View CVE findings</a>
+        {% endif %}
+      </div>
+      {% if not cve_attention.available %}
+      <p class="attention-row__meta attention-row__meta--warn">CVE attention is not yet available for this estate.</p>
+      {% endif %}
+      {# PAT-2025: CVE assessment coverage - additive tenant-level read
+         model (contracts/portal-api.md "CVE assessment state (PAT-2024)"),
+         read via a lightweight GET /v1/portal/findings probe since
+         /v1/portal/overview does not carry it, and independent of
+         cve_attention itself (a separate platform read model - see above).
+         Unavailable renders as genuinely unknown, never a false "just
+         synced" read. #}
+      {% if cve_assessment_unavailable %}
+      <p class="attention-row__meta attention-row__meta--warn">CVE assessment coverage is temporarily unavailable.</p>
+      {% else %}
+      <p class="attention-row__meta">CVE data last checked {% if cve_assessment.last_full_match_at %}{{ cve_assessment.last_full_match_at | humandate_nowrap(true) }} UTC{% else %}not yet recorded{% endif %} &middot; vulnerability feed last updated {% if cve_assessment.last_feed_sync_at %}{{ cve_assessment.last_feed_sync_at | humandate_nowrap(true) }} UTC{% else %}not yet recorded{% endif %}</p>
+      {#- PAT-2160: the coverage figure moved to "Your estate at a glance"
+         (Andy: nothing said twice); only its no-coverage fallback stays here. -#}
+      {% if cve_assessment.coverage_pct is none %}
+      <p class="attention-row__meta">No installed products have been assessed for CVEs yet.</p>
+      {% endif %}
+      {% endif %}
+    </div>
+
+    {% if attention.all_clear %}
+    <p class="attention-summary__empty">Nothing needs attention.</p>
+    {% endif %}
+  </div>
+  <p class="meta attention-summary__foot">Review the affected evidence and route remediation through your management platform.</p>
+  {#- PAT-1927: one plain link to the Cyber Essentials v3.3 readiness page,
+     kept minimal rather than duplicating its counts here. #}
+  <p class="card-foot"><a href="/ce-readiness">See Cyber Essentials v3.3 readiness evidence</a></p>
+</section>
+
+{# PAT-2190: the ten Overview information cards (contracts/portal-api.md
+   "overview/cards", platform PAT-2207) - a high-signal estate summary
+   before any detailed chart or evidence table. Placement (orchestrator
+   ruling, superseding the earlier Andy-review placement): PAT-2160's
+   shipped 1280x800 fold guarantee for Top 3 actions and Needs attention
+   holds, so these cards render AFTER Needs attention and before the first
+   detailed chart or evidence section (here, the High-risk software/Browser
+   extensions row) - never between the welcome block and Needs attention.
+
+   Nine of the ten cards are one link each; recent_activity carries no href
+   (main.py's OVERVIEW_CARD_LINKS) because the platform marks it
+   permanently unavailable and /whats-new is the product changelog, not
+   estate activity - a card with nothing real to link to renders as a
+   plain, non-interactive, non-focusable block instead (still readable by
+   a screen reader in normal document order, just not in the tab order).
+
+   Each interactive card's headline is either its one primary figure or,
+   for unknown/unavailable, a short neutral state word - never a number for
+   those two states (root AGENTS.md - absence requires authority; PAT-2190
+   - never infer a healthy state from missing data) - and its one
+   supporting line is either a compact stat breakdown or, when the card is
+   not complete, the reason in plain English. GET /v1/portal/overview/cards
+   is a separate platform call from GET /v1/portal/overview above: its own
+   failure (5xx, 404 because the platform isn't deployed yet, or a timeout)
+   degrades to one honest line here and never touches the rest of this
+   page. Each card is deliberately a single self-contained element so it
+   can become a PAT-2189 widget later without restructuring this markup. #}
+<section class="overview-cards" aria-label="Estate summary">
+  {% if overview_cards.available %}
+  <div class="overview-cards__grid">
+    {% for card in overview_cards.cards %}
+    {%- set freshness_text = ("Last seen " ~ (card.freshness.observed_at | humandate(true)) ~ " UTC") if card.freshness.observed_at else "" -%}
+    {%- set full_text = card.label ~ ": " ~ card.headline ~ (" " ~ card.unit if card.unit else "") ~ (". " ~ card.support if card.support else "") ~ (". " ~ freshness_text if freshness_text else "") -%}
+    {% if card.href %}
+    <a class="ov-card ov-card--{{ card.state }} ov-card--tone-{{ card.tone }}" data-card="{{ card.key }}" href="{{ card.href }}" title="{{ full_text }}">
+      <span class="ov-card__label" title="{{ card.label }}">{{ card.label }}</span>
+      <span class="ov-card__figure"><span class="ov-card__headline">{{ card.headline }}</span>{% if card.unit %}<span class="ov-card__unit">{{ card.unit }}</span>{% endif %}</span>
+      {% if card.support %}<span class="ov-card__support" title="{{ card.support }}">{{ card.support }}</span>{% endif %}
+      {% if freshness_text %}<span class="ov-card__freshness" title="{{ freshness_text }}">{{ freshness_text }}</span>{% endif %}
+    </a>
+    {% else %}
+    <div class="ov-card ov-card--{{ card.state }} ov-card--tone-{{ card.tone }}" data-card="{{ card.key }}" title="{{ full_text }}">
+      <span class="ov-card__label" title="{{ card.label }}">{{ card.label }}</span>
+      <span class="ov-card__figure"><span class="ov-card__headline">{{ card.headline }}</span>{% if card.unit %}<span class="ov-card__unit">{{ card.unit }}</span>{% endif %}</span>
+      {% if card.support %}<span class="ov-card__support" title="{{ card.support }}">{{ card.support }}</span>{% endif %}
+      {% if freshness_text %}<span class="ov-card__freshness" title="{{ freshness_text }}">{{ freshness_text }}</span>{% endif %}
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="overview-cards__unavailable">Estate summary is temporarily unavailable. The rest of this page is unaffected.</p>
+  {% endif %}
+</section>
+
+{# PAT-2177/PAT-2231: the ongoing-review cards, redesigned as a consistent
+   pair (PAT-2231). High-risk software reads only the platform's PAT-2093
+   urgency and reasons for newly found software (the one risk read model
+   the platform exposes today), and says so; Browser extensions reads the
+   platform's own risk_level and approval_state. Both cards share one
+   shape now - head, then a single `.risk-card__summary` row that reads as
+   one figure (headline number + its badges, PAT-2231 review: these
+   previously sat as disconnected paragraphs), then a top-N preview list,
+   then exactly one primary action in the card-foot, styled with the
+   existing .btn/.btn-small idiom rather than a plain text link so neither
+   card ends on an afterthought-looking link. Both drill into filtered
+   views. Neither turns an unreadable or unassessed value into a clean
+   one - the .grid-review pair stretches to equal height (portal.css) so
+   a short "nothing found" card never reads as broken next to a full one. #}
+<div class="grid grid-review">
+<section class="card risk-card" aria-labelledby="high-risk-heading">
+  <div class="risk-card__head">
+    <h2 id="high-risk-heading">High-risk software</h2>
+    {% if high_risk.status != 'unavailable' %}<p class="meta">Newly found in the last {{ high_risk.window_days }} day{{ '' if high_risk.window_days == 1 else 's' }}, rated from trust evidence and known vulnerabilities.</p>{% endif %}
+  </div>
+  {% if high_risk.status == 'unavailable' %}
+  <p class="empty risk-card__filler">Software risk could not be read for this estate right now. This is not a confirmed absence of risky software.</p>
+  {% else %}
+  <div class="risk-card__summary">
+    <div class="risk-card__figure">
+      {% if high_risk.count and high_risk.count_href %}<a class="risk-card__count" href="{{ high_risk.count_href }}">{{ high_risk.count }}</a>{% else %}<span class="risk-card__count">{{ high_risk.count }}</span>{% endif %}
+      <span class="risk-card__unit">product{{ '' if high_risk.count == 1 else 's' }} warrant investigation{% if high_risk.count %}, on {{ 'at least ' if high_risk.devices_is_floor }}{{ high_risk.devices }} device{{ '' if high_risk.devices == 1 else 's' }}{% endif %}</span>
+    </div>
+    {% if high_risk.counts.critical or high_risk.counts.high or high_risk.not_assessed %}
+    <div class="risk-card__badges">
+      {% if high_risk.counts.critical %}<a class="pill pill-critical" href="{{ high_risk.level_hrefs.critical }}">{{ high_risk.counts.critical }} Critical</a>{% endif %}
+      {% if high_risk.counts.high %}<a class="pill pill-high" href="{{ high_risk.level_hrefs.high }}">{{ high_risk.counts.high }} High</a>{% endif %}
+      {% if high_risk.not_assessed %}<a class="pill pill-info" href="{{ high_risk.level_hrefs.not_assessed }}">{{ high_risk.not_assessed }} not assessed</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% if high_risk.not_assessed %}<p class="meta risk-card__note">Not yet rated, so not counted as low risk.</p>{% endif %}
+  {% if high_risk.status == 'data' %}
+  <ul class="risk-list risk-list--compact">
+    {% for p in high_risk.products %}
+    <li class="risk-list__row">
+      <span class="risk-list__row-name"><span class="pill {{ p.urgency_pill_class }}">{{ p.urgency_label }}</span><a href="{{ p.href }}"><strong>{{ p.name }}</strong></a></span>
+      <span class="risk-list__meta">{{ p.device_count }} device{{ '' if p.device_count == 1 else 's' }}{% if p.first_seen_at %} &middot; first seen {{ p.first_seen_at | humandate }}{% endif %}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="meta">Nothing newly found in this window is rated critical or high.</p>
+  {% endif %}
+  {% endif %}
+  <p class="card-foot"><a class="btn btn-small" href="{{ high_risk.primary_action.href }}">{{ high_risk.primary_action.text }}</a></p>
+</section>
+
+<section class="card risk-card" aria-labelledby="extension-risk-heading">
+  <div class="risk-card__head">
+    <h2 id="extension-risk-heading">Browser extensions</h2>
+    {% if extension_risk.status in ('data', 'clear') %}<p class="meta">{{ extension_risk.total }} extension{{ '' if extension_risk.total == 1 else 's' }} across your estate.</p>{% endif %}
+  </div>
+  {% if extension_risk.status == 'unavailable' %}
+  <p class="empty risk-card__filler">Browser extensions could not be read for this estate right now. This is not a confirmed absence of risky extensions.</p>
+  {% elif extension_risk.status == 'empty' %}
+  <p class="meta risk-card__filler">No browser extensions have been reported by this estate.</p>
+  {% else %}
+  <div class="risk-card__summary">
+    <div class="risk-card__figure">
+      <span class="risk-card__count">{{ extension_risk.elevated }}</span>
+      <span class="risk-card__unit">elevated risk{% if extension_risk.elevated %}, on {{ extension_risk.elevated_devices }} device{{ '' if extension_risk.elevated_devices == 1 else 's' }}{% endif %}</span>
+    </div>
+    <div class="risk-card__badges">
+      <a class="pill {{ 'pill-high' if extension_risk.waiting else 'pill-muted' }}" href="{{ extension_risk.waiting_href }}">{{ extension_risk.waiting }} waiting on a decision</a>
+      <span class="pill {{ 'pill-info' if extension_risk.unassessed else 'pill-muted' }}">{{ extension_risk.unassessed }} not assessed</span>
+    </div>
+  </div>
+  {% if extension_risk.top %}
+  <ul class="risk-list risk-list--compact">
+    {% for e in extension_risk.top %}
+    <li class="risk-list__row">
+      <span class="risk-list__row-name"><a href="{{ e.href }}"><strong>{{ e.name }}</strong></a></span>
+      <span class="risk-list__meta">{% if e.browser %}{{ e.browser | capitalize }} &middot; {% endif %}{{ e.device_count }} device{{ '' if e.device_count == 1 else 's' }} &middot; {{ e.decision }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% elif extension_risk.status == 'clear' %}
+  <p class="meta">No extension is rated elevated risk and none is waiting on a decision.</p>
+  {% endif %}
+  {% endif %}
+  <p class="card-foot">
+  {% if extension_risk.primary_action %}
+  <a class="btn btn-small" href="{{ extension_risk.primary_action.href }}">{{ extension_risk.primary_action.text }}</a>
+  {% else %}
+  <a class="btn btn-small" href="/software?type=extension">View browser extensions</a>
+  {% endif %}
+  </p>
+</section>
+</div>
+
+{# PAT-2093/PAT-2159: new software by urgency, additive to this overview
+   response (contracts/portal-api.md "new_software"). main.py's
+   _new_software_view always returns a status: "unavailable" (the
+   platform's own null for "could not be computed", a missing key on an
+   older platform, or a malformed shape) still renders this card with an
+   explicit unavailable line - an error must never look identical to a
+   confirmed "nothing new" read (root AGENTS.md - absence requires
+   authority). "empty" (a trustworthy read where every count is genuinely
+   zero) is the one status that hides the card entirely. "data" renders it
+   as before.
+
+   PAT-2254 (Andy, 28 September 2026): software review is done in the
+   Software section, not here. This card is a read only summary: the
+   urgency strip and the top rows, every one of them a link into /software
+   pre-filtered (main.py's _software_filter_url). The inline Set state /
+   Apply controls PAT-2139 left here are gone, so a customer opens a
+   product in /software to review it and this page carries no write path. #}
+{% if new_software.status != 'empty' %}
+<section class="card new-software" aria-labelledby="new-software-heading">
+  <div class="section-head">
+    <div>
+      <h2 id="new-software-heading">New software</h2>
+      {% if new_software.status == 'data' %}
+      <p class="meta">First seen on your estate in the last {{ new_software.window_days }} day{{ '' if new_software.window_days == 1 else 's' }}, sorted by urgency.{% if new_software.truncated %} More was found than is shown below - the counts still cover everything in the window.{% endif %}</p>
+      {% endif %}
+    </div>
+  </div>
+  {% if new_software.status == 'unavailable' %}
+  <p class="empty">New software could not be read for this estate right now. This is not a confirmed absence of new software.</p>
+  {% else %}
+  {# PAT-2140: reuse the existing severity tones rather than invent new
+     colours - critical/high stay the alert tone (bad-text), medium stays
+     the warn tone. not_assessed used to share warn-text with medium (the
+     two counters were indistinguishable) - it now gets its own distinct
+     neutral (graphite-text, the same "not yet assessed" reading the CVE
+     assessment badge already gives that state elsewhere, never confused
+     with a clean/low reading). Low is always muted, matching its pill
+     tone below, and a zero count is muted whatever the level - previously
+     a zero fell through to the same plain, uncoloured text as a real Low
+     count, which is exactly what Andy's live review flagged as "no colour
+     coding". Colour is never the only signal: the label stays either way. #}
+  {{ kpi_summary([
+    ('Critical', new_software.counts.critical, 'bad-text' if new_software.counts.critical else 'mute-text', new_software.level_hrefs.critical),
+    ('High', new_software.counts.high, 'bad-text' if new_software.counts.high else 'mute-text', new_software.level_hrefs.high),
+    ('Not assessed', new_software.counts.not_assessed, 'graphite-text' if new_software.counts.not_assessed else 'mute-text', new_software.level_hrefs.not_assessed),
+    ('Medium', new_software.counts.medium, 'warn-text' if new_software.counts.medium else 'mute-text', new_software.level_hrefs.medium),
+    ('Low', new_software.counts.low, 'mute-text', new_software.level_hrefs.low)
+  ]) }}
+  {% if new_software.products %}
+  <div class="table-scroll">
+    <table class="data-table new-software-table">
+      <colgroup>
+        <col class="ns-col-product"><col class="ns-col-platform"><col class="ns-col-urgency">
+        <col class="ns-col-first-seen"><col class="ns-col-devices">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Product</th><th>Platform</th><th>Urgency</th>
+          <th>First seen</th><th>Devices</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in new_software.products %}
+        <tr>
+          <td><a class="cell-anywrap" href="{{ p.href }}">{{ p.name }}</a></td>
+          <td>{{ p.platform | platform_display if p.platform else 'No platform' }}</td>
+          <td>
+            <span class="pill {{ p.urgency_pill_class }}">{{ p.urgency_label }}</span>
+            {% if p.reasons %}
+            <details class="ns-reasons">
+              <summary>{{ p.reasons | length }} reason{{ '' if p.reasons | length == 1 else 's' }}</summary>
+              <ul class="ns-reasons__list">
+                {% for reason in p.reasons %}
+                <li>{% if reason.level_label %}<strong>{{ reason.level_label }}:</strong> {% endif %}{{ reason.detail }}</li>
+                {% endfor %}
+              </ul>
+            </details>
+            {% endif %}
+          </td>
+          {# PAT-2140: date and time on their own lines (rather than one
+             long "24 Sep 2026 20:51 UTC" string) so this column wraps at
+             most twice at 1280px instead of wrapping one word per line. #}
+          <td class="mono cell-evidence">
+            {%- if p.first_seen_at -%}
+            <span class="cell-evidence__main nowrap">{{ p.first_seen_at | humandate }}</span><span class="cell-subtle">{{ p.first_seen_at | humantime }} UTC</span>
+            {%- else -%}-{%- endif -%}
+          </td>
+          <td>{{ p.device_count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  <p class="card-foot"><a href="{{ new_software.all_href }}">Review all {{ new_software.total }} new product{{ '' if new_software.total == 1 else 's' }} in Software</a></p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% macro control_coverage_card() %}
+<section class="card control-coverage" aria-labelledby="control-coverage-heading">
+  <div class="control-coverage__head">
+    <div>
+      <h2 id="control-coverage-heading">How CIS control coverage explains this score</h2>
+      <p class="control-coverage__intro">The CIS Level 1 score above is unchanged. This view does not create a second score, grade or composite: it shows the platform's latest evaluation evidence and the control definitions behind it.</p>
+    </div>
+    {% if not control_coverage_unavailable %}
+    <p class="meta">Coverage snapshot {{ control_coverage.generated_at | humandate(true) }} UTC</p>
+    {% endif %}
+  </div>
+
+  {% if control_coverage_unavailable %}
+  <p class="empty">CIS control coverage is temporarily unavailable. The existing CIS Level 1 score and the rest of this overview are still shown above.</p>
+  {% else %}
+  <div class="control-coverage__scope" aria-label="Control coverage scope">
+    <span class="control-coverage__scope-label">Platform mix</span>
+    {% if control_coverage.platforms %}
+      {% for platform in control_coverage.platforms %}<span class="pill pill-muted">{{ platform }}</span>{% endfor %}
+    {% else %}
+      <span class="control-coverage__empty">No active platforms returned</span>
+    {% endif %}
+  </div>
+
+  {% if control_coverage.total_zero %}
+  <p class="control-coverage__zero">No active control definitions are currently returned for this platform mix. The explicit zeroes below do not indicate a pass.</p>
+  {% endif %}
+
+  {% call kpi_summary([
+    ('Measured pass', control_coverage.measurements['pass'], 'ok-text'),
+    ('Evidenced fail', control_coverage.measurements['fail'], 'bad-text'),
+    ('Undetermined', control_coverage.measurements['undetermined'], 'warn-text'),
+    ('Not applicable', control_coverage.measurements['not_applicable'], ''),
+    ('Deliberately out of scope', control_coverage.controls['out_of_scope'], '')
+  ]) %}{% endcall %}
+
+  <p class="control-coverage__authority">Measured pass, evidenced fail, undetermined and not applicable are latest per-device, per-rule measurement counts supplied by the platform. Deliberately out of scope is a control-definition count. It means manual review, not a pass or an automated result.</p>
+
+  <ul class="control-coverage__states">
+    <li><strong>Measured pass:</strong> the latest measurement reported a pass.</li>
+    <li><strong>Evidenced fail:</strong> the latest measurement reported a fail with observed evidence.</li>
+    <li><strong>Undetermined:</strong> the platform could not determine a result. It is separate from an evidenced fail and is never treated as a pass.</li>
+    <li><strong>Not applicable:</strong> the latest measurement reported that the control did not apply.</li>
+    <li><strong>Deliberately out of scope:</strong> this means manual review. It is not evaluated automatically and is never treated as a pass.</li>
+  </ul>
+
+  {% call kpi_summary([
+    ('Control definitions', control_coverage.controls.total, ''),
+    ('Evaluated definitions', control_coverage.controls.evaluated, ''),
+    ('Undetermined evaluations', control_coverage.controls.undetermined_evaluations, 'warn-text')
+  ]) %}{% endcall %}
+
+  <section class="control-coverage__identifiers" aria-labelledby="control-identifier-heading">
+    <h3 id="control-identifier-heading">Definition identifiers</h3>
+    {% call kpi_summary([
+      ('CIS-mapped definitions', control_coverage.identifiers.cis_mapped, ''),
+      ('CIS-unmapped definitions', control_coverage.identifiers.cis_unmapped, ''),
+      ('Non-CIS definitions', control_coverage.identifiers.non_cis, '')
+    ]) %}{% endcall %}
+    <p class="control-coverage__authority">These are rule-definition counts, not device measurements. CIS-unmapped definitions have no CIS benchmark mapping; non-CIS definitions belong to another control namespace. Neither is shown as a mapped CIS identifier.</p>
+  </section>
+
+  <section class="control-coverage__benchmarks" aria-labelledby="control-benchmarks-heading">
+    <h3 id="control-benchmarks-heading">Benchmark coverage</h3>
+    {% if control_coverage.benchmarks %}
+    <div class="table-scroll">
+      <table class="data-table control-coverage-table">
+        <thead>
+          <tr>
+            <th class="ccov-col-benchmark">Benchmark</th>
+            <th class="col-tertiary">Version</th>
+            <th class="ccov-col-num">Definitions</th>
+            <th class="ccov-col-num">Evaluated</th>
+            <th class="ccov-col-num">Pass</th>
+            <th class="ccov-col-num">Fail</th>
+            <th class="ccov-col-num">Undetermined</th>
+            <th class="col-tertiary">Not applicable</th>
+            <th class="col-tertiary">Out of scope</th>
+            <th class="col-tertiary">CIS mapped</th>
+            <th class="col-tertiary">CIS unmapped</th>
+            <th class="col-tertiary">Non-CIS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for benchmark in control_coverage.benchmarks %}
+          <tr>
+            <td class="ccov-col-benchmark"><span class="cell-truncate" title="{{ benchmark.benchmark }}">{{ benchmark.benchmark }}</span></td>
+            <td class="mono col-tertiary">{{ benchmark.benchmark_version }}</td>
+            <td>{{ benchmark.controls.total }}</td>
+            <td>{{ benchmark.controls.evaluated }}</td>
+            <td class="ok-text">{{ benchmark.measurements['pass'] }}</td>
+            <td class="bad-text">{{ benchmark.measurements['fail'] }}</td>
+            <td class="warn-text">{{ benchmark.measurements.undetermined }}</td>
+            <td class="col-tertiary">{{ benchmark.measurements.not_applicable }}</td>
+            <td class="col-tertiary">{{ benchmark.controls.out_of_scope }}</td>
+            <td class="col-tertiary">{{ benchmark.identifiers.cis_mapped }}</td>
+            <td class="col-tertiary">{{ benchmark.identifiers.cis_unmapped }}</td>
+            <td class="col-tertiary">{{ benchmark.identifiers.non_cis }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty">No active benchmark and version pairs were returned for this platform mix.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+</section>
+{% endmacro %}
+
+{# PAT-2177: when the evidence is current and no critical or high CIS check
+   is failing, CIS compresses to one posture card and the full score,
+   trend, severity and control-coverage detail folds away (still one click
+   from the page). While the baseline is being fixed, or the evidence is
+   stale, the full CIS layout stays exactly as it was. #}
+{% if cis_healthy %}
+<div class="grid grid-overview grid-cis-compact">
+  <section class="card cis-compact" aria-labelledby="cis-compact-heading">
+    <h2 id="cis-compact-heading">CIS posture</h2>
+    <div class="cis-compact__row"><span class="cis-compact__score">{{ dial.value }}</span><span class="meta">CIS Level 1 score, of 100</span></div>
+    <p><span class="pill pill-ok">Healthy</span> No critical or high CIS checks failing.{% if findings.medium or findings.low %} {{ findings.medium }} medium and {{ findings.low }} low still open.{% endif %}</p>
+    <p class="card-foot"><a href="/findings">View CIS checks</a></p>
+  </section>
+  <section class="card">
+    <h2>Update currency</h2>
+    {% if coverage.total and not coverage.reporting %}<p class="posture-caveat">No device has reported in the last 24 hours. Update status is historical, not current.</p>{% endif %}
+    <div class="stat-row">
+      <div class="stat"><span class="stat-num ok-text">{{ patch.up_to_date }}</span><span class="stat-name">Up to date</span></div>
+      <div class="stat"><span class="stat-num warn-text">{{ patch.pending }}</span><span class="stat-name">Pending</span></div>
+      <div class="stat"><span class="stat-num bad-text">{{ patch.failed }}</span><span class="stat-name">Failed</span></div>
+      <div class="stat"><span class="stat-num{% if patch.unknown is none %} stat-num-unavailable{% endif %}">{{ patch.unknown if patch.unknown is not none else "Not reported" }}</span><span class="stat-name">Unknown</span></div>
+    </div>
+  </section>
+</div>
+<details class="card cis-detail">
+  <summary>CIS score, trend and control coverage</summary>
+  <div class="grid grid-overview">
+  
+    <section class="card card-dial">
+      <h2>CIS Level 1 score</h2>
+      {% if coverage.total and not coverage.reporting %}<p class="posture-caveat">No device has reported in the last 24 hours. This score is historical, not current posture.</p>{% endif %}
+      <div class="dial-wrap">
+        <svg viewBox="0 0 130 130" role="img" aria-label="CIS Level 1 score {{ dial.value }} out of 100">
+          <circle cx="65" cy="65" r="{{ dial.radius }}" fill="none" stroke="var(--hair-strong)" stroke-width="10"/>
+          <circle cx="65" cy="65" r="{{ dial.radius }}" fill="none"
+                  stroke="{% if dial.value >= 80 %}var(--ok){% elif dial.value >= 60 %}var(--warn){% else %}var(--bad){% endif %}"
+                  stroke-width="10" stroke-linecap="round"
+                  stroke-dasharray="{{ dial.dash }} {{ dial.circumference }}"
+                  transform="rotate(-90 65 65)"/>
+          <text x="65" y="62" text-anchor="middle" class="dial-value">{{ dial.value }}</text>
+          <text x="65" y="82" text-anchor="middle" class="dial-label">of 100</text>
+        </svg>
+      </div>
+    </section>
+  
+    <section class="card card-trend">
+      <h2>Score trend</h2>
+      {% if trend.points %}
+      <svg viewBox="0 0 {{ trend.width }} {{ trend.height }}" preserveAspectRatio="none" class="trend-svg" role="img" aria-label="CIS score trend">
+        <polyline points="{{ trend.points }}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="{{ trend.last_x }}" cy="{{ trend.last_y }}" r="4" fill="var(--accent)"/>
+      </svg>
+      <div class="trend-axis">
+        <span>{{ trend.labels[0] | humandate }}</span>
+        <span>{{ trend.labels[1] | humandate }}</span>
+      </div>
+      {% else %}
+      <p class="empty">Not enough history yet. The trend appears once a few days of scores have been recorded.</p>
+      {% endif %}
+    </section>
+  
+    <section class="card">
+      <h2>Failing CIS checks by severity</h2>
+      <div class="sev-row">
+        <div class="sev sev-critical"><span class="sev-count">{{ findings.critical }}</span><span class="sev-name">Critical</span></div>
+        <div class="sev sev-high"><span class="sev-count">{{ findings.high }}</span><span class="sev-name">High</span></div>
+        <div class="sev sev-medium"><span class="sev-count">{{ findings.medium }}</span><span class="sev-name">Medium</span></div>
+        <div class="sev sev-low"><span class="sev-count">{{ findings.low }}</span><span class="sev-name">Low</span></div>
+      </div>
+      <p class="card-foot"><a href="/findings">View CVE and CIS findings</a></p>
+    </section>
+  
+  
+  
+  </div>
+  {{ control_coverage_card() }}
+</details>
+{% else %}
+<div class="grid grid-overview">
+
+  <section class="card card-dial">
+    <h2>CIS Level 1 score</h2>
+    {% if coverage.total and not coverage.reporting %}<p class="posture-caveat">No device has reported in the last 24 hours. This score is historical, not current posture.</p>{% endif %}
+    <div class="dial-wrap">
+      <svg viewBox="0 0 130 130" role="img" aria-label="CIS Level 1 score {{ dial.value }} out of 100">
+        <circle cx="65" cy="65" r="{{ dial.radius }}" fill="none" stroke="var(--hair-strong)" stroke-width="10"/>
+        <circle cx="65" cy="65" r="{{ dial.radius }}" fill="none"
+                stroke="{% if dial.value >= 80 %}var(--ok){% elif dial.value >= 60 %}var(--warn){% else %}var(--bad){% endif %}"
+                stroke-width="10" stroke-linecap="round"
+                stroke-dasharray="{{ dial.dash }} {{ dial.circumference }}"
+                transform="rotate(-90 65 65)"/>
+        <text x="65" y="62" text-anchor="middle" class="dial-value">{{ dial.value }}</text>
+        <text x="65" y="82" text-anchor="middle" class="dial-label">of 100</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="card card-trend">
+    <h2>Score trend</h2>
+    {% if trend.points %}
+    <svg viewBox="0 0 {{ trend.width }} {{ trend.height }}" preserveAspectRatio="none" class="trend-svg" role="img" aria-label="CIS score trend">
+      <polyline points="{{ trend.points }}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="{{ trend.last_x }}" cy="{{ trend.last_y }}" r="4" fill="var(--accent)"/>
+    </svg>
+    <div class="trend-axis">
+      <span>{{ trend.labels[0] | humandate }}</span>
+      <span>{{ trend.labels[1] | humandate }}</span>
+    </div>
+    {% else %}
+    <p class="empty">Not enough history yet. The trend appears once a few days of scores have been recorded.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Failing CIS checks by severity</h2>
+    <div class="sev-row">
+      <div class="sev sev-critical"><span class="sev-count">{{ findings.critical }}</span><span class="sev-name">Critical</span></div>
+      <div class="sev sev-high"><span class="sev-count">{{ findings.high }}</span><span class="sev-name">High</span></div>
+      <div class="sev sev-medium"><span class="sev-count">{{ findings.medium }}</span><span class="sev-name">Medium</span></div>
+      <div class="sev sev-low"><span class="sev-count">{{ findings.low }}</span><span class="sev-name">Low</span></div>
+    </div>
+    <p class="card-foot"><a href="/findings">View CVE and CIS findings</a></p>
+  </section>
+
+  <section class="card">
+    <h2>Update currency</h2>
+    {% if coverage.total and not coverage.reporting %}<p class="posture-caveat">No device has reported in the last 24 hours. Update status is historical, not current.</p>{% endif %}
+    <div class="stat-row">
+      <div class="stat"><span class="stat-num ok-text">{{ patch.up_to_date }}</span><span class="stat-name">Up to date</span></div>
+      <div class="stat"><span class="stat-num warn-text">{{ patch.pending }}</span><span class="stat-name">Pending</span></div>
+      <div class="stat"><span class="stat-num bad-text">{{ patch.failed }}</span><span class="stat-name">Failed</span></div>
+      <div class="stat"><span class="stat-num{% if patch.unknown is none %} stat-num-unavailable{% endif %}">{{ patch.unknown if patch.unknown is not none else "Not reported" }}</span><span class="stat-name">Unknown</span></div>
+    </div>
+  </section>
+
+</div>
+{{ control_coverage_card() }}
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ static_url('js/portal.js') }}"></script>{% endblock %}

@@ -1,0 +1,30 @@
+name: acl-validate
+
+# Validates api-vps-artefacts/tailscale-acl.json parses cleanly.
+#
+# The file is HuJSON (Tailscale's superset of JSON: allows `//` line comments
+# and trailing commas). We strip `//` line comments with sed before piping to
+# `jq empty`. This catches structural breakage; it does not detect HuJSON-legal
+# trailing commas that jq would reject — if the file grows trailing commas
+# later, swap in a hujson-aware validator (e.g. `go run tailscale.com/cmd/hujson`).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'api-vps-artefacts/tailscale-acl.json'
+      - '.github/workflows/acl-validate.yml'
+  pull_request:
+    paths:
+      - 'api-vps-artefacts/tailscale-acl.json'
+      - '.github/workflows/acl-validate.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Strip // comments and validate with jq
+        run: |
+          sed -E 's@//.*$@@' api-vps-artefacts/tailscale-acl.json | jq empty

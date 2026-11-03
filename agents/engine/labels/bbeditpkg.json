@@ -1,0 +1,24 @@
+{
+  "label": "bbeditpkg",
+  "name": "BBEdit",
+  "type": "dmg",
+  "app_path": "/Applications/BBEdit.app",
+  "expected_team_id": "W52GZAXT98",
+  "download": {
+    "method": "resolved",
+    "strategy": "sparkle-plist-feed",
+    "source": "https://versioncheck.barebones.com/BBEdit.xml"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "PAT-1350: was declared strategy sparkle-appcast, but versioncheck.barebones.com/BBEdit.xml is a legacy Sparkle plist feed (a SUFeedEntries array), not an RSS appcast with <enclosure> elements -- the appcast resolver could never find a match, so bbeditpkg alone was blocking nightly catalogue signing. Now resolves via strategy sparkle-plist-feed, which picks the newest SUFeedEntryShortVersionString (compared numerically, the feed goes back to BBEdit 9) and requires its SUFeedEntryDownloadURL to be https. Type changed pkg -> dmg: the feed only ever names a .dmg (SUFeedEntryDownloadURL), with a vendor-published SUFeedEntryDownloadChecksum the verifier cross-checks against the downloaded artifact. The .pkg exists on barebones' CDN but is reached only by string-rewriting the .dmg URL (the old Installomator behaviour), is never referenced by the feed, and has no vendor-published hash -- verifying against provenance this pipeline doesn't actually have would defeat the point of it. Team ID and this resolution still require human review before allowlisted=true; bbedit.json (type dmg) points at the same feed and will hit the same original failure if it is ever probed -- out of scope for PAT-1350, worth a follow-up."
+  }
+}

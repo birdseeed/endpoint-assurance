@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="crumb"><a href="/reports">Reports</a> / Version sprawl</p>
+<div class="page-head">
+  <div class="page-head__title">
+    <h1>Version sprawl</h1>
+    <a class="btn btn-small" href="{{ pdf_url }}">Download PDF</a> <a class="btn btn-small" href="{{ csv_url }}">Download CSV</a>
+  </div>
+  <p class="meta">How many distinct versions of each installed application are live across your estate, how far behind the newest live version some devices are, and how that compares with the vendor's most recently released version where Patched holds a trusted source for it.</p>
+</div>
+
+<div class="card" aria-labelledby="vs-basis-title">
+  <h2 id="vs-basis-title">Basis</h2>
+  {% if not basis.complete %}
+  <div class="notice">Coverage is partial. {{ basis.statement }}</div>
+  {% elif basis.statement %}
+  <p class="meta">{{ basis.statement }}</p>
+  {% endif %}
+  <dl class="kv">
+    <dt>Devices assessed</dt>
+    <dd>{{ basis.devices_assessed if basis.devices_assessed is not none else 'Unknown' }} of {{ basis.devices_total if basis.devices_total is not none else 'Unknown' }}</dd>
+    <dt>Stale devices included</dt>
+    <dd>{{ basis.devices_stale if basis.devices_stale is not none else 'Unknown' }}</dd>
+    {% if basis.retired_devices_excluded %}
+    <dt>Retired devices excluded</dt>
+    <dd>{{ basis.devices_retired if basis.devices_retired is not none else 0 }}</dd>
+    {% endif %}
+  </dl>
+  {% if basis.not_counted %}
+  <p class="meta">Not counted in this report, and why:</p>
+  <ul>
+    {% for item in basis.not_counted %}
+    <li>{{ item.description or item.reason }}{% if item.count %} ({{ item.count }}){% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+
+<form method="get" action="/reports/software/version-sprawl" class="alerts-filter-form">
+  <label class="visually-hidden" for="vs-filter-platform">Platform</label>
+  <select class="search" id="vs-filter-platform" name="platform">
+    <option value="">All platforms</option>
+    <option value="macos"{% if platform_filter == 'macos' %} selected{% endif %}>macOS</option>
+    <option value="windows"{% if platform_filter == 'windows' %} selected{% endif %}>Windows</option>
+  </select>
+  <button type="submit" class="btn btn-small">Filter</button>
+  {% if platform_filter %}<a class="btn btn-small" href="/reports/software/version-sprawl">Clear filters</a>{% endif %}
+</form>
+
+<div class="card card-table">
+  {% if products %}
+  <div class="table-scroll">
+  <table class="data-table table-stack" id="vs-products-table">
+    <colgroup>
+      <col><col class="col-secondary"><col><col><col><col><col><col class="col-secondary">
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Product</th><th class="col-secondary">Platform</th><th>Versions live</th>
+        <th>Latest released</th><th>More than one major behind</th><th>Not comparable</th>
+        <th>CVEs on oldest</th><th class="col-secondary">Devices</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in products %}
+      <tr>
+        <td data-label="Product">
+          {{ p.name }}
+          {% if p.versions %}
+          <details>
+            <summary>{{ p.distinct_versions }} version{{ '' if p.distinct_versions == 1 else 's' }}</summary>
+            <div class="table-scroll">
+            <table class="data-table" aria-label="Version breakdown for {{ p.name }}">
+              <thead><tr><th>Version</th><th>Devices</th></tr></thead>
+              <tbody>
+                {% for v in p.versions %}
+                <tr>
+                  <td class="mono">{{ v.version }}</td>
+                  <td>{{ v.device_count }}{% if v.stale_device_count %} <span class="cell-subtle">({{ v.stale_device_count }} stale)</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            </div>
+          </details>
+          {% endif %}
+        </td>
+        <td class="col-secondary" data-label="Platform">{{ p.platform | platform_display if p.platform else '-' }}</td>
+        <td class="mono" data-label="Versions live">{{ p.oldest_version or '-' }} &ndash; {{ p.newest_version or '-' }} <span class="cell-subtle">({{ p.distinct_versions }})</span></td>
+        <td data-label="Latest released">
+          {% if p.latest_released %}
+          <span class="mono">{{ p.latest_released }}</span>
+          {% if p.latest_released_source_label %}<span class="cell-subtle">{% if p.latest_released_source_url %}<a href="{{ p.latest_released_source_url }}" target="_blank" rel="noopener noreferrer">{{ p.latest_released_source_label }}</a>{% else %}{{ p.latest_released_source_label }}{% endif %}{% if p.latest_released_checked_at %}, checked {{ p.latest_released_checked_at | humandate_nowrap }}{% endif %}</span>{% endif %}
+          {% else %}
+          Not known
+          {% endif %}
+        </td>
+        <td data-label="More than one major behind">{{ p.devices_more_than_one_major_behind }}</td>
+        <td data-label="Not comparable">{{ p.devices_not_comparable }}</td>
+        <td data-label="CVEs on oldest">
+          {% if p.cve_not_assessed_on_oldest_version %}
+          Not assessed
+          {% elif p.cve_count_on_oldest_version is not none %}
+          {{ p.cve_count_on_oldest_version }} CVE{{ '' if p.cve_count_on_oldest_version == 1 else 's' }}
+          {% else %}
+          Not assessed
+          {% endif %}
+        </td>
+        <td class="col-secondary" data-label="Devices">{{ p.device_count }}{% if p.stale_device_count %} <span class="cell-subtle">({{ p.stale_device_count }} stale)</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">No products match this filter.</p>
+  {% endif %}
+</div>
+
+{% if total_pages > 1 %}
+<nav class="pager" aria-label="Version sprawl pages">
+  {% if page > 1 %}
+  <a class="btn btn-small" href="{{ prev_url }}">&larr; Previous</a>
+  {% else %}
+  <span class="btn btn-small btn-disabled" aria-disabled="true">&larr; Previous</span>
+  {% endif %}
+  <span class="pager-status">Page {{ page }} of {{ total_pages }}</span>
+  {% if page < total_pages %}
+  <a class="btn btn-small" href="{{ next_url }}">Next &rarr;</a>
+  {% else %}
+  <span class="btn btn-small btn-disabled" aria-disabled="true">Next &rarr;</span>
+  {% endif %}
+</nav>
+{% endif %}
+<p class="toolbar-hint">This is an estimate from the application versions your devices reported, compared against each product's own newest live version and, where available, the vendor's most recently released version. It is not an audit or a compliance position.</p>
+{% endblock %}

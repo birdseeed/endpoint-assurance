@@ -1,0 +1,38 @@
+{
+  "schema_version": 3,
+  "platform": "windows",
+  "agent": "patched-collect-win",
+  "agent_version": "0.2.0",
+  "tenant_id": "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBD",
+  "collected_at": "2026-07-10T09:00:00Z",
+  "device": {
+    "serial": "DMT1234569",
+    "hw_uuid": "CCCCCCCC-DDDD-EEEE-FFFF-AAAAAAAAAAAC",
+    "hostname": "DESKTOP-ONEDRIVE",
+    "hw_model": "Dell OptiPlex 7090",
+    "arch": "x86_64",
+    "last_boot": "2026-07-09T08:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Intel(R) Core(TM) i7-10700",
+    "cpu_cores": 8,
+    "ram_gb": 16,
+    "disk_total_gb": 476.9,
+    "disk_free_gb": 210.3
+  },
+  "os": {
+    "name": "Windows",
+    "version": "11.0.22631",
+    "build": "22631.3593"
+  },
+  "compliance": {},
+  "security_tools": [],
+  "apps": [],
+  "backup_status": {
+    "has_backup": false,
+    "backup_type": "onedrive_sync",
+    "stale": false,
+    "sync_only": true,
+    "notes": "OneDrive sync detected; sync is not a substitute for backup"
+  }
+}

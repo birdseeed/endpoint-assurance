@@ -1,0 +1,596 @@
+# PAT-739 — Windows E2E Layer B
+#
+# Boots a self-contained Patched platform stack on the runner, builds the real
+# Windows agent from source, provisions it against the local API, induces
+# compliant then non-compliant state, triggers scans, and asserts rule verdicts.
+#
+# Cross-repo checkout requires a fine-grained PAT with read access to
+# Patched-LTD/updater stored as secrets.UPDATER_CHECKOUT_TOKEN.
+# See README.md for the exact permission scope required.
+
+name: Windows E2E (Layer B)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * 1'   # Weekly Monday 04:00 UTC
+
+jobs:
+  e2e-windows:
+    name: Windows agent E2E
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    defaults:
+      run:
+        shell: pwsh
+
+    env:
+      # Shared secrets injected into the Go service.
+      ADMIN_API_TOKEN: "e2e-admin-${{ github.run_id }}"
+      # Agent connects here; must be set BEFORE publishing (PathConstants reads at
+      # static-field init time).
+      PATCHED_API_URL: "http://localhost:8080"
+      # Postgres credentials — windows-latest runner default.
+      PGPASSWORD: "root"
+      PGUSER: "postgres"
+      PGHOST: "localhost"
+      PGDATABASE: "patched"
+
+    steps:
+      # ──────────────────────────────────────────────────────────────────────
+      # 0. Preflight — fail fast and legibly if required secrets are missing
+      # ──────────────────────────────────────────────────────────────────────
+      - name: Preflight — verify required secrets
+        env:
+          UPDATER_CHECKOUT_TOKEN: ${{ secrets.UPDATER_CHECKOUT_TOKEN }}
+        run: |
+          if ([string]::IsNullOrEmpty($env:UPDATER_CHECKOUT_TOKEN)) {
+            $msg = "UPDATER_CHECKOUT_TOKEN repo secret is missing. This job needs it to " +
+                   "check out Patched-LTD/updater (private repo, Windows agent source) " +
+                   "for the 'Checkout updater (Windows agent source)' step. See PAT-1341: " +
+                   "creating the secret is Andy-gated, do not substitute github.token or a " +
+                   "deploy key (deploy keys are disabled org-wide, PAT-617)."
+            Write-Host "::error::$msg"
+            "## Windows E2E preflight failed" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            "" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            $msg | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            throw $msg
+          }
+          Write-Host "Preflight OK: UPDATER_CHECKOUT_TOKEN is present."
+
+      # ──────────────────────────────────────────────────────────────────────
+      # 1. Checkout
+      # ──────────────────────────────────────────────────────────────────────
+      - name: Checkout patched.im (this repo)
+        uses: actions/checkout@v7
+        with:
+          path: patched.im
+
+      - name: Checkout updater (Windows agent source)
+        uses: actions/checkout@v7
+        with:
+          repository: Patched-LTD/updater
+          token: ${{ secrets.UPDATER_CHECKOUT_TOKEN }}
+          path: updater
+
+      # ──────────────────────────────────────────────────────────────────────
+      # 2. Toolchain
+      # ──────────────────────────────────────────────────────────────────────
+      - name: Setup Go (version from go.mod)
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: patched.im/go-service/go.mod
+          cache-dependency-path: patched.im/go-service/go.sum
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '8.0.x'
+
+      # ──────────────────────────────────────────────────────────────────────
+      # 3. PostgreSQL — start preinstalled service, create role + database
+      # ──────────────────────────────────────────────────────────────────────
+      - name: Start PostgreSQL
+        run: |
+          $svc = Get-Service -Name 'postgresql*' | Select-Object -First 1
+          if (-not $svc) { throw "PostgreSQL service not found on runner" }
+          Set-Service -Name $svc.Name -StartupType Manual
+          Start-Service -Name $svc.Name
+          # PAT-1744: the PostgreSQL bin directory is not on PATH on current
+          # windows-latest images. Resolve it from the runner's PGBIN, else from
+          # the service's pg_ctl.exe path, and add it to GITHUB_PATH so later
+          # steps can call psql by name.
+          $pgBin = $env:PGBIN
+          if (-not $pgBin -or -not (Test-Path (Join-Path $pgBin 'pg_isready.exe'))) {
+            $svcPath = (Get-CimInstance Win32_Service -Filter "Name='$($svc.Name)'").PathName
+            if ($svcPath -match '^"?(.+?\\bin)\\pg_ctl\.exe') { $pgBin = $Matches[1] }
+          }
+          if (-not $pgBin -or -not (Test-Path (Join-Path $pgBin 'pg_isready.exe'))) {
+            throw "pg_isready.exe not found (PGBIN='$env:PGBIN', service path='$svcPath')"
+          }
+          Add-Content -Path $env:GITHUB_PATH -Value $pgBin -Encoding utf8
+          $pgIsReady = Join-Path $pgBin 'pg_isready.exe'
+          Write-Host "PostgreSQL bin: $pgBin"
+          # Wait for readiness (pg_isready exits 0 when server accepts connections).
+          $ready = $false
+          for ($i = 0; $i -lt 20; $i++) {
+            & $pgIsReady -h localhost -U postgres | Out-Null
+            if ($LASTEXITCODE -eq 0) { $ready = $true; break }
+            Start-Sleep 2
+          }
+          if (-not $ready) { throw "PostgreSQL did not become ready within 40s" }
+          Write-Host "PostgreSQL ready."
+
+      - name: Create DB role and database
+        run: |
+          # The GRANT statements in migrations 0010-0057 reference role 'patched'.
+          # Connect to the maintenance DB: the job-level PGDATABASE=patched does
+          # not exist until the CREATE DATABASE below runs.
+          # pwsh passes `-o $null` as no argument at all, so psql died with
+          # "option requires an argument -- o"; discard output with Out-Null.
+          psql -d postgres -c "CREATE ROLE patched;" 2>&1 | Out-Null
+          psql -d postgres -c "CREATE DATABASE patched OWNER postgres;" | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw "CREATE DATABASE patched failed (psql exit $LASTEXITCODE)" }
+          Write-Host "Database 'patched' created."
+
+      - name: Apply all migrations
+        run: |
+          $migrDir = "patched.im\go-service\migrations"
+          # Apply in filename-sort order; skip rollback files and non-SQL files.
+          $migrations = Get-ChildItem -Path $migrDir -Filter "*.sql" |
+            Where-Object { $_.Name -notmatch "_rollback\.sql$" } |
+            Sort-Object Name
+          foreach ($m in $migrations) {
+            Write-Host "  Applying $($m.Name)…"
+            $result = psql -d patched -f $m.FullName 2>&1
+            if ($LASTEXITCODE -ne 0) {
+              Write-Warning "psql returned $LASTEXITCODE for $($m.Name). Output: $result"
+            }
+          }
+          Write-Host "Migrations complete ($($migrations.Count) files)."
+
+      # ──────────────────────────────────────────────────────────────────────
+      # 4. Build platform services (patched-api + patched-extractor)
+      # ──────────────────────────────────────────────────────────────────────
+      - name: Build Go services
+        working-directory: patched.im\go-service
+        run: |
+          New-Item -ItemType Directory -Force -Path ..\bin | Out-Null
+          go build -o ..\bin\patched-api.exe    .\cmd\patched-api
+          if ($LASTEXITCODE -ne 0) { throw "go build patched-api failed" }
+          go build -o ..\bin\patched-extractor.exe .\cmd\patched-extractor
+          if ($LASTEXITCODE -ne 0) { throw "go build patched-extractor failed" }
+          Write-Host "Go services built."
+
+      # ──────────────────────────────────────────────────────────────────────
+      # 5. Generate signing key, start platform services
+      # ──────────────────────────────────────────────────────────────────────
+      - name: Generate Ed25519 signing key seed
+        run: |
+          $bytes = [System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32)
+          $b64   = [Convert]::ToBase64String($bytes)
+          "SIGNING_KEY=$b64" | Out-File -Append $env:GITHUB_ENV
+          Write-Host "Signing key generated."
+
+      - name: Start patched-api
+        run: |
+          $dbUrl = "postgres://postgres:root@localhost:5432/patched?sslmode=disable"
+          # Started detached (e2e/windows/start-detached.ps1): a Start-Process
+          # child does not survive the end of this step (PAT-1744). The detached
+          # process does not inherit this step's environment, so pass
+          # everything it needs.
+          $apiEnv = @{
+            DATABASE_URL             = $dbUrl
+            AGENT_CONFIG_SIGNING_KEY = $env:SIGNING_KEY
+            ADMIN_API_TOKEN          = $env:ADMIN_API_TOKEN
+            RATE_LIMIT_RPM           = '100000'
+            LISTEN_PUBLIC            = '127.0.0.1:8080'
+            LISTEN_INTERNAL          = '127.0.0.1:8081'
+          }
+
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          $apiPid = & patched.im\e2e\windows\start-detached.ps1 `
+            -Name patched-api -FilePath "patched.im\bin\patched-api.exe" `
+            -Environment $apiEnv -LogDir artifacts
+          "API_PID=$apiPid" | Out-File -Append $env:GITHUB_ENV
+
+          # Poll /health until ready (up to 60 s).
+          $ready = $false
+          for ($i = 0; $i -lt 30; $i++) {
+            try {
+              $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8080/health' -UseBasicParsing -TimeoutSec 2
+              if ($r.StatusCode -eq 200) { $ready = $true; break }
+            } catch { $lastHealthError = $_.Exception.Message }
+            Start-Sleep 2
+          }
+          if (-not $ready) {
+            Write-Host "Last health error: $lastHealthError"
+            Write-Host "patched-api process alive: $([bool](Get-Process -Id $apiPid -ErrorAction SilentlyContinue))"
+            Get-NetTCPConnection -LocalPort 8080, 8081 -ErrorAction SilentlyContinue |
+              Format-Table LocalAddress, LocalPort, State, OwningProcess | Out-String | Write-Host
+            & curl.exe -sv --max-time 5 http://127.0.0.1:8080/health 2>&1 | Write-Host
+            Get-Content artifacts\patched-api.log, artifacts\patched-api-err.log -ErrorAction SilentlyContinue |
+              Select-Object -Last 20 | Write-Host
+            throw "patched-api did not pass health check within 60s"
+          }
+          Write-Host "patched-api ready (PID $apiPid)."
+
+      - name: Start patched-extractor
+        run: |
+          $dbUrl = "postgres://postgres:root@localhost:5432/patched?sslmode=disable"
+          $extEnv = @{
+            DATABASE_URL             = $dbUrl
+            AGENT_CONFIG_SIGNING_KEY = $env:SIGNING_KEY
+            ADMIN_API_TOKEN          = $env:ADMIN_API_TOKEN
+          }
+          $extPid = & patched.im\e2e\windows\start-detached.ps1 `
+            -Name patched-extractor -FilePath "patched.im\bin\patched-extractor.exe" `
+            -Environment $extEnv -LogDir artifacts
+          "EXTRACTOR_PID=$extPid" | Out-File -Append $env:GITHUB_ENV
+          Write-Host "patched-extractor started (PID $extPid)."
+          Start-Sleep 3
+
+      # ──────────────────────────────────────────────────────────────────────
+      # 6. Bootstrap tenant
+      # ──────────────────────────────────────────────────────────────────────
+      - name: Bootstrap e2e tenant
+        run: |
+          # PAT-1744: fail legibly if a background service died after its
+          # start step, rather than with a bare "connection refused".
+          foreach ($p in @(@{ Name = 'patched-api'; Id = $env:API_PID }, @{ Name = 'patched-extractor'; Id = $env:EXTRACTOR_PID })) {
+            if (-not (Get-Process -Id $p.Id -ErrorAction SilentlyContinue)) {
+              Get-Content "artifacts\$($p.Name).log", "artifacts\$($p.Name)-err.log" -ErrorAction SilentlyContinue |
+                Select-Object -Last 20 | Write-Host
+              throw "$($p.Name) (PID $($p.Id)) is no longer running"
+            }
+          }
+          $headers = @{ Authorization = "Bearer $env:ADMIN_API_TOKEN"; 'Content-Type' = 'application/json' }
+          $body    = '{"name":"e2e-win","tier":2}'
+          $resp = Invoke-RestMethod -Uri 'http://localhost:8081/admin/tenants' `
+                    -Method POST -Headers $headers -Body $body
+          "TENANT_ID=$($resp.tenant_id)"          | Out-File -Append $env:GITHUB_ENV
+          "BEARER_TOKEN=$($resp.bearer_token)"    | Out-File -Append $env:GITHUB_ENV
+          "HMAC_SECRET=$($resp.hmac_secret_b64)"  | Out-File -Append $env:GITHUB_ENV
+          Write-Host "Tenant created: $($resp.tenant_id)"
+
+      # ──────────────────────────────────────────────────────────────────────
+      # 6b. Enable all T2 rules (T1 rules always evaluate; T2 rules show
+      #     enabled=false with no evaluations until an explicit PUT per rule —
+      #     there is no bulk-enable endpoint. Mirrors e2e/run_matrix.py's
+      #     enable_all_t2_rules; without this step the bulk of rules.csv,
+      #     which is T2, never gets an evaluation row at all.)
+      # ──────────────────────────────────────────────────────────────────────
+      - name: Enable all T2 rules
+        run: |
+          $headers = @{ Authorization = "Bearer $env:ADMIN_API_TOKEN" }
+          $list = Invoke-RestMethod -Uri "http://localhost:8081/admin/tenant-rules/$env:TENANT_ID" -Headers $headers
+          $t2 = $list.rules | Where-Object { $_.collection_tier -eq 'T2' }
+          Write-Host "Found $($t2.Count) T2 rules; enabling all..."
+          $putHeaders = @{ Authorization = "Bearer $env:ADMIN_API_TOKEN"; 'Content-Type' = 'application/json' }
+          $putBody = '{"enabled":true,"override_severity":null}'
+          $errors = 0
+          foreach ($r in $t2) {
+            try {
+              Invoke-RestMethod -Uri "http://localhost:8081/admin/tenant-rules/$env:TENANT_ID/$($r.rule_id)" `
+                -Method PUT -Headers $putHeaders -Body $putBody | Out-Null
+            } catch {
+              $errors++
+              Write-Warning "PUT rule $($r.rule_key) failed: $_"
+            }
+          }
+          if ($errors -gt 0) {
+            Write-Error "$errors of $($t2.Count) T2 rules failed to enable"
+            exit 1
+          }
+          Write-Host "Enabled $($t2.Count) T2 rules (all OK)."
+
+      # ──────────────────────────────────────────────────────────────────────
+      # 7. Build Windows agent (self-contained win-x64)
+      # ──────────────────────────────────────────────────────────────────────
+      - name: Build Patched.Service (win-x64 self-contained)
+        run: |
+          $publishDir = "$PWD\agent-publish"
+          dotnet publish `
+            updater\windows\src\Service\Service.csproj `
+            -c Release -r win-x64 --self-contained `
+            -p:PublishSingleFile=true `
+            -o $publishDir
+          $exe = Join-Path $publishDir "Patched.Service.exe"
+          if (-not (Test-Path $exe)) { throw "Patched.Service.exe not found in $publishDir" }
+          "AGENT_EXE=$exe" | Out-File -Append $env:GITHUB_ENV
+          Write-Host "Agent built: $exe"
+
+      # ──────────────────────────────────────────────────────────────────────
+      # 8. Provision agent (env vars + directories)
+      # ──────────────────────────────────────────────────────────────────────
+      - name: Provision agent credentials and directories
+        run: |
+          & patched.im\e2e\windows\provision.ps1 `
+            -TenantId     $env:TENANT_ID `
+            -BearerToken  $env:BEARER_TOKEN `
+            -HmacSecret   $env:HMAC_SECRET `
+            -ApiUrl       $env:PATCHED_API_URL
+
+      # ──────────────────────────────────────────────────────────────────────
+      # 9. Start agent in console mode
+      # ──────────────────────────────────────────────────────────────────────
+      - name: Start Patched Agent (console mode)
+        run: |
+          # Started detached (e2e/windows/start-detached.ps1) so it outlives
+          # this step (PAT-1744). The detached process sees neither this step's
+          # environment nor Machine-scope variables written earlier in the job,
+          # so pass the credentials provision.ps1 set explicitly.
+          # PathConstants.ApiUrl is a static readonly field read at class-load time
+          # from PATCHED_API_URL in the process environment.
+          $agentEnv = @{
+            PATCHED_TENANT_ID    = $env:TENANT_ID
+            PATCHED_BEARER_TOKEN = $env:BEARER_TOKEN
+            PATCHED_HMAC_SECRET  = $env:HMAC_SECRET
+            PATCHED_API_URL      = 'http://localhost:8080'
+          }
+
+          $logPath    = "$PWD\artifacts\agent.log"
+          $agentPid = & patched.im\e2e\windows\start-detached.ps1 `
+            -Name agent -FilePath $env:AGENT_EXE `
+            -Environment $agentEnv -LogDir artifacts
+          "AGENT_PID=$agentPid" | Out-File -Append $env:GITHUB_ENV
+          Write-Host "Agent started (PID $agentPid)"
+
+          # Wait for the first-run scan to complete (log line: "update-status.json written").
+          $deadline = [datetime]::UtcNow.AddSeconds(120)
+          $started  = $false
+          while ([datetime]::UtcNow -lt $deadline) {
+            Start-Sleep 5
+            if (Test-Path $logPath) {
+              $content = Get-Content $logPath -Raw -ErrorAction SilentlyContinue
+              if ($content -match "update-status\.json written") { $started = $true; break }
+            }
+          }
+          if (-not $started) {
+            Write-Warning "Agent did not complete first-run scan within 120s — proceeding anyway."
+            Get-Content $logPath -ErrorAction SilentlyContinue | Select-Object -Last 30
+          } else {
+            Write-Host "Agent first-run scan complete."
+          }
+
+      # ──────────────────────────────────────────────────────────────────────
+      # 10. Phase COMPLIANT — induce baseline state, trigger scan, assert
+      # ──────────────────────────────────────────────────────────────────────
+      - name: COMPLIANT — induce baseline state
+        run: |
+          $induceDir = "patched.im\e2e\windows\induce"
+          $scripts = @(
+            'firewall', 'uac', 'autoupdate', 'rdp', 'smb-signing',
+            'screensaver', 'mdm', 'security-options', 'services-features',
+            'defender-policy', 'tls-fips', 'eventlog', 'laps', 'aslr',
+            'account-policy', 'audit-policy'
+          )
+          foreach ($s in $scripts) {
+            Write-Host "  Baseline: $s"
+            & "$induceDir\$s.ps1" -Mode Baseline
+          }
+
+      - name: COMPLIANT — trigger scan
+        run: |
+          $triggerDir = "$env:ProgramData\Patched\triggers"
+          New-Item -ItemType Directory -Force -Path $triggerDir | Out-Null
+          $trigger = @{
+            type         = 'scan'
+            requested_at = ([datetime]::UtcNow.ToString('o'))
+            source       = 'manual'
+          } | ConvertTo-Json -Compress
+          $triggerFile = Join-Path $triggerDir "$([Guid]::NewGuid()).trigger"
+          Set-Content -Path $triggerFile -Value $trigger -Encoding UTF8
+          "COMPLIANT_TRIGGER_TIME=$([datetime]::UtcNow.ToString('o'))" | Out-File -Append $env:GITHUB_ENV
+          Write-Host "Scan trigger dropped: $triggerFile"
+
+      - name: COMPLIANT — wait for extraction
+        run: |
+          # Poll until device last_seen > trigger time or 120 s timeout.
+          # 'id' is the JSON field on tenantDeviceEntry (verified admin_overview.go:125).
+          $headers   = @{ Authorization = "Bearer $env:ADMIN_API_TOKEN" }
+          $afterTime = [datetime]::Parse($env:COMPLIANT_TRIGGER_TIME)
+          $deadline  = [datetime]::UtcNow.AddSeconds(120)
+          $extracted = $false
+
+          while ([datetime]::UtcNow -lt $deadline) {
+            Start-Sleep 8
+            try {
+              $devs = Invoke-RestMethod `
+                -Uri "http://localhost:8081/admin/tenants/$env:TENANT_ID/devices" `
+                -Headers $headers
+              foreach ($d in $devs.devices) {
+                if ($d.last_seen) {
+                  $ls = [datetime]::Parse($d.last_seen)
+                  if ($ls -gt $afterTime) { $extracted = $true; break }
+                }
+              }
+              if ($extracted) { break }
+            } catch { Write-Warning "Poll error: $_" }
+          }
+
+          if (-not $extracted) { throw "Device last_seen was not updated after trigger within 120s" }
+          Write-Host "Compliant scan extracted (last_seen updated)."
+
+      - name: COMPLIANT — assert verdicts
+        run: |
+          # assert_verdicts.ps1 discovers DeviceId from TenantId internally.
+          & patched.im\e2e\windows\assert_verdicts.ps1 `
+            -TenantId        $env:TENANT_ID `
+            -AdminApiBaseUrl 'http://localhost:8081' `
+            -AdminApiToken   $env:ADMIN_API_TOKEN `
+            -Phase           Compliant `
+            -SinceUtc        $env:COMPLIANT_TRIGGER_TIME `
+            -LedgerPath      "artifacts\verdicts-compliant.json"
+
+      # ──────────────────────────────────────────────────────────────────────
+      # 11. Phase NONCOMPLIANT — flip state, trigger scan, assert
+      # ──────────────────────────────────────────────────────────────────────
+      - name: NONCOMPLIANT — induce non-compliant state
+        run: |
+          $induceDir = "patched.im\e2e\windows\induce"
+          $scripts = @(
+            'firewall', 'uac', 'autoupdate', 'rdp', 'smb-signing',
+            'screensaver', 'mdm', 'security-options', 'services-features',
+            'defender-policy', 'tls-fips', 'eventlog', 'laps', 'aslr',
+            'account-policy', 'audit-policy'
+          )
+          foreach ($s in $scripts) {
+            Write-Host "  NonCompliant: $s"
+            & "$induceDir\$s.ps1" -Mode NonCompliant
+          }
+
+      - name: NONCOMPLIANT — trigger scan
+        run: |
+          $triggerDir = "$env:ProgramData\Patched\triggers"
+          $trigger = @{
+            type         = 'scan'
+            requested_at = ([datetime]::UtcNow.ToString('o'))
+            source       = 'manual'
+          } | ConvertTo-Json -Compress
+          $triggerFile = Join-Path $triggerDir "$([Guid]::NewGuid()).trigger"
+          Set-Content -Path $triggerFile -Value $trigger -Encoding UTF8
+          "NONCOMPLIANT_TRIGGER_TIME=$([datetime]::UtcNow.ToString('o'))" | Out-File -Append $env:GITHUB_ENV
+          Write-Host "Scan trigger dropped: $triggerFile"
+
+      - name: NONCOMPLIANT — wait for extraction
+        run: |
+          $headers   = @{ Authorization = "Bearer $env:ADMIN_API_TOKEN" }
+          $afterTime = [datetime]::Parse($env:NONCOMPLIANT_TRIGGER_TIME)
+          $deadline  = [datetime]::UtcNow.AddSeconds(120)
+          $extracted = $false
+
+          while ([datetime]::UtcNow -lt $deadline) {
+            Start-Sleep 8
+            try {
+              $devs = Invoke-RestMethod `
+                -Uri "http://localhost:8081/admin/tenants/$env:TENANT_ID/devices" `
+                -Headers $headers
+              foreach ($d in $devs.devices) {
+                if ($d.last_seen) {
+                  $ls = [datetime]::Parse($d.last_seen)
+                  if ($ls -gt $afterTime) { $extracted = $true; break }
+                }
+              }
+              if ($extracted) { break }
+            } catch { Write-Warning "Poll error: $_" }
+          }
+
+          if (-not $extracted) { throw "Non-compliant scan was not extracted within 120s" }
+          Write-Host "Non-compliant scan extracted (last_seen updated)."
+
+      - name: NONCOMPLIANT — assert verdicts
+        run: |
+          & patched.im\e2e\windows\assert_verdicts.ps1 `
+            -TenantId        $env:TENANT_ID `
+            -AdminApiBaseUrl 'http://localhost:8081' `
+            -AdminApiToken   $env:ADMIN_API_TOKEN `
+            -Phase           NonCompliant `
+            -SinceUtc        $env:NONCOMPLIANT_TRIGGER_TIME `
+            -LedgerPath      "artifacts\verdicts-noncompliant.json"
+
+      # ──────────────────────────────────────────────────────────────────────
+      # 12. Restore state
+      # ──────────────────────────────────────────────────────────────────────
+      - name: Restore all induced state
+        if: always()
+        run: |
+          $induceDir = "patched.im\e2e\windows\induce"
+          $scripts = @(
+            'firewall', 'uac', 'autoupdate', 'rdp', 'smb-signing',
+            'screensaver', 'mdm', 'security-options', 'services-features',
+            'defender-policy', 'tls-fips', 'eventlog', 'laps', 'aslr',
+            'account-policy', 'audit-policy'
+          )
+          foreach ($s in $scripts) {
+            Write-Host "  Restore: $s"
+            & "$induceDir\$s.ps1" -Mode Restore -ErrorAction SilentlyContinue
+          }
+
+      # ──────────────────────────────────────────────────────────────────────
+      # 13. Capture service event log excerpts
+      # ──────────────────────────────────────────────────────────────────────
+      - name: Capture Windows event log excerpts
+        if: always()
+        run: |
+          try {
+            Get-EventLog -LogName Application -Source "Patched Agent" -Newest 50 `
+              -ErrorAction SilentlyContinue |
+              Format-List TimeGenerated, EntryType, Message |
+              Out-File artifacts\event-log-patched-agent.txt
+          } catch {}
+
+      # ──────────────────────────────────────────────────────────────────────
+      # 14. Stop agent and platform services
+      # ──────────────────────────────────────────────────────────────────────
+      - name: Stop background processes
+        if: always()
+        run: |
+          foreach ($pidVar in @('AGENT_PID', 'API_PID', 'EXTRACTOR_PID')) {
+            $procId = [System.Environment]::GetEnvironmentVariable($pidVar)
+            if ($procId) {
+              try { Stop-Process -Id ([int]$procId) -Force -ErrorAction SilentlyContinue } catch {}
+            }
+          }
+
+      # ──────────────────────────────────────────────────────────────────────
+      # 15. Upload artifacts
+      # ──────────────────────────────────────────────────────────────────────
+      - name: Upload E2E artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-windows-${{ github.run_id }}
+          path: |
+            artifacts/
+          retention-days: 14
+
+      # ──────────────────────────────────────────────────────────────────────
+      # 16. Assert scenario coverage — a green job must mean the COMPLIANT and
+      #     NONCOMPLIANT scenarios genuinely ran, not merely that nothing
+      #     threw. Keys off the ledger files assert_verdicts.ps1 writes in
+      #     steps 10/11 (artifacts\verdicts-compliant.json /
+      #     verdicts-noncompliant.json), each with a `checked` count of rules
+      #     that were evaluated and matched the expected verdict.
+      #
+      #     Deliberately success() and not always(): this exists solely to
+      #     catch the "green tick, zero coverage" case. If any earlier step
+      #     already failed, the job is red for a reason that is on screen,
+      #     and a second "no scenario coverage" error would just bury it —
+      #     which is the same trains-you-to-ignore-it failure mode PAT-1341
+      #     is about. Most visibly, while UPDATER_CHECKOUT_TOKEN is still
+      #     missing the preflight fails every run, and this step must not
+      #     pile a misleading error on top of an accurate one.
+      # ──────────────────────────────────────────────────────────────────────
+      - name: Assert E2E scenarios actually ran
+        if: success()
+        run: |
+          $ledgers = @(
+            @{ Phase = 'Compliant';    Path = 'artifacts\verdicts-compliant.json' },
+            @{ Phase = 'NonCompliant'; Path = 'artifacts\verdicts-noncompliant.json' }
+          )
+          $problems = @()
+          foreach ($l in $ledgers) {
+            if (-not (Test-Path $l.Path)) {
+              $problems += "$($l.Phase): ledger not found at $($l.Path) — assert_verdicts.ps1 did not run or did not complete."
+              continue
+            }
+            $summary = Get-Content $l.Path -Raw | ConvertFrom-Json
+            if (-not $summary.checked -or $summary.checked -le 0) {
+              $problems += "$($l.Phase): $($summary.checked) rule(s) checked — no scenario coverage was produced."
+            } else {
+              Write-Host "$($l.Phase): $($summary.checked) rule(s) checked, $($summary.skipped) skipped, $($summary.failures) failures."
+            }
+          }
+
+          if ($problems.Count -gt 0) {
+            $msg = "Windows E2E did not produce genuine scenario coverage (PAT-1341):`n" + ($problems -join "`n")
+            Write-Host "::error::$msg"
+            "## Windows E2E coverage assertion failed" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            "" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            foreach ($p in $problems) { "- $p" | Out-File -Append $env:GITHUB_STEP_SUMMARY }
+            throw $msg
+          }
+
+          Write-Host "Coverage assertion passed: both phases produced non-zero checked rules."

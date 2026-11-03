@@ -1,0 +1,23 @@
+{
+  "label": "grasshopper",
+  "name": "Grasshopper",
+  "type": "dmg",
+  "app_path": "/Applications/Grasshopper.app",
+  "expected_team_id": "KD6L2PTK2Q",
+  "download": {
+    "method": "static",
+    "url": "https://dl.grasshopper.com/Grasshopper.dmg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

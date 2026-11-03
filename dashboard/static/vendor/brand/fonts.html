@@ -1,0 +1,94 @@
+<!--
+  Patched Brand — Font loading snippet
+  Families: Archivo (display) · Inter (body/UI) · JetBrains Mono (labels/data)
+
+  ── Option A: Google Fonts (CDN, quickest to add) ───────────────────────────
+  Paste this into the <head> of your HTML before your own stylesheets.
+  The display=swap prevents invisible text while fonts load.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+/>
+
+<!--
+  ── Option B: Self-hosted woff2 (no CDN dependency, GDPR-friendly) ──────────
+
+  1. Download the woff2 subsets from google-webfonts-helper or directly from
+     fonts.google.com and place them under, for example, /fonts/.
+
+  2. Add @font-face rules like these BEFORE your main stylesheet:
+
+  @font-face {
+    font-family: "Archivo";
+    src: url("/fonts/Archivo-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Archivo";
+    src: url("/fonts/Archivo-Medium.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Archivo";
+    src: url("/fonts/Archivo-SemiBold.woff2") format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Archivo";
+    src: url("/fonts/Archivo-Bold.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "Inter";
+    src: url("/fonts/Inter-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Inter";
+    src: url("/fonts/Inter-Medium.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Inter";
+    src: url("/fonts/Inter-SemiBold.woff2") format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "JetBrains Mono";
+    src: url("/fonts/JetBrainsMono-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "JetBrains Mono";
+    src: url("/fonts/JetBrainsMono-Medium.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  3. Remove the Google Fonts <link> tags above once self-hosted files are in place.
+     The --font-display / --font-sans / --font-mono custom properties in tokens.css
+     already list sensible system-font fallbacks so the page renders acceptably
+     before the woff2 files load.
+-->

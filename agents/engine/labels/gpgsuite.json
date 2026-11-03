@@ -1,0 +1,32 @@
+{
+  "label": "gpgsuite",
+  "name": "GPG Suite",
+  "type": "pkgindmg",
+  "pkg_in_dmg": {
+    "mode": "relative-path-glob",
+    "patterns": [
+      "Install.pkg"
+    ]
+  },
+  "app_path": "/Applications/GPG Suite.app",
+  "expected_team_id": "PKV8ZPD836",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://gpgtools.com/"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [
+    "GPG Keychain"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

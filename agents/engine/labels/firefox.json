@@ -1,0 +1,34 @@
+{
+  "label": "firefox",
+  "name": "Mozilla Firefox",
+  "type": "dmg",
+  "app_path": "/Applications/Firefox.app",
+  "expected_team_id": "43AQ936H96",
+  "download": {
+    "method": "static",
+    "url": "https://download.mozilla.org/?product=firefox-latest-ssl&os=osx&lang=en-US"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [
+    "firefox"
+  ],
+  "pinned_sha256": null,
+  "cross_hash_sources": [
+    {
+      "type": "homebrew_cask",
+      "id": "firefox"
+    }
+  ],
+  "patched": {
+    "allowlisted": true,
+    "mirror": false,
+    "mirror_eula_approved": false,
+    "tier": "core",
+    "reviewed_by": "andy",
+    "reviewed_at": null,
+    "notes": "Stable Mozilla URL that 302-redirects to the current versioned DMG; version is read from the redirect target filename. PAT-500: in scope for Phase 2 mirror pipeline; EULA review pending.",
+    "ring_policy": "immediate"
+  }
+}

@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cve_confidence_badge, lifecycle_cell, segmented_control %}
+{% block content %}
+<div class="page-head">
+  <h1>Findings</h1>
+  <p class="meta">CVE and CIS compliance findings across your estate, shown separately - never interleaved in one list.</p>
+</div>
+
+<section class="findings-section" id="cve-findings">
+  <div class="findings-section__head">
+    <h2>CVE findings</h2>
+    <p class="meta">
+      {{ total }} open CVE finding{{ '' if total == 1 else 's' }} across your estate
+      {% if total_pages > 1 %}&middot; page {{ page }} of {{ total_pages }}{% endif %}
+    </p>
+    <p class="meta">CVE data last checked {% if cve_assessment.last_full_match_at %}{{ cve_assessment.last_full_match_at | humandate_nowrap(true) }} UTC{% else %}not yet recorded{% endif %} &middot; vulnerability feed last updated {% if cve_assessment.last_feed_sync_at %}{{ cve_assessment.last_feed_sync_at | humandate_nowrap(true) }} UTC{% else %}not yet recorded{% endif %}</p>
+    <p class="meta">{{ cve_assessment.assessed_products }} product{{ '' if cve_assessment.assessed_products == 1 else 's' }} assessed, {{ cve_assessment.pending_products }} checking, {{ cve_assessment.not_assessed_products }} not yet assessed across your estate.</p>
+  </div>
+
+  <div class="toolbar">
+    <input type="search" id="device-search" class="search" data-table-search="#device-table" placeholder="Search this page (CVE, application or severity)" aria-label="Search findings on this page">
+    {% if total_pages > 1 %}<p class="toolbar-hint">Search covers only the {{ findings | length }} finding{{ '' if findings | length == 1 else 's' }} shown on this page, not all {{ total }}.</p>{% endif %}
+    {% if findings %}<p class="toolbar-hint">Confidence is how certain we are that the installed version is affected, not severity, exploitability or remediation certainty. Hover over a confidence label for its definition.</p>{% endif %}
+  </div>
+
+  <div class="card card-table">
+    <div class="table-scroll">
+    <table class="data-table findings-table table-stack" id="device-table">
+      <colgroup>
+        <col class="findings-col-cve"><col class="findings-col-severity"><col class="findings-col-cvss col-secondary">
+        <col class="findings-col-app"><col class="findings-col-confidence">
+        <col class="findings-col-devices"><col class="findings-col-seen col-tertiary">
+        <col class="findings-col-verification">
+      </colgroup>
+      <thead>
+        <tr>
+          <th data-sort="text">CVE</th>
+          <th data-sort="text">Severity</th>
+          <th data-sort="num" class="col-secondary">CVSS</th>
+          <th data-sort="text">Application</th>
+          <th data-sort="text">Confidence</th>
+          <th data-sort="num">Devices</th>
+          <th data-sort="date" class="col-tertiary">First seen</th>
+          <th>Verification</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in findings %}
+        <tr>
+          <td class="mono" data-label="CVE"><a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ f.cve_id }}" target="_blank" rel="noopener noreferrer">{{ f.cve_id }}</a></td>
+          <td data-label="Severity"><span class="pill pill-{{ (f.severity or 'low') | lower }}">{{ (f.severity or '-') | capitalize }}</span></td>
+          <td class="col-secondary" data-label="CVSS" data-value="{{ f.cvss }}">{{ f.cvss if f.cvss is not none else '-' }}</td>
+          <td data-label="Application" data-value="{{ f.app }}">{{ f.app }}{% if f.homebrew_source_label %}<span class="cell-subtle">{{ f.homebrew_source_label }}{% if f.homebrew_install_reason_label %}, {{ f.homebrew_install_reason_label }}{% endif %}</span>{% endif %}
+            <div class="finding-versions">
+              <span class="finding-installed" title="Installed: {{ f.version or 'Not reported' }}">Installed: {{ f.version or 'Not reported' }}</span>
+              <span class="finding-target{% if not f.fixed_version %} finding-target--fallback{% endif %}" title="Target: {{ f.fixed_version or 'latest vendor release' }}">Target: {{ f.fixed_version or 'latest vendor release' }}</span>
+            </div>
+          </td>
+          <td data-label="Confidence">{{ cve_confidence_badge(f.confidence_key) }}</td>
+          <td data-label="Devices" data-value="{{ f.devices_affected }}">{{ f.devices_affected }}</td>
+          <td class="col-tertiary" data-label="First seen" data-value="{{ f.first_seen }}"><span class="nowrap">{{ f.first_seen | humandate }}</span></td>
+          <td data-label="Verification">{{ lifecycle_cell(f.lifecycle) }}</td>
+        </tr>
+        <tr class="row-summary"><td colspan="8">
+          {% if f.summary %}{{ f.summary }}{% else %}No description has been published yet. Check the <a href="https://nvd.nist.gov/vuln/detail/{{ f.cve_id }}" target="_blank" rel="noopener noreferrer">NVD record</a>.{% endif %}
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if not findings %}<p class="empty">No open CVE findings. Vulnerability matching runs continuously; new findings appear here as they are identified.</p>{% endif %}
+  </div>
+
+  {% if total_pages > 1 %}
+  <nav class="pager" aria-label="Findings pages">
+    {% if page > 1 %}
+    <a class="btn btn-small" href="/findings?page={{ page - 1 }}">&larr; Previous</a>
+    {% else %}
+    <span class="btn btn-small btn-disabled" aria-disabled="true">&larr; Previous</span>
+    {% endif %}
+    <span class="pager-status">Page {{ page }} of {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a class="btn btn-small" href="/findings?page={{ page + 1 }}">Next &rarr;</a>
+    {% else %}
+    <span class="btn btn-small btn-disabled" aria-disabled="true">Next &rarr;</span>
+    {% endif %}
+  </nav>
+  {% endif %}
+</section>
+
+{# Ruling 2026-09-13 (Andy): CVE and CIS compliance findings are distinct
+   sections, never interleaved as rows in one list. There is no tenant-wide
+   CIS/compliance findings list endpoint yet (only the overview severity
+   rollup and each device's own compliance signals), so this section is
+   that rollup with a link to per-device detail rather than a fabricated
+   row list - see the PAT-1602 report for the platform gap this stands in
+   for. #}
+<section class="findings-section findings-section--cis" id="cis-compliance-findings">
+  <div class="findings-section__head">
+    <h2>CIS compliance findings</h2>
+    <p class="meta">Failing CIS Level 1 checks across your estate, by severity</p>
+  </div>
+  {% if cis_summary_unavailable %}
+  <div class="card"><p class="empty">CIS compliance summary is temporarily unavailable. The CVE findings above are unaffected.</p></div>
+  {% elif cis_summary and cis_summary.total %}
+  <div class="card">
+    <div class="sev-row">
+      <div class="sev sev-critical"><span class="sev-count">{{ cis_summary.critical }}</span><span class="sev-name">Critical</span></div>
+      <div class="sev sev-high"><span class="sev-count">{{ cis_summary.high }}</span><span class="sev-name">High</span></div>
+      <div class="sev sev-medium"><span class="sev-count">{{ cis_summary.medium }}</span><span class="sev-name">Medium</span></div>
+      <div class="sev sev-low"><span class="sev-count">{{ cis_summary.low }}</span><span class="sev-name">Low</span></div>
+    </div>
+    <p class="card-foot">Per-check detail (rule, evidence, remediation) is on each device's page. <a href="/devices">View device roster</a></p>
+  </div>
+  {% else %}
+  <div class="card"><p class="empty">No open CIS Level 1 failures across your estate.</p></div>
+  {% endif %}
+</section>
+
+{#- PAT-2263: estate driver findings - kernel/file-system drivers matched by
+    hash against Microsoft's recommended driver block rules and
+    loldrivers.io, across every device (contracts/portal-api.md
+    "GET /v1/portal/driver-findings (PAT-2263)"). Additive third section,
+    same "distinct sections, never interleaved" idiom as CVE/CIS above.
+    Copy is evidence only - never "safe", "exploited" or "compromised". #}
+<section class="findings-section findings-section--drivers" id="driver-findings">
+  <div class="findings-section__head">
+    <h2>Known vulnerable drivers</h2>
+    <p class="meta">Drivers across your estate matched against Microsoft's recommended driver block rules and loldrivers.io</p>
+  </div>
+  {% if driver_findings_unavailable %}
+  <div class="card"><p class="empty">Driver findings are temporarily unavailable. The findings above are unaffected.</p></div>
+  {% elif driver_findings %}
+    <p class="meta">
+      {{ driver_findings.total }} matched driver{{ '' if driver_findings.total == 1 else 's' }} across your estate
+      &middot; {{ driver_findings.summary.devices_reporting }} device{{ '' if driver_findings.summary.devices_reporting == 1 else 's' }} reporting drivers
+      {% if driver_findings.summary.devices_with_unhashed_drivers %}&middot; {{ driver_findings.summary.devices_with_unhashed_drivers }} with drivers that could not be hashed{% endif %}
+    </p>
+    <p class="meta">Blocklist enforced on {{ driver_findings.summary.blocklist_enforced.yes }}, not enforced on {{ driver_findings.summary.blocklist_enforced.no }}, unknown on {{ driver_findings.summary.blocklist_enforced.unknown }} device{{ '' if driver_findings.summary.blocklist_enforced.unknown == 1 else 's' }}</p>
+    {% if driver_findings.lists %}
+    <ul class="driver-lists">
+      {% for l in driver_findings.lists %}
+      <li>
+        <span>{{ l.source_label }}</span>
+        {% if l.ever_fetched %}<span class="mono">v{{ l.list_version or 'unknown' }}, fetched {{ l.fetched_at | humandate_nowrap(true) }} (UTC)</span>{% else %}<span class="cell-subtle">Never fetched</span>{% endif %}
+        {% if l.stale %}<span class="pill pill-warn">Stale</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if driver_findings.rows %}
+    {#- No tone modifier here (unlike devices.html's Silent/Quiet tabs):
+        tests/test_pat1957_devices_default_and_tones.py locks tone-bearing
+        segmented_control tabs to devices.html only. Severity is carried by
+        the Blocklist column's pill-critical badge and the tab's own count
+        instead. -#}
+    {{ segmented_control('blocklist', driver_view, [
+      ('all', 'All', driver_findings.total, '/findings?driver_view=all#driver-findings'),
+      ('not_enforced', 'Blocklist not enforced', driver_findings.critical_count, '/findings?driver_view=not_enforced#driver-findings'),
+    ], 'driver_view', 'Filter driver findings', 'all') }}
+
+    <div class="card card-table">
+      <div class="table-scroll">
+      <table class="data-table driver-findings-table table-stack" id="driver-findings-table">
+        <thead>
+          <tr>
+            <th data-sort="text">Device</th>
+            <th data-sort="text">Driver</th>
+            <th data-sort="text">Loaded</th>
+            <th data-sort="text">Blocklist</th>
+            <th data-sort="text" class="col-secondary">List version</th>
+            <th data-sort="date" class="col-tertiary">Fetched</th>
+            <th>Matching hash</th>
+            <th data-sort="date" class="col-tertiary">First seen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in driver_findings.rows %}
+          <tr data-filter-blocklist="{{ 'not_enforced' if r.critical else 'other' }}">
+            <td data-label="Device"><a href="/devices/{{ r.device_id }}/compliance">{{ r.hostname }}</a></td>
+            <td class="mono" data-label="Driver">{{ r.path or r.service_name or 'Unknown' }}{% if r.category == 'malicious' %} <span class="pill pill-critical">Malicious</span>{% endif %}</td>
+            <td data-label="Loaded">{{ r.loaded_label }}</td>
+            <td data-label="Blocklist">{% if r.critical %}<span class="pill pill-critical">Not enforced</span>{% elif r.blocklist_enforced == 'yes' %}<span class="pill pill-ok">Enforced</span>{% else %}<span class="pill pill-muted">Unknown</span>{% endif %}</td>
+            <td class="mono col-secondary" data-label="List version">{{ r.matches[0].list_version if r.matches else 'Unknown' }}</td>
+            <td class="mono col-tertiary" data-label="Fetched" data-value="{{ r.matches[0].list_fetched_at if r.matches else '' }}">{% if r.matches and r.matches[0].list_fetched_at %}{{ r.matches[0].list_fetched_at | humandate_nowrap(true) }} UTC{% else %}Unknown{% endif %}{% if r.matches and r.matches[0].list_stale %} <span class="pill pill-warn">Stale</span>{% endif %}</td>
+            <td data-label="Matching hash">
+              {% if r.hash_truncated %}
+              <span class="mono">{{ r.hash_truncated }}</span>
+              <span class="visually-hidden" id="driver-finding-hash-{{ loop.index }}">{{ r.hash_full }}</span>
+              <button type="button" class="code-block__copy" data-copy-target="driver-finding-hash-{{ loop.index }}">Copy</button>
+              {% else %}Unknown{% endif %}
+            </td>
+            <td class="col-tertiary" data-label="First seen" data-value="{{ r.first_seen_at }}">{% if r.first_seen_at %}<span class="nowrap">{{ r.first_seen_at | humandate }}</span>{% else %}Unknown{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      <p class="empty filtered-empty" data-filter-empty hidden>No driver findings match this filter.</p>
+    </div>
+    {% else %}
+    <div class="card"><p class="empty">No drivers on your estate match the vulnerable driver lists checked so far.</p></div>
+    {% endif %}
+  {% else %}
+  <div class="card"><p class="empty">No drivers on your estate match the vulnerable driver lists checked so far.</p></div>
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ static_url('js/portal.js') }}"></script>
+<script>
+(function () {
+  document.querySelectorAll(".code-block__copy").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var target = document.getElementById(btn.getAttribute("data-copy-target"));
+      if (!target || !navigator.clipboard) return;
+      navigator.clipboard.writeText(target.textContent).then(function () {
+        var original = btn.textContent;
+        btn.textContent = "Copied";
+        btn.classList.add("is-copied");
+        setTimeout(function () {
+          btn.textContent = original;
+          btn.classList.remove("is-copied");
+        }, 1500);
+      });
+    });
+  });
+})();
+</script>
+{% endblock %}

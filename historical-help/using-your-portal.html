@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Using your Patched portal - Patched.im docs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="A tour of the Patched customer portal: estate overview, devices, findings, software governance, reports, enrolment and tenant-scoped access." />
+  <link rel="icon" href="/favicon.ico?v=20260926-brand-v3" sizes="32x32" />
+  <link rel="icon" href="/favicon.svg?v=20260926-brand-v3" type="image/svg+xml" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=20260926-brand-v3" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=20260926-brand-v3" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20260926-brand-v3" />
+  <link rel="mask-icon" href="/mask-icon.svg?v=20260926-brand-v3" color="#2563eb" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=20260926-brand-v3" />
+</head>
+<body>
+
+  <!-- ── Nav ─────────────────────────────────────────────── -->
+  <header class="nav">
+    <div class="nav__inner">
+      <a class="nav__logo" href="https://patched.im" aria-label="Patched.im home"><img src="/patched-lockup-horizontal.svg" width="132" height="27" alt="Patched" /></a>
+      <nav class="nav__links" aria-label="Primary">
+        <a href="/getting-started.html">Getting started</a>
+        <a href="/faq.html">FAQ</a>
+        <div class="nav__dropdown">
+          <button type="button" class="nav__dropdown-trigger" aria-haspopup="true" aria-expanded="false">Guides <svg class="nav__dropdown-chevron" width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="nav__dropdown-menu" role="menu">
+            <a role="menuitem" href="/agent-updater.html">Endpoint agent</a>
+            <a role="menuitem" href="/protected.html">Configuration assurance</a>
+            <a role="menuitem" href="/read-your-report.html">Reports and evidence</a>
+            <a role="menuitem" href="/remediation-guide.html">Remediation guide</a>
+            <a role="menuitem" href="/using-your-portal.html">Customer portal</a>
+            <a role="menuitem" href="/security.html">Security</a>
+            <a role="menuitem" href="/privacy.html">Data and privacy</a>
+          </div>
+        </div>
+      </nav>
+      <div class="nav__spacer"></div>
+      <div class="nav__cta"><a class="btn btn--primary" href="https://patched.im/pricing">Become a design partner</a></div>
+      <button class="nav__burger" type="button" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+
+  <main class="doc">
+    <div class="wrap">
+      <div class="doc__inner">
+        <a class="doc__back" href="/">&larr; All guides</a>
+
+        <article class="article">
+          <header>
+            <p class="kicker">Guide 10</p>
+            <h1>Using your Patched portal</h1>
+            <p class="lead">
+              The portal at <a href="https://app.patched.im">app.patched.im</a> is a
+              read-only view of your own estate: posture, devices, findings and reports,
+              all in one place. This is a short tour of what's on each tab.
+            </p>
+          </header>
+
+          <h2>Signing in</h2>
+          <p>
+            You sign in with your existing <strong>Microsoft or Google</strong> account.
+            There's no separate portal password to create or remember. Every session only
+            ever shows your own organisation's data; it's scoped to your tenant on our
+            side, so there's nothing to configure and no risk of seeing (or being seen by)
+            another customer's estate.
+          </p>
+
+          <h2>Overview</h2>
+          <p>
+            Your landing page. It shows your CIS Level&nbsp;1 security-posture score as a
+            dial, how that score has moved over time, and a breakdown of open findings by
+            severity: critical, high, medium and low. Alongside it sits inventory
+            freshness, OS currency and the controls requiring
+            attention. For a fuller explanation of what the score
+            and trend mean, see
+            <a href="/read-your-report.html">how to read your report</a>.
+          </p>
+
+          <h2>Devices</h2>
+          <p>
+            The roster of every device in your estate: hostname, platform, OS version,
+            when it was last seen, its own CIS score, and its encryption and OS status.
+            A <strong>stale devices</strong> view surfaces machines that haven't reported
+            in for a while, so nothing goes quietly unmonitored. You can export the full
+            roster as CSV whenever you need it outside the portal.
+          </p>
+
+          <h2>Extensions</h2>
+          <p>
+            An inventory of every browser extension installed across your estate, with
+            the browsers and devices each one is on. Policy status is shown alongside
+            discovery evidence so administrators can review what is present and route
+            any required action through browser or endpoint-management policy.
+          </p>
+
+          <h2>Findings</h2>
+          <p>
+            CVE correlations are shown with the affected software identity, observed
+            version, device count and available confidence evidence. Treat a finding as a
+            prioritised lead when identity or version evidence is incomplete, not as an
+            unqualified proof of exposure.
+          </p>
+
+          <h2>Software requiring review</h2>
+          <p>
+            Discovered software can be grouped by policy state, including unapproved,
+            prohibited, under review and unclassified. The customer owns those decisions;
+            Patched preserves the discovery and review evidence.
+          </p>
+
+          <h2>Reports</h2>
+          <p>
+            Generate an audit-ready PDF of your posture on demand, and download reports
+            you've generated previously. You can also schedule recurring delivery
+            (daily, weekly or monthly), so a fresh report lands without you having to
+            ask for it. See <a href="/read-your-report.html">how to read your report</a>
+            for a walk-through of what's in it.
+          </p>
+
+          <h2>Agent enrolment</h2>
+          <p>
+            The enrolment area issues a single-use
+            enrolment token (valid for around 24 hours) along with ready-to-use deploy
+            artifacts for each platform: a macOS script you upload to Intune as a
+            Platform Script, and a Windows <code>msiexec</code> command, each with the
+            token already built in. The agent itself (provided by Patched during
+            onboarding) uses that token the first time it runs to enrol the device and
+            collect its own credentials automatically; the full walk-through of
+            deployment is in <a href="/getting-started.html">Getting started</a>. This
+            enrols the Patched collector. It is not an application store or a route for
+            deploying third-party software.
+          </p>
+
+          <h2>Support</h2>
+          <p>
+            A direct way to reach us if something needs attention: a question about a
+            finding, a device that isn't reporting, or anything else about your estate.
+          </p>
+
+          <nav class="pager">
+            <a href="/remediation-guide.html">&larr; Remediation guide</a>
+            <a href="/security.html">Security architecture &rarr;</a>
+          </nav>
+        </article>
+      </div>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__logo"><img src="/patched-lockup-horizontal-white.svg" width="132" height="27" alt="Patched" /></div>
+      <nav class="footer__links" aria-label="Footer"><a href="https://patched.im/cyber-essentials">Cyber Essentials</a><a href="https://patched.im/msp">For MSPs</a><a href="https://patched.im/pricing">Pricing</a><a href="https://patched.im/security.html">Security</a><a href="https://patched.im/about.html">About</a><a href="https://patched.im/blog">Blog</a><a href="https://docs.patched.im">Docs</a><a href="https://status.patched.im">Status</a><a href="https://patched.im/privacy.html">Privacy</a><a href="https://patched.im/cookies.html">Cookies</a><a href="mailto:hello@patched.im">Contact</a></nav>
+      <div class="footer__meta">&copy; <span data-year>2026</span> Patched.im Ltd · Isle of Man · Company No. 139269C</div>
+    </div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

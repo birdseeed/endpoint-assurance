@@ -1,0 +1,166 @@
+rule_key,platform,collection_tier,signal_key,comparator,expected_values,applicable_arch,treat_unknown_as,severity,benchmark
+cis_macos_2_5_1_1_filevault,macos,T1,filevault,eq,"[""On""]",,fail,critical,CIS Apple macOS v3.0.0
+cis_macos_2_5_3_sip,macos,T1,sip,eq,"[""enabled""]",,fail,high,CIS Apple macOS v3.0.0
+cis_macos_2_5_2_1_gatekeeper,macos,T1,gatekeeper,in,"[""enabled"",""assessments""]",,fail,high,CIS Apple macOS v3.0.0
+cis_macos_2_5_2_2_firewall,macos,T1,firewall,eq,"[""enabled""]",,fail,high,CIS Apple macOS v3.0.0
+cis_macos_2_5_5_sealed_system_volume,macos,T1,sealed_system_volume,in,"[""enabled"",""true""]",,fail,high,CIS Apple macOS v3.0.0
+cis_macos_1_4_auto_security_updates,macos,T1,auto_security_updates,eq,"[""On""]",,fail,high,CIS Apple macOS v3.0.0
+cis_macos_3_x_audit_logging,macos,T1,audit_logging,eq,"[""enabled""]",,fail,medium,CIS Apple macOS v3.0.0
+cis_macos_2_4_1_remote_apple_events,macos,T1,remote_apple_events,eq,"[""Off""]",,fail,medium,CIS Apple macOS v3.0.0
+cis_macos_2_4_4_remote_login,macos,T1,remote_login,eq,"[""Off""]",,fail,high,CIS Apple macOS v3.0.0
+cis_macos_2_4_10_screen_sharing,macos,T1,screen_sharing,eq,"[""Off""]",,fail,medium,CIS Apple macOS v3.0.0
+cis_macos_2_10_screensaver_password,macos,T1,screensaver_password,in,"[""Yes"",""DefaultAssumed""]",,fail,medium,CIS Apple macOS v3.0.0
+cis_macos_5_1_auto_login_disabled,macos,T1,auto_login_user,eq,"[""None""]",,fail,high,CIS Apple macOS v3.0.0
+cis_macos_5_8_local_admin_count,macos,T1,local_admin_count,lte,"[""2""]",,fail,medium,CIS Apple macOS v3.0.0
+cis_macos_5_x_password_policy_non_default,macos,T1,password_policy_is_default,eq,"[""No""]",,fail,medium,CIS Apple macOS v3.0.0
+patched_mdm_enrolment,macos,T1,mdm_enrolment,contains,"[""mdm=Yes""]",,fail,medium,patched.im baseline v1
+cis_macos_1_1_pending_security_updates,macos,T1,pending_updates_count,eq,"[""0""]",,fail,medium,CIS Apple macOS v3.0.0
+cis_macos_5_x_secure_boot_arm64,macos,T1,secure_boot,in,"[""Full Security"",""Valid""]",arm64,fail,high,CIS Apple macOS v3.0.0
+cis_macos_5_2_1a_lockout_threshold,macos,T2,pwpolicy_lockout_threshold,lte,"[""5""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_5_2_1b_lockout_reset_minutes,macos,T2,pwpolicy_lockout_reset_minutes,gte,"[""15""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_5_2_2_min_length,macos,T2,pwpolicy_min_length,gte,"[""15""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_5_2_7_max_age_days,macos,T2,pwpolicy_max_age_days,lte,"[""365""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_5_2_8_history_depth,macos,T2,pwpolicy_history_depth,gte,"[""15""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_1_2_update_check_auto,macos,T2,update_check_auto,eq,"[""On""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_1_3_update_download_auto,macos,T2,update_download_auto,eq,"[""On""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_1_5_app_updates_auto,macos,T2,app_updates_auto_install,eq,"[""On""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_1_6a_xprotect_data_auto,macos,T2,xprotect_data_auto_update,eq,"[""On""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_1_6b_critical_updates_auto,macos,T2,critical_updates_auto_install,eq,"[""On""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_3_3_2_smbd_disabled,macos,T2,smbd_disabled,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_3_3_3_printer_sharing_disabled,macos,T2,printer_sharing_disabled,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_3_3_5_remote_management_disabled,macos,T2,remote_management_disabled,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_3_3_7_internet_sharing_disabled,macos,T2,internet_sharing_disabled,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_4_2_httpd_disabled,macos,T2,httpd_disabled,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_4_3_nfsd_disabled,macos,T2,nfsd_disabled,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_5_1_3_amfi_enabled,macos,T2,amfi_enabled,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_5_6_root_disabled,macos,T2,root_disabled,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_10_2_password_after_screensaver_delay,macos,T1,screensaver_delay_seconds,lte,"[""5""]",,fail,medium,CIS Apple macOS v3.0.0
+cis_macos_2_9_2_power_nap_disabled,macos,T2,power_nap_disabled,eq,"[""Yes""]",,fail,low,CIS Apple macOS v2.1.0
+cis_macos_2_9_3_wake_on_network_disabled,macos,T2,wake_on_network_disabled,eq,"[""Yes""]",,fail,low,CIS Apple macOS v2.1.0
+cis_macos_3_5_audit_control_no_acl,macos,T2,audit_control_no_acl,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_3_5_audit_control_owner,macos,T2,audit_control_owner,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_3_5_audit_control_group,macos,T2,audit_control_group,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_3_5_audit_control_mode,macos,T2,audit_control_mode,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_3_5_audit_folder_no_acl,macos,T2,audit_folder_no_acl,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_3_5_audit_folder_owner,macos,T2,audit_folder_owner,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_3_5_audit_folder_group,macos,T2,audit_folder_group,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_3_5_audit_folder_mode,macos,T2,audit_folder_mode,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_3_5_audit_logs_no_acl,macos,T2,audit_logs_no_acl,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_3_5_audit_logs_owner,macos,T2,audit_logs_owner,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_3_5_audit_logs_group,macos,T2,audit_logs_group,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_3_5_audit_logs_mode,macos,T2,audit_logs_mode,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_5_4_sudo_timeout,macos,T2,sudo_timeout_minutes,lte,"[""0""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_5_5_sudo_timestamp_type,macos,T2,sudo_timestamp_type,eq,"[""tty""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_win_18_10_11_bitlocker_os_drive,windows,T1,bitlocker_os_drive,eq,"[""On""]",,fail,critical,CIS Microsoft Windows 11 v2.0.0
+cis_win_9_1_1_firewall_domain,windows,T1,windows_firewall_domain,eq,"[""enabled""]",,fail,high,CIS Microsoft Windows 11 v2.0.0
+cis_win_9_2_1_firewall_private,windows,T1,windows_firewall_private,eq,"[""enabled""]",,fail,high,CIS Microsoft Windows 11 v2.0.0
+cis_win_9_3_1_firewall_public,windows,T1,windows_firewall_public,eq,"[""enabled""]",,fail,high,CIS Microsoft Windows 11 v2.0.0
+cis_win_18_9_45_defender_realtime,windows,T1,defender_realtime,eq,"[""enabled""]",,fail,critical,CIS Microsoft Windows 11 v2.0.0
+cis_win_2_3_17_1_uac_enabled,windows,T1,uac_enabled,eq,"[""Yes""]",,fail,high,CIS Microsoft Windows 11 v2.0.0
+cis_win_18_9_102_auto_updates,windows,T1,auto_updates_enabled,eq,"[""Yes""]",,fail,high,CIS Microsoft Windows 11 v2.0.0
+cis_win_18_10_56_2_rdp_disabled,windows,T1,remote_desktop_enabled,eq,"[""disabled""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_2_3_8_1_smb_signing,windows,T1,smb_signing_required,eq,"[""Yes""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_19_1_3_2_screensaver_enabled,windows,T1,screensaver_enabled,eq,"[""Yes""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_19_1_3_3_screensaver_password,windows,T1,screensaver_password_required,eq,"[""Yes""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_19_1_3_4_screensaver_timeout,windows,T1,screensaver_timeout_seconds,lte,"[""900""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+patched_win_mdm_enrolled,windows,T1,mdm_enrolled,eq,"[""Yes""]",,fail,medium,patched.im baseline v1
+cis_win_1_1_1_password_history,windows,T2,password_history_count,gte,"[""24""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_1_1_2_password_max_age,windows,T2,password_max_age_days,lte,"[""365""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_1_1_3_password_min_age,windows,T2,password_min_age_days,gte,"[""1""]",,fail,low,CIS Microsoft Windows 11 v2.0.0
+cis_win_1_1_4_password_min_length,windows,T2,password_min_length,gte,"[""14""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_1_1_5_password_complexity,windows,T2,password_complexity_enabled,eq,"[""Yes""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_1_1_7_reversible_encryption,windows,T2,password_reversible_encryption_disabled,eq,"[""Yes""]",,fail,high,CIS Microsoft Windows 11 v2.0.0
+cis_win_1_2_1_lockout_duration,windows,T2,account_lockout_duration_minutes,gte,"[""15""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_1_2_2_lockout_threshold,windows,T2,account_lockout_threshold,lte,"[""5""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_1_2_4_lockout_reset,windows,T2,account_lockout_reset_minutes,gte,"[""15""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_17_1_1_audit_credential_validation,windows,T2,audit_credential_validation,eq,"[""Success and Failure""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_17_2_3_audit_user_account_management,windows,T2,audit_user_account_management,eq,"[""Success and Failure""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_17_2_2_audit_security_group_management,windows,T2,audit_security_group_management,contains,"[""Success""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_17_3_2_audit_process_creation,windows,T2,audit_process_creation,contains,"[""Success""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_17_5_4_audit_logon,windows,T2,audit_logon,eq,"[""Success and Failure""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_17_5_1_audit_account_lockout,windows,T2,audit_account_lockout,contains,"[""Failure""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_17_7_1_audit_policy_change,windows,T2,audit_policy_change,contains,"[""Success""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_17_8_1_audit_sensitive_privilege_use,windows,T2,audit_sensitive_privilege_use,eq,"[""Success and Failure""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_17_9_5_audit_system_integrity,windows,T2,audit_system_integrity,eq,"[""Success and Failure""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_17_9_3_audit_security_state_change,windows,T2,audit_security_state_change,contains,"[""Success""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_2_3_1_1_block_microsoft_accounts,windows,T2,block_microsoft_accounts,eq,"[""Yes""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_2_3_2_1_force_audit_subcategory,windows,T2,audit_force_subcategory_policy,eq,"[""Yes""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_2_3_7_2_no_last_username,windows,T2,dont_display_last_username,eq,"[""Yes""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_2_3_7_3_inactivity_limit,windows,T2,machine_inactivity_limit_seconds,lte,"[""900""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_2_3_10_2_restrict_anonymous_sam,windows,T2,restrict_anonymous_sam,eq,"[""Yes""]",,fail,high,CIS Microsoft Windows 11 v2.0.0
+cis_win_2_3_11_1_no_lm_hash,windows,T2,no_lm_hash,eq,"[""Yes""]",,fail,high,CIS Microsoft Windows 11 v2.0.0
+cis_win_2_3_11_7_lm_auth_level,windows,T2,lan_manager_auth_level,gte,"[""5""]",,fail,high,CIS Microsoft Windows 11 v2.0.0
+cis_win_2_3_17_4_uac_admin_approval_builtin,windows,T2,uac_admin_approval_builtin,eq,"[""Yes""]",,fail,high,CIS Microsoft Windows 11 v2.0.0
+cis_win_18_4_3_smbv1_client_disabled,windows,T2,smbv1_disabled,eq,"[""Yes""]",,fail,high,CIS Microsoft Windows 11 v2.0.0
+cis_win_18_6_4_1_llmnr_disabled,windows,T2,llmnr_disabled,eq,"[""Yes""]",,fail,high,CIS Microsoft Windows 11 v2.0.0
+cis_win_18_9_8_2_autoplay_disabled,windows,T2,autoplay_disabled,eq,"[""Yes""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_18_9_85_1_always_install_elevated_disabled,windows,T2,always_install_elevated_disabled,eq,"[""Yes""]",,fail,high,CIS Microsoft Windows 11 v2.0.0
+cis_win_18_8_36_1_remote_assistance_disabled,windows,T2,remote_assistance_disabled,eq,"[""Yes""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_18_3_7_wdigest_cleartext_disabled,windows,T2,wdigest_cleartext_disabled,eq,"[""Yes""]",,fail,high,CIS Microsoft Windows 11 v2.0.0
+cis_win_18_9_47_4_1_defender_cloud_protection,windows,T2,defender_cloud_protection,eq,"[""Yes""]",,fail,high,CIS Microsoft Windows 11 v2.0.0
+cis_win_18_9_47_4_2_defender_sample_submission,windows,T2,defender_sample_submission,eq,"[""Yes""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_18_9_47_8_defender_pua_protection,windows,T2,defender_pua_protection,eq,"[""Yes""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_18_9_47_9_defender_behavior_monitoring,windows,T2,defender_behavior_monitoring,eq,"[""Yes""]",,fail,high,CIS Microsoft Windows 11 v2.0.0
+cis_win_18_9_47_12_defender_scan_removable_drives,windows,T2,defender_scan_removable_drives,eq,"[""Yes""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+cis_win_18_9_47_11_defender_archive_scanning,windows,T2,defender_archive_scanning,eq,"[""Yes""]",,fail,medium,CIS Microsoft Windows 11 v2.0.0
+patched_macos_disk_encryption_off,macos,T1,disk_encryption_off,eq,"[""Pass""]",,pass,critical,patched.im baseline v1
+patched_win_disk_encryption_off,windows,T1,disk_encryption_off,eq,"[""Pass""]",,pass,critical,patched.im baseline v1
+patched_macos_removable_storage_unencrypted,macos,T1,removable_storage_unencrypted,eq,"[""Pass""]",,pass,medium,patched.im baseline v1
+patched_win_removable_storage_unencrypted,windows,T1,removable_storage_unencrypted,eq,"[""Pass""]",,pass,medium,patched.im baseline v1
+cis_macos_1_7_update_deferral_days,macos,T2,update_deferral_days,lte,"[""30""]",,pass,medium,CIS Apple macOS v2.1.0
+cis_macos_2_2_2_firewall_stealth_mode,macos,T2,firewall_stealth_mode,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_3_1_1_airdrop_disabled,macos,T2,airdrop_disabled,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_3_1_2_airplay_receiver_disabled,macos,T2,airplay_receiver_disabled,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_3_2_1a_time_server_host,macos,T2,time_server_host,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_3_2_1b_time_server_enforced,macos,T2,time_server_enforced,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_3_2_2_timed_running,macos,T2,timed_running,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_3_3_10_bluetooth_sharing_disabled,macos,T2,bluetooth_sharing_disabled,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_3_4_2_time_machine_encrypted,macos,T2,time_machine_encrypted,eq,"[""Yes""]",,pass,medium,CIS Apple macOS v2.1.0
+cis_macos_2_4_1_wifi_menu_visible,macos,T2,wifi_menu_visible,eq,"[""Yes""]",,fail,low,CIS Apple macOS v2.1.0
+cis_macos_2_4_2_bluetooth_menu_visible,macos,T2,bluetooth_menu_visible,eq,"[""Yes""]",,fail,low,CIS Apple macOS v2.1.0
+cis_macos_2_5_1_siri_disabled,macos,T2,siri_disabled,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_6_4_personalized_ads_disabled,macos,T2,personalized_ads_disabled,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_6_8_system_prefs_admin_lock,macos,T2,system_prefs_admin_lock,eq,"[""Yes""]",,fail,high,CIS Apple macOS v2.1.0
+cis_macos_2_10_3_loginwindow_text_set,macos,T2,loginwindow_text_set,eq,"[""Yes""]",,fail,low,CIS Apple macOS v2.1.0
+cis_macos_2_10_4_loginwindow_fullname_prompt,macos,T2,loginwindow_fullname_prompt,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_10_5_loginwindow_password_hints,macos,T2,loginwindow_password_hints,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_11_1_password_hints_absent,macos,T2,password_hints_absent,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_12_1_guest_account_disabled,macos,T2,guest_account_disabled,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_12_2_smb_guest_disabled,macos,T2,smb_guest_disabled,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_2_18_1_dictation_on_device,macos,T2,dictation_on_device,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_3_3_install_log_retention,macos,T2,install_log_retention_days,gte,"[""365""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_3_4_audit_retention_expire,macos,T2,audit_retention_expire,eq,"[""Yes""]",,fail,low,CIS Apple macOS v2.1.0
+cis_macos_3_6_firewall_logging,macos,T2,firewall_logging,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_5_1_1_home_folders_mode,macos,T2,home_folders_mode,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_5_1_5_system_apps_world_writable,macos,T2,system_apps_world_writable,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_5_1_6_system_folder_world_writable,macos,T2,system_folder_world_writable,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_5_7_screensaver_unlock_group,macos,T2,screensaver_unlock_group,eq,"[""authenticate-session-owner""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_5_9_guest_folder_absent,macos,T2,guest_folder_absent,eq,"[""Yes""]",,fail,low,CIS Apple macOS v2.1.0
+cis_macos_5_10_xprotect_running,macos,T2,xprotect_running,eq,"[""Yes""]",,fail,high,CIS Apple macOS v2.1.0
+cis_macos_6_1_1_show_file_extensions,macos,T2,show_file_extensions,eq,"[""Yes""]",,fail,low,CIS Apple macOS v2.1.0
+cis_macos_6_3_1_safari_auto_open_downloads_disabled,macos,T2,safari_auto_open_downloads_disabled,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_6_3_3_safari_fraudulent_warning,macos,T2,safari_fraudulent_warning,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_6_3_4_safari_cross_site_tracking_blocked,macos,T2,safari_cross_site_tracking_blocked,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_6_3_6_safari_private_measurement,macos,T2,safari_private_measurement,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+cis_macos_6_3_7_safari_full_url_shown,macos,T2,safari_full_url_shown,eq,"[""Yes""]",,fail,low,CIS Apple macOS v2.1.0
+cis_macos_6_3_10_safari_status_bar_shown,macos,T2,safari_status_bar_shown,eq,"[""Yes""]",,fail,low,CIS Apple macOS v2.1.0
+cis_macos_6_4_1_terminal_secure_keyboard,macos,T2,terminal_secure_keyboard,eq,"[""Yes""]",,fail,medium,CIS Apple macOS v2.1.0
+nist_win_ia7_fips_mode_enabled,windows,T2,fips_mode_enabled,eq,"[""Yes""]",,fail,medium,NIST SP 800-53 Rev 5
+nist_win_sc13_tls10_client_disabled,windows,T2,tls10_client_disabled,eq,"[""Yes""]",,pass,high,NIST SP 800-53 Rev 5
+nist_win_sc13_tls10_server_disabled,windows,T2,tls10_server_disabled,eq,"[""Yes""]",,pass,high,NIST SP 800-53 Rev 5
+nist_win_sc13_tls11_client_disabled,windows,T2,tls11_client_disabled,eq,"[""Yes""]",,pass,high,NIST SP 800-53 Rev 5
+nist_win_sc13_tls11_server_disabled,windows,T2,tls11_server_disabled,eq,"[""Yes""]",,pass,high,NIST SP 800-53 Rev 5
+nist_win_sc13_tls12_client_enabled,windows,T2,tls12_client_enabled,eq,"[""Yes""]",,pass,high,NIST SP 800-53 Rev 5
+nist_win_sc13_tls12_server_enabled,windows,T2,tls12_server_enabled,eq,"[""Yes""]",,pass,high,NIST SP 800-53 Rev 5
+nist_win_sc28_bitlocker_cipher_256bit,windows,T2,bitlocker_cipher_256bit,eq,"[""Yes""]",,fail,high,NIST SP 800-53 Rev 5
+nist_win_si7_secure_boot_enabled,windows,T2,secure_boot_enabled,eq,"[""Yes""]",,fail,high,NIST SP 800-53 Rev 5
+nist_win_si7_tpm_ready,windows,T2,tpm_ready,eq,"[""Yes""]",,fail,high,NIST SP 800-53 Rev 5
+nist_win_sc39_vbs_enabled,windows,T2,vbs_enabled,eq,"[""Yes""]",,fail,high,NIST SP 800-53 Rev 5
+nist_win_si16_hvci_enabled,windows,T2,hvci_enabled,eq,"[""Yes""]",,fail,high,NIST SP 800-53 Rev 5
+nist_win_sc41_kernel_dma_protection,windows,T2,kernel_dma_protection,eq,"[""Yes""]",,fail,medium,NIST SP 800-53 Rev 5
+nist_win_si16_mandatory_aslr,windows,T2,mandatory_aslr_enabled,eq,"[""Yes""]",,pass,medium,NIST SP 800-53 Rev 5
+nist_win_ac2_laps_enrolled,windows,T2,laps_enrolled,eq,"[""Yes""]",,pass,high,NIST SP 800-53 Rev 5
+nist_win_au11_security_log_max_size,windows,T2,security_log_max_size_kb,gte,"[""196608""]",,fail,medium,NIST SP 800-53 Rev 5
+nist_win_si3_defender_definition_age,windows,T2,defender_definition_age_days,lte,"[""1""]",,fail,high,NIST SP 800-53 Rev 5
+nist_win_si3_asr_ransomware,windows,T2,asr_ransomware_enabled,eq,"[""Yes""]",,fail,high,NIST SP 800-53 Rev 5
+nist_win_cm7_asr_psexec_wmi_block,windows,T2,asr_psexec_wmi_block_enabled,eq,"[""Yes""]",,fail,high,NIST SP 800-53 Rev 5

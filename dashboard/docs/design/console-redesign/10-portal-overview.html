@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Patched customer portal — Customer portal, your estate</title>
+<!-- Design reference for the customer portal (PAT-1602). Static mockup, invented data.
+     Same tokens and components as the staff console. -->
+<style>
+    body { margin:0; font-family:system-ui,-apple-system,'Segoe UI',sans-serif; font-size:14px; color:#0f1115; background:#f5f5f3; -webkit-font-smoothing:antialiased; }
+    a { color:#c93f04; text-decoration:none; } a:hover { color:#9f3003; }
+    .lbl { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:#7d8089; }
+    .mono { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; }
+    .num { font-weight:700; letter-spacing:-.02em; }
+    .pill { font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace; font-size:10px; font-weight:600; padding:2px 6px; border-radius:4px; white-space:nowrap; }
+    .card { background:#fff; border:1px solid rgba(15,17,21,.12); border-radius:6px; }
+    .navitem { display:flex; align-items:center; gap:10px; padding:7px 14px; color:rgba(255,255,255,.72); font-size:13px; border-left:2px solid transparent; }
+    .navitem--on { background:rgba(255,255,255,.07); color:#fff; border-left-color:#f5530a; font-weight:500; }
+  </style>
+</head>
+<body>
+<div style="display:flex; width:1440px; height:900px; overflow:hidden; background:#f5f5f3;">
+
+  <div style="width:216px; flex-shrink:0; background:#0f1115; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:center; gap:9px; padding:18px 16px 22px;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="#f5530a" stroke-width="2.4"/><circle cx="10" cy="10" r="2.2" fill="#ffffff"/></svg>
+      <span style="font-weight:700; font-size:15px; color:#fff;">Patched</span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:1px;">
+      <div class="navitem navitem--on"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>Your estate</div>
+      <div class="navitem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/></svg>Findings</div>
+      <div class="navitem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v11H4z"/><path d="M9 20h6"/></svg>Devices</div>
+      <div class="navitem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 10h8M8 14h5"/></svg>Software</div>
+      <div class="navitem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l5 5v13H6z"/><path d="M14 3v6h6"/></svg>Reports</div>
+    </div>
+    <div style="margin-top:auto; padding:14px 16px; border-top:1px solid rgba(255,255,255,.09);">
+      <div class="lbl" style="color:rgba(255,255,255,.34);">Your specialist</div>
+      <div style="display:flex; align-items:center; gap:9px; margin-top:9px;">
+        <div style="width:26px; height:26px; border-radius:50%; background:#2a2d33; color:#fff; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center;">AB</div>
+        <div><div style="font-size:12px; color:#fff;">Example specialist</div><div class="mono" style="font-size:10px; color:rgba(255,255,255,.5);">specialist@example.invalid</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex-grow:1; display:flex; flex-direction:column; min-width:0;">
+    <div style="height:56px; flex-shrink:0; background:#fff; border-bottom:1px solid rgba(15,17,21,.12); display:flex; align-items:center; padding:0 24px; gap:11px;">
+      <h1 style="margin:0; font-size:18px; font-weight:700; letter-spacing:-.015em;">Meridian Trust</h1>
+      <span class="mono" style="font-size:10px; color:#7d8089; background:#f5f5f3; border:1px solid rgba(15,17,21,.07); padding:3px 7px; border-radius:4px;">SAMPLE DATA</span>
+      <span class="mono" style="font-size:10px; color:#c93f04; background:#fff4ed; border:1px solid rgba(201,63,4,.22); padding:3px 7px; border-radius:4px;">MANAGED</span>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:11px;">
+        <span class="mono" style="font-size:11px; color:#7d8089;">UPDATED 14 MINUTES AGO</span>
+        <div style="display:flex; border:1px solid rgba(15,17,21,.12); border-radius:6px; overflow:hidden;"><span class="mono" style="font-size:10px; font-weight:600; padding:5px 9px; background:#0f1115; color:#fff;">LIGHT</span><span class="mono" style="font-size:10px; font-weight:600; padding:5px 9px; color:#7d8089;">DARK</span></div>
+        <div style="border:1px solid rgba(15,17,21,.12); border-radius:6px; padding:6px 11px; font-size:12px; font-weight:500;">Ask Andy a question</div>
+      </div>
+    </div>
+
+    <div style="padding:20px 24px; display:flex; flex-direction:column; gap:16px; overflow:hidden;">
+
+      <!-- COVERAGE IS THE HERO -->
+      <div class="card" style="padding:20px 22px;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+          <div>
+            <div class="lbl" style="color:#0f1115; font-size:11px;">What we can see of your estate</div>
+            <div style="display:flex; align-items:baseline; gap:11px; margin-top:9px;">
+              <div class="num" style="font-size:40px;">222<span style="font-size:22px; color:#7d8089;"> of 248</span></div>
+              <div class="mono" style="font-size:14px; color:#b91c1c; font-weight:600;">89.5%</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div class="lbl">Device list you gave us</div>
+            <div class="mono" style="font-size:12px; margin-top:4px;">2 September</div>
+          </div>
+        </div>
+        <div style="display:flex; height:26px; border-radius:4px; overflow:hidden; margin-top:16px;">
+          <div style="width:89.5%; background:#15803d;"></div><div style="width:2.4%; background:#c2410c;"></div><div style="width:1.6%; background:#b91c1c;"></div><div style="width:4.8%; background:#2a2d33;"></div><div style="width:1.7%; background:#7c3aed;"></div>
+        </div>
+        <div style="display:flex; gap:22px; margin-top:13px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:7px;"><span style="width:9px; height:9px; border-radius:2px; background:#15803d;"></span><span style="font-size:12px;">Reporting</span><span class="mono" style="font-size:12px; font-weight:600;">222</span></div>
+          <div style="display:flex; align-items:center; gap:7px;"><span style="width:9px; height:9px; border-radius:2px; background:#c2410c;"></span><span style="font-size:12px;">Quiet a few days</span><span class="mono" style="font-size:12px; font-weight:600;">6</span></div>
+          <div style="display:flex; align-items:center; gap:7px;"><span style="width:9px; height:9px; border-radius:2px; background:#b91c1c;"></span><span style="font-size:12px;">Silent over 14 days</span><span class="mono" style="font-size:12px; font-weight:600;">4</span></div>
+          <div style="display:flex; align-items:center; gap:7px;"><span style="width:9px; height:9px; border-radius:2px; background:#2a2d33;"></span><span style="font-size:12px;">On your list, never seen</span><span class="mono" style="font-size:12px; font-weight:600;">12</span></div>
+          <div style="display:flex; align-items:center; gap:7px;"><span style="width:9px; height:9px; border-radius:2px; background:#7c3aed;"></span><span style="font-size:12px;">Seen, not on your list</span><span class="mono" style="font-size:12px; font-weight:600;">4</span></div>
+        </div>
+        <div style="margin-top:15px; padding-top:14px; border-top:1px solid rgba(15,17,21,.07); display:flex; align-items:center; gap:11px;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7d8089" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+          <div style="font-size:13px; color:#2a2d33; line-height:1.5;">
+            The 26 devices we cannot currently see are <strong>not counted as compliant</strong> anywhere in this portal or in any report. Andy is working through them with your team and will ask you about anything he cannot resolve.
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:13px;">
+        <div class="card" style="padding:14px 16px;">
+          <div style="display:flex; justify-content:space-between; align-items:start;"><div class="lbl">Open findings</div>
+            <div style="display:flex; flex-direction:column; gap:3px; align-items:flex-end;"><span class="pill" style="background:#fef2f2; color:#b91c1c;">31 HIGH</span><span class="pill" style="background:#fff7ed; color:#c2410c;">64 MED</span></div></div>
+          <div class="num" style="font-size:27px; margin-top:6px;">95</div>
+        </div>
+        <div class="card" style="padding:14px 16px;">
+          <div class="lbl">Past the 14 day deadline</div>
+          <div class="num" style="font-size:27px; margin-top:6px; color:#b91c1c;">6</div>
+          <div style="font-size:11px; color:#7d8089; margin-top:2px;">Cyber Essentials risk</div>
+        </div>
+        <div class="card" style="padding:14px 16px;">
+          <div class="lbl">Software outside policy</div>
+          <div class="num" style="font-size:27px; margin-top:6px;">17</div>
+          <div style="font-size:11px; color:#7d8089; margin-top:2px;">products, 41 installs</div>
+        </div>
+        <div class="card" style="padding:14px 16px;">
+          <div class="lbl">Your specialist time</div>
+          <div class="num" style="font-size:27px; margin-top:6px;">9.2<span style="font-size:15px; color:#7d8089;"> of 10</span></div>
+          <div style="height:5px; background:#f5f5f3; border-radius:1px; margin-top:7px; overflow:hidden;"><div style="width:92%; height:100%; background:#c2410c;"></div></div>
+          <div class="mono" style="font-size:10px; color:#7d8089; margin-top:6px; line-height:1.4;">DAYS LEFT, PERIOD ENDS 30 SEP<br>UNUSED TIME DOES NOT CARRY OVER</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:14px; align-items:start;">
+        <div class="card" style="padding:16px 18px;">
+          <div class="lbl" style="color:#0f1115; font-size:11px;">What needs your team</div>
+          <div style="display:flex; flex-direction:column; gap:12px; margin-top:13px;">
+            <div style="display:flex; align-items:center; gap:13px;">
+              <div style="width:230px; flex-shrink:0;"><div style="font-size:13px; font-weight:500;">Google Chrome, 4 versions behind</div><div class="mono" style="font-size:11px; color:#15803d; margin-top:2px;">version confirmed</div></div>
+              <div style="flex-grow:1; height:7px; background:#f5f5f3; border-radius:1px; overflow:hidden;"><div style="width:78%; height:100%; background:#b91c1c;"></div></div>
+              <span class="num" style="width:36px; text-align:right; font-size:16px;">61</span>
+              <span class="mono" style="font-size:11px; color:#c93f04; width:152px; text-align:right; white-space:nowrap;">GET THE FIX →</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:13px;">
+              <div style="width:230px; flex-shrink:0;"><div style="font-size:13px; font-weight:500;">Disk encryption off</div><div class="mono" style="font-size:11px; color:#15803d; margin-top:2px;">version confirmed</div></div>
+              <div style="flex-grow:1; height:7px; background:#f5f5f3; border-radius:1px; overflow:hidden;"><div style="width:46%; height:100%; background:#b91c1c;"></div></div>
+              <span class="num" style="width:36px; text-align:right; font-size:16px;">36</span>
+              <span class="mono" style="font-size:11px; color:#c93f04; width:152px; text-align:right; white-space:nowrap;">GET THE FIX →</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:13px;">
+              <div style="width:230px; flex-shrink:0;"><div style="font-size:13px; font-weight:500;">Zoom, end of support build</div><div class="mono" style="font-size:11px; color:#c2410c; margin-top:2px;">name match only</div></div>
+              <div style="flex-grow:1; height:7px; background:#f5f5f3; border-radius:1px; overflow:hidden;"><div style="width:24%; height:100%; background:#c2410c;"></div></div>
+              <span class="num" style="width:36px; text-align:right; font-size:16px;">19</span>
+              <span class="mono" style="font-size:11px; color:#c93f04; width:152px; text-align:right; white-space:nowrap;">ASK US TO CONFIRM &rarr;</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:13px;">
+              <div style="width:230px; flex-shrink:0;"><div style="font-size:13px; font-weight:500;">Tailscale, unclassified</div><div class="mono" style="font-size:11px; color:#7d8089; margin-top:2px;">unclassified, no evidence yet</div></div>
+              <div style="flex-grow:1; height:7px; background:#f5f5f3; border-radius:1px; overflow:hidden;"><div style="width:11%; height:100%; background:#7d8089;"></div></div>
+              <span class="num" style="width:36px; text-align:right; font-size:16px;">9</span>
+              <span class="mono" style="font-size:11px; color:#c93f04; width:152px; text-align:right; white-space:nowrap;">TELL US YOUR VIEW &rarr;</span>
+            </div>
+          </div>
+          <div style="margin-top:15px; padding-top:13px; border-top:1px solid rgba(15,17,21,.07); font-size:12px; color:#7d8089; line-height:1.5;">
+            Ask us about anything on this list. Every decision is recorded by your named specialist rather than accepted here, so your evidence stays a specialist judgement and not a self certification.
+          </div>
+        </div>
+
+        <div class="card" style="padding:16px 18px;">
+          <div class="lbl" style="color:#0f1115; font-size:11px;">Since you last looked</div>
+          <div style="display:flex; flex-direction:column; gap:11px; margin-top:13px;">
+            <div style="display:flex; gap:10px;"><span class="mono" style="font-size:10px; color:#7d8089; width:38px; flex-shrink:0; padding-top:2px;">9 SEP</span><span style="font-size:12px; line-height:1.5;">26 devices stopped reporting after your VPN change. Nothing is wrong with them, we just cannot see them.</span></div>
+            <div style="display:flex; gap:10px;"><span class="mono" style="font-size:10px; color:#7d8089; width:38px; flex-shrink:0; padding-top:2px;">8 SEP</span><span style="font-size:12px; line-height:1.5;">Encryption switched off on two Macs, both recently rebuilt.</span></div>
+            <div style="display:flex; gap:10px;"><span class="mono" style="font-size:10px; color:#7d8089; width:38px; flex-shrink:0; padding-top:2px;">7 SEP</span><span style="font-size:12px; line-height:1.5;">Tailscale appeared on 9 machines. Nobody has said whether it is allowed.</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

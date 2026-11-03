@@ -1,0 +1,27 @@
+{
+  "label": "istatmenus",
+  "name": "iStat Menus",
+  "type": "zip",
+  "app_path": "/Applications/iStat Menus.app",
+  "expected_team_id": "Y93TK974AT",
+  "download": {
+    "method": "static",
+    "url": "https://download.bjango.com/istatmenus/"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "iStat Menus",
+    "iStatMenusAgent",
+    "iStat Menus Status"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

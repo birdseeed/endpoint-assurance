@@ -1,0 +1,17 @@
+{
+  "_comment": "PAT-443 canonical tier-status source. This is the single source of truth for tier availability. Flip a status here and the CVE report's closing-page rungs follow. Website tier cards + the buyer-facing tier doc should sync FROM this file (cross-repo sync mechanism is a separate decision — see PAT-443). Status values must be exactly 'Available now' or 'Coming soon'.",
+  "tiers": {
+    "report": {
+      "name": "Report + Deploy",
+      "status": "Available now"
+    },
+    "patch": {
+      "name": "Patch",
+      "status": "Available now"
+    },
+    "full_endpoint_management": {
+      "name": "Full Endpoint Management",
+      "status": "Available now"
+    }
+  }
+}

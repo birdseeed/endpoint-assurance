@@ -1,0 +1,23 @@
+{
+  "label": "smartsheet",
+  "name": "Smartsheet",
+  "type": "dmg",
+  "app_path": "/Applications/Smartsheet.app",
+  "expected_team_id": "J89ET3PY68",
+  "download": {
+    "method": "static",
+    "url": "https://smartsheet-desktop-app-builds.s3.amazonaws.com/public/darwin/Smartsheet-setup.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

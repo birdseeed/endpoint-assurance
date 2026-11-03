@@ -1,0 +1,25 @@
+{
+  "label": "tunnelblick",
+  "name": "Tunnelblick",
+  "type": "dmg",
+  "app_path": "/Applications/Tunnelblick.app",
+  "expected_team_id": "Z2SG5H3HC8",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/Tunnelblick/Tunnelblick/releases/latest",
+    "asset_pattern": "\\.dmg$"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "pat-664",
+    "reviewed_at": "2026-07-04",
+    "notes": "PAT-664: fixed stale URL. Original label used literal \\${version} and \\${version_plus_build} template variables that were never substituted. Switched to github-release strategy pointing at the GitHub releases latest API. Latest confirmed version: v8.0.2 (build 6302), DMG at https://github.com/Tunnelblick/Tunnelblick/releases/download/v8.0.2/Tunnelblick_8.0.2_build_6302.dmg — verified 2026-07-04."
+  }
+}

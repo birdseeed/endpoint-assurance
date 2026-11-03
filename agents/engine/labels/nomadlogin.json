@@ -1,0 +1,23 @@
+{
+  "label": "nomadlogin",
+  "name": "NoMAD Login",
+  "type": "pkg",
+  "app_path": "/Applications/NoMAD Login.app",
+  "expected_team_id": "AAPZK3CB24",
+  "download": {
+    "method": "static",
+    "url": "https://files.nomad.menu/NoMAD-Login-AD.pkg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

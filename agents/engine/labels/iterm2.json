@@ -1,0 +1,26 @@
+{
+  "label": "iterm2",
+  "name": "iTerm",
+  "type": "zip",
+  "app_path": "/Applications/iTerm.app",
+  "expected_team_id": "H7V7XYVQ7D",
+  "download": {
+    "method": "static",
+    "url": "https://iterm2.com/downloads/stable/latest"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [
+    "iTerm",
+    "iTerm2"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

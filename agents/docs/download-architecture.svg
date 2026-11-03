@@ -1,0 +1,98 @@
+<svg viewBox="0 0 900 730" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ttl dsc">
+<title id="ttl">Patched Updater download architecture</title>
+<desc id="dsc">Phase 1: client Macs download installers directly from vendors and verify them on-device against Apple's code-signing PKI. Phase 2: client Macs download only from a Patched-controlled mirror; only Patched's central pipeline contacts the vendor.</desc>
+<style>
+  svg{--ink:#262521;--muted:#6f6b61;--line:#c6c3b8;--lineS:#8c897e;
+      --panel:#faf9f6;--patched:#e9eef3;--patchedB:#8ea0b0;
+      --vendor:#f6ead3;--vendorB:#cd9d52;--acc:#356391;--accBg:#e3ecf4;--white:#ffffff;}
+  .pl{font-family:ui-sans-serif,-apple-system,"Segoe UI",sans-serif;font-weight:700;font-size:15px;fill:var(--ink);}
+  .bt{font-family:ui-sans-serif,-apple-system,"Segoe UI",sans-serif;font-weight:700;font-size:13px;fill:var(--ink);}
+  .st{font-family:ui-sans-serif,-apple-system,"Segoe UI",sans-serif;font-size:10.5px;fill:var(--muted);}
+  .al{font-family:ui-sans-serif,-apple-system,"Segoe UI",sans-serif;font-size:9.5px;font-weight:600;fill:var(--lineS);}
+  .pt{font-family:ui-sans-serif,-apple-system,"Segoe UI",sans-serif;font-weight:700;font-size:11px;fill:var(--ink);}
+  .cap{font-family:ui-sans-serif,-apple-system,"Segoe UI",sans-serif;font-style:italic;font-size:11px;fill:var(--muted);}
+  .lg{font-family:ui-sans-serif,-apple-system,"Segoe UI",sans-serif;font-size:10px;fill:var(--muted);}
+  .flow{stroke:var(--lineS);stroke-width:2;fill:none;}
+</style>
+<defs>
+  <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="var(--lineS)"/>
+  </marker>
+</defs>
+
+<!-- ============ PANEL A ============ -->
+<rect x="16" y="16" width="868" height="316" rx="10" fill="var(--panel)" stroke="var(--line)"/>
+<text class="pl" x="36" y="44">PHASE 1 — Direct download, verified on the endpoint</text>
+<rect x="610" y="33" width="12" height="12" rx="2" fill="var(--patched)" stroke="var(--patchedB)"/>
+<text class="lg" x="628" y="43">Patched-controlled</text>
+<rect x="752" y="33" width="12" height="12" rx="2" fill="var(--vendor)" stroke="var(--vendorB)"/>
+<text class="lg" x="770" y="43">External vendor</text>
+
+<rect x="40" y="92" width="160" height="74" rx="8" fill="var(--vendor)" stroke="var(--vendorB)"/>
+<text class="bt" x="120" y="124" text-anchor="middle">Vendor source</text>
+<text class="st" x="120" y="141" text-anchor="middle">Google, Mozilla, Slack…</text>
+
+<rect x="320" y="76" width="330" height="150" rx="9" fill="var(--patched)" stroke="var(--patchedB)"/>
+<text class="bt" x="485" y="101" text-anchor="middle">Client Mac</text>
+<text class="st" x="485" y="118" text-anchor="middle">Patched update engine</text>
+<rect x="328" y="146" width="80" height="46" rx="6" fill="var(--white)" stroke="var(--line)"/>
+<text class="pt" x="368" y="173" text-anchor="middle">Download</text>
+<rect x="416" y="146" width="148" height="46" rx="6" fill="var(--accBg)" stroke="var(--acc)"/>
+<text class="pt" x="490" y="167" text-anchor="middle">Verify</text>
+<text class="st" x="490" y="182" text-anchor="middle">Team ID + notarization</text>
+<rect x="572" y="146" width="70" height="46" rx="6" fill="var(--white)" stroke="var(--line)"/>
+<text class="pt" x="607" y="173" text-anchor="middle">Install</text>
+
+<rect x="720" y="110" width="150" height="60" rx="8" fill="var(--patched)" stroke="var(--patchedB)"/>
+<text class="bt" x="795" y="135" text-anchor="middle">api.patched.im</text>
+<text class="st" x="795" y="152" text-anchor="middle">provenance record</text>
+
+<rect x="40" y="212" width="252" height="62" rx="8" fill="var(--patched)" stroke="var(--patchedB)"/>
+<text class="bt" x="166" y="238" text-anchor="middle">Verification agent</text>
+<text class="st" x="166" y="255" text-anchor="middle">macOS runner · daily independent check</text>
+
+<line class="flow" x1="200" y1="129" x2="316" y2="129" marker-end="url(#ah)"/>
+<text class="al" x="258" y="121" text-anchor="middle">1 · HTTPS download</text>
+<line class="flow" x1="650" y1="140" x2="716" y2="140" marker-end="url(#ah)"/>
+<text class="al" x="683" y="132" text-anchor="middle">2 · provenance</text>
+<line class="flow" x1="150" y1="212" x2="124" y2="170" marker-end="url(#ah)" stroke-dasharray="4 3"/>
+<text class="al" x="205" y="197">daily check</text>
+
+<text class="cap" x="36" y="312">Endpoint connects directly to the vendor. Integrity is the on-device Team ID + notarization check — mandatory, fail-closed.</text>
+
+<!-- ============ PANEL B ============ -->
+<rect x="16" y="348" width="868" height="366" rx="10" fill="var(--panel)" stroke="var(--line)"/>
+<text class="pl" x="36" y="378">PHASE 2 — Internal mirror  ·  recommended end-state</text>
+
+<rect x="40" y="416" width="150" height="80" rx="8" fill="var(--vendor)" stroke="var(--vendorB)"/>
+<text class="bt" x="115" y="451" text-anchor="middle">Vendor source</text>
+<text class="st" x="115" y="468" text-anchor="middle">Google, Mozilla…</text>
+
+<rect x="263" y="416" width="150" height="80" rx="8" fill="var(--patched)" stroke="var(--patchedB)"/>
+<text class="bt" x="338" y="451" text-anchor="middle">Mirror pipeline</text>
+<text class="st" x="338" y="468" text-anchor="middle">verify + hash, central</text>
+
+<rect x="486" y="416" width="150" height="80" rx="8" fill="var(--patched)" stroke="var(--patchedB)"/>
+<text class="bt" x="561" y="451" text-anchor="middle">Patched mirror</text>
+<text class="st" x="561" y="468" text-anchor="middle">R2 · signed manifest</text>
+
+<rect x="709" y="416" width="150" height="80" rx="8" fill="var(--patched)" stroke="var(--patchedB)"/>
+<text class="bt" x="784" y="451" text-anchor="middle">Client Mac</text>
+<text class="st" x="784" y="468" text-anchor="middle">re-check hash + Team ID</text>
+
+<rect x="709" y="566" width="150" height="56" rx="8" fill="var(--patched)" stroke="var(--patchedB)"/>
+<text class="bt" x="784" y="590" text-anchor="middle">api.patched.im</text>
+<text class="st" x="784" y="606" text-anchor="middle">provenance record</text>
+
+<line class="flow" x1="190" y1="456" x2="259" y2="456" marker-end="url(#ah)"/>
+<text class="al" x="224" y="448" text-anchor="middle">1 · download once</text>
+<line class="flow" x1="413" y1="456" x2="482" y2="456" marker-end="url(#ah)"/>
+<text class="al" x="447" y="448" text-anchor="middle">2 · re-host verified</text>
+<line class="flow" x1="636" y1="456" x2="705" y2="456" marker-end="url(#ah)"/>
+<text class="al" x="670" y="448" text-anchor="middle">3 · hash-pinned</text>
+<line class="flow" x1="784" y1="496" x2="784" y2="562" marker-end="url(#ah)"/>
+<text class="al" x="792" y="534">4 · provenance</text>
+
+<text class="cap" x="36" y="664">Endpoint connects only to Patched infrastructure. Only the pipeline ever contacts the vendor —</text>
+<text class="cap" x="36" y="682">so the endpoint egress allowlist collapses to a single domain.</text>
+</svg>

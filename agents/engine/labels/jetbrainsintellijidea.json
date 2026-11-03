@@ -1,0 +1,25 @@
+{
+  "label": "jetbrainsintellijidea",
+  "name": "IntelliJ IDEA",
+  "type": "dmg",
+  "app_path": "/Applications/IntelliJ IDEA.app",
+  "expected_team_id": "2ZEFAR8TH3",
+  "download": {
+    "method": "static",
+    "url": "https://download.jetbrains.com/product?code=${jetbrainscode}&latest&distribution=${jetbrainsdistribution}"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [
+    "idea"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

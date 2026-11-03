@@ -1,0 +1,72 @@
+name: mktemp-template-lint
+# PAT-1062: macOS/BSD mktemp only substitutes TRAILING X's in a template.
+# A template like foo.XXXXXX.sh — X's followed by a suffix — is not
+# recognized as a template at all: mktemp silently returns the literal
+# path back, unsubstituted, on the FIRST call. No error, no warning. A
+# later call against that same template does not repeat the silent
+# success: the destination file already exists from the first call, so
+# mktemp hard-fails outright (mktemp: mkstemp failed on ...: File exists).
+# The blast radius is a permanent hard failure once a stale file survives
+# cleanup, not merely random collisions between overlapping runs.
+#
+# This greps for the shape of the bug: 3-or-more X's (mktemp's actual
+# minimum for real substitution) immediately followed by a character that
+# is not another X, not a closing quote/paren, and not whitespace — i.e.
+# a suffix glued directly onto the X run. Legitimate mktemp templates keep
+# the X's trailing (e.g. foo.XXXXXX or foo.XXXXXX") and are not flagged.
+#
+# engine/ is excluded: it is a hard fork of upstream Installomator source
+# (see AGENTS.md) and is not ours to gate on. Nothing else is excluded.
+#
+# PAT-1062 left a temporary KNOWN_PROD_HITS allowance covering the 4
+# production call sites its sweep found. PAT-1079 fixed all 4, so the
+# allowance is gone and this workflow now gates the whole repo unconditionally.
+
+on:
+  pull_request:
+    paths:
+      - '**.sh'
+      - '**.zsh'
+      - '**.yml'
+  push:
+    branches: [main]
+    paths:
+      - '**.sh'
+      - '**.zsh'
+      - '**.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check for mktemp templates with a suffix glued onto the X run
+        run: |
+          set +e
+          matches=$(grep -rnP 'mktemp\b.*X{3,}[^X\s"'"'"')]' \
+            --include='*.sh' --include='*.zsh' --include='*.yml' \
+            --exclude-dir='.git' --exclude-dir='engine' \
+            --exclude='mktemp-template-lint.yml' .)
+          grep_rc=$?
+          set -e
+
+          # grep's own exit status: 0 (matches found) and 1 (no matches,
+          # clean) are both real lint results. Anything else (2 = malformed
+          # regex, no PCRE support, unreadable path, etc.) is a tooling
+          # failure, not a lint finding — fail loudly rather than silently
+          # reporting a clean pass.
+          if [ "$grep_rc" -gt 1 ]; then
+            echo "::error::grep itself failed while scanning for mktemp template issues (exit status $grep_rc). This is a tooling problem (regex/engine/path), not a lint finding — investigate the grep invocation, not the mktemp templates."
+            exit 1
+          fi
+
+          if [ -n "$matches" ]; then
+            echo "::error::Found mktemp template(s) with a suffix glued onto the X run. On macOS/BSD, mktemp only substitutes TRAILING X's — a template like foo.XXXXXX.sh is not recognized, so mktemp silently returns it unsubstituted on the first call, then hard-fails (mkstemp failed ...: File exists) on any later call against that same stale path. Drop the suffix so the X's are trailing (foo.XXXXXX). If the suffix is load-bearing (something globs or type-sniffs it), create the file under a trailing-X template and rename it into place — see emit_audit_event in endpoint/patched-update.sh."
+            echo "$matches"
+            exit 1
+          fi
+          echo "No mktemp template suffix issues found."

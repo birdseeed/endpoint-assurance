@@ -1,0 +1,23 @@
+{
+  "label": "boxtools",
+  "name": "Box Tools",
+  "type": "pkg",
+  "app_path": "/Applications/Box Tools.app",
+  "expected_team_id": "M683GB7CPW",
+  "download": {
+    "method": "static",
+    "url": "https://box-installers.s3.amazonaws.com/boxedit/mac/currentrelease/BoxToolsInstaller.pkg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

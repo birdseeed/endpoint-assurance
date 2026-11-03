@@ -1,0 +1,23 @@
+{
+  "label": "boxsync",
+  "name": "Box Sync",
+  "type": "dmg",
+  "app_path": "/Applications/Box Sync.app",
+  "expected_team_id": "M683GB7CPW",
+  "download": {
+    "method": "static",
+    "url": "https://e3.boxcdn.net/box-installers/sync/Sync+4+External/Box%20Sync%20Installer.dmg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "schema_version": 3,
+  "platform": "windows",
+  "agent": "patched-collect-win",
+  "agent_version": "0.2.0",
+  "tenant_id": "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBC",
+  "collected_at": "2026-07-10T09:00:00Z",
+  "device": {
+    "serial": "DMT1234568",
+    "hw_uuid": "CCCCCCCC-DDDD-EEEE-FFFF-AAAAAAAAAAAB",
+    "hostname": "DESKTOP-BACKUPWIN",
+    "hw_model": "Dell OptiPlex 7090",
+    "arch": "x86_64",
+    "last_boot": "2026-07-09T08:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Intel(R) Core(TM) i7-10700",
+    "cpu_cores": 8,
+    "ram_gb": 16,
+    "disk_total_gb": 476.9,
+    "disk_free_gb": 210.3
+  },
+  "os": {
+    "name": "Windows",
+    "version": "11.0.22631",
+    "build": "22631.3593"
+  },
+  "compliance": {
+    "bitlocker_os_drive": "On",
+    "windows_firewall_domain": "enabled"
+  },
+  "security_tools": [
+    { "id": "defender-for-endpoint", "name": "Microsoft Defender for Endpoint" }
+  ],
+  "apps": [
+    {
+      "name": "Microsoft Edge",
+      "version": "124.0.2478.97",
+      "identifier": "Microsoft Edge",
+      "publisher": "Microsoft Corporation",
+      "architecture": "x86_64"
+    }
+  ],
+  "backup_status": {
+    "has_backup": true,
+    "backup_type": "file_history",
+    "last_backup_at": "2026-07-08T09:00:00Z",
+    "last_backup_days_ago": 2,
+    "stale": false,
+    "sync_only": false
+  }
+}

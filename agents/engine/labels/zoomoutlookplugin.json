@@ -1,0 +1,25 @@
+{
+  "label": "zoomoutlookplugin",
+  "name": "Zoom Outlook Plugin",
+  "type": "pkg",
+  "app_path": "/Applications/Zoom Outlook Plugin.app",
+  "expected_team_id": "BJ4HAAB9B3",
+  "download": {
+    "method": "static",
+    "url": "https://zoom.us/client/latest/ZoomMacOutlookPlugin.pkg"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [
+    "PluginLauncher"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

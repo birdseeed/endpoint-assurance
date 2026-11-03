@@ -1,0 +1,26 @@
+{
+  "label": "codex",
+  "name": "Codex",
+  "type": "dmg",
+  "app_path": "/Applications/Codex.app",
+  "expected_team_id": "2DC432GLL2",
+  "download": {
+    "method": "static",
+    "url": "https://persistent.oaistatic.com/codex-app-prod/Codex.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "mirror_eula_approved": false,
+    "vendor_only": true,
+    "vendor_only_reason": "auth-gated-cdn",
+    "reviewed_by": "pat-664",
+    "reviewed_at": "2026-07-04",
+    "notes": "PAT-664: permanently vendor_only=true. OpenAI CDN (persistent.oaistatic.com) is auth-gated; download requires an authenticated session. No public programmatic download path exists. Mirror pipeline will skip this label."
+  }
+}

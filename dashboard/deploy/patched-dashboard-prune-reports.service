@@ -1,0 +1,81 @@
+[Unit]
+Description=Prune generated .docx reports older than the retention window (PAT-87)
+Documentation=file:///opt/patched-dashboard/deploy/prune-reports.sh
+
+[Service]
+Type=oneshot
+# Runs as www-data (PAT-1376): reports/ and every .docx in it are owned by
+# www-data (755/644), so unlinking needs no elevated privilege. Root gets no
+# benefit here and, per PAT-1376, actively fails: root is evaluated as "other"
+# against those modes, and without CAP_DAC_OVERRIDE (dropped below) it hits
+# EACCES on the very first file. The script only deletes top-level *.docx in
+# reports/, never reports/public/ or dashboard.db.
+User=www-data
+# PAT-2307: the reports moved out of the root-owned code tree into the
+# app's state directory. Named here as well as in the script's default so
+# the unit states exactly what it may delete from. This unit is installed
+# by scripts/deploy.sh's sync_box_config from PAT-2307 on; before that it
+# was hand-installed and a change here never reached the box.
+Environment=REPORTS_DIR=/var/lib/patched-dashboard/reports
+ExecStart=/opt/patched-dashboard/deploy/prune-reports.sh 90
+StandardOutput=journal
+StandardError=journal
+Restart=no
+TimeoutStartSec=2min
+
+# ── Sandboxing (PAT-1085) ────────────────────────────────────────────────
+# prune-reports.sh is pure bash + coreutils (find/rm/echo): no network
+# calls, no privilege transitions (no sudo/runuser), no writes outside
+# REPORTS_DIR, and it only ever touches top-level *.docx there (-maxdepth 1
+# — never reports/public/ or dashboard.db, see the script's own comments).
+# Much narrower footprint than patched-dashboard.service (PAT-887), so this
+# floor is tighter throughout: no outbound network, no DB/venv/source-tree
+# access at all, and RW scoped to reports/ only rather than the whole app
+# directory.
+
+NoNewPrivileges=true
+# www-data owns reports/ and every file in it, so no capability grant is
+# needed to unlink them. Deliberately not CapabilityBoundingSet=CAP_DAC_OVERRIDE
+# under User=root instead (PAT-1376): that would let this job bypass every
+# permission check on the box to delete three files it already owns.
+CapabilityBoundingSet=
+
+PrivateTmp=true
+ProtectSystem=strict
+
+# Only reports/ needs write access — the script never touches dashboard.db,
+# nvd.db, or anything under the root-owned /opt/patched-dashboard. The "-"
+# prefix lets the unit start even if the app has not yet created reports/
+# (it does on its first start with PAT-2307's unit); the script then
+# reports there is nothing to prune rather than the unit failing to set up
+# its namespace.
+ReadWritePaths=-/var/lib/patched-dashboard/reports
+
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+
+RestrictNamespaces=true
+LockPersonality=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+
+# The script makes zero network calls (no curl/wget/nc/scp — confirmed by
+# reading it), so this can deny every address family outright. "none" is
+# the standard systemd special value for that (systemd 249+; Ubuntu 24.04
+# ships 255) — unlike most systemd list directives, assigning the empty
+# string to RestrictAddressFamilies= means "permit all", the opposite of
+# what's wanted here, so it must be the explicit "none" and not "=".
+RestrictAddressFamilies=none
+
+SystemCallArchitectures=native
+
+# Pure bash + coreutils, no runtime codegen — safe.
+MemoryDenyWriteExecute=true
+
+PrivateDevices=true

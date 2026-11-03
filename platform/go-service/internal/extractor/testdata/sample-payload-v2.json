@@ -1,0 +1,122 @@
+{
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.2.0",
+  "tenant_id": "11111111-1111-1111-1111-111111111111",
+  "collected_at": "2026-11-13T22:00:00Z",
+  "device": {
+    "serial": "C02XK1ABJG5J",
+    "hw_uuid": "9C8B7A6F-5E4D-3C2B-1A09-8F7E6D5C4B3A",
+    "hostname": "andys-macbook",
+    "computer_name": "Andy's MacBook Pro",
+    "hw_model": "Mac15,9",
+    "arch": "arm64",
+    "last_boot": "2026-11-12T07:15:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M3 Pro",
+    "cpu_cores": 11,
+    "ram_gb": 18,
+    "disk_total_gb": 460.4,
+    "disk_free_gb": 173.2
+  },
+  "os": {
+    "name": "macOS",
+    "version": "15.4.1",
+    "build": "24E263"
+  },
+  "compliance": {
+    "filevault": "On",
+    "sip": "enabled",
+    "gatekeeper": "assessments",
+    "firewall": "enabled",
+    "xprotect_version": "2199",
+    "mrt_version": "1.93",
+    "pending_updates_count": 0,
+    "mdm_enrolled": "Yes",
+    "mdm_enrolled_via_dep": "Yes",
+    "mdm_enrolment": "dep=Yes mdm=Yes",
+    "secure_boot": "Full Security",
+    "auto_security_updates": "On",
+    "audit_logging": "enabled",
+    "remote_apple_events": "Off",
+    "remote_login": "Off",
+    "screen_sharing": "Off",
+    "sealed_system_volume": "true",
+    "screensaver_password": "DefaultAssumed",
+    "screensaver_delay_seconds": -1,
+    "auto_login_user": "None",
+    "local_admin_count": 1,
+    "password_policy_present": "Yes",
+    "password_policy_is_default": "Yes",
+    "password_policy_raw": "(apple-default-4char-fallback)"
+  },
+  "security_tools": [
+    { "id": "defender-for-endpoint", "name": "Microsoft Defender for Endpoint" }
+  ],
+  "system_extensions": [
+    {
+      "enabled": true,
+      "active": true,
+      "team_id": "UBF8T346G9",
+      "bundle_id": "com.microsoft.wdav.epsext",
+      "version": "1.0.0",
+      "name": "Microsoft Defender Endpoint Protection",
+      "state": "activated_enabled"
+    }
+  ],
+  "background_items": [
+    {
+      "name": "Spotify",
+      "identifier": "com.spotify.client",
+      "team_id": "2FNC3A47ZF",
+      "url": "/Applications/Spotify.app",
+      "type": 1,
+      "disposition": 11
+    }
+  ],
+  "icloud": {
+    "signed_in": "Yes"
+  },
+  "apps": [
+    {
+      "name": "Safari",
+      "version": "18.4",
+      "bundle_id": "com.apple.Safari",
+      "path": "/Applications/Safari.app",
+      "size_mb": 78.21,
+      "modified_at": "2026-10-15T14:00:00Z",
+      "architecture": "x86_64 arm64",
+      "sha256": "abc123def456abc123def456abc123def456abc123def456abc123def456abcd",
+      "team_id": "Software Signing",
+      "signed_by": "Software Signing",
+      "notarized": false
+    },
+    {
+      "name": "Slack",
+      "version": "4.38.121",
+      "bundle_id": "com.tinyspeck.slackmacgap",
+      "path": "/Applications/Slack.app",
+      "size_mb": 332.4,
+      "modified_at": "2026-11-01T09:00:00Z",
+      "architecture": "x86_64 arm64",
+      "sha256": "111222333444555666777888999aaabbbcccdddeeefff0001112223334445556",
+      "team_id": "BQR82RBBHL",
+      "signed_by": "Developer ID Application: Slack Technologies, LLC (BQR82RBBHL)",
+      "notarized": true
+    },
+    {
+      "name": "Broken App",
+      "version": "1.0",
+      "bundle_id": "Unknown",
+      "path": "/Applications/Broken.app",
+      "size_mb": 0,
+      "modified_at": "Unknown",
+      "architecture": "Unknown",
+      "sha256": "Unknown",
+      "team_id": "Unknown",
+      "signed_by": "Unknown",
+      "notarized": false
+    }
+  ]
+}

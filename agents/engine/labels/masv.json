@@ -1,0 +1,23 @@
+{
+  "label": "masv",
+  "name": "MASV",
+  "type": "dmg",
+  "app_path": "/Applications/MASV.app",
+  "expected_team_id": "VHKX7RCAY7",
+  "download": {
+    "method": "static",
+    "url": "https://dl.massive.io/MASV.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

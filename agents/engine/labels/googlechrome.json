@@ -1,0 +1,34 @@
+{
+  "label": "googlechrome",
+  "name": "Google Chrome",
+  "type": "dmg",
+  "app_path": "/Applications/Google Chrome.app",
+  "expected_team_id": "EQHXZ8M8AV",
+  "download": {
+    "method": "static",
+    "url": "https://dl.google.com/chrome/mac/universal/stable/GGRO/googlechrome.dmg"
+  },
+  "version": {
+    "source": "none"
+  },
+  "blocking_processes": [
+    "Google Chrome"
+  ],
+  "pinned_sha256": null,
+  "cross_hash_sources": [
+    {
+      "type": "homebrew_cask",
+      "id": "google-chrome"
+    }
+  ],
+  "patched": {
+    "allowlisted": true,
+    "mirror": false,
+    "mirror_eula_approved": false,
+    "tier": "core",
+    "reviewed_by": "andy",
+    "reviewed_at": null,
+    "notes": "Static universal DMG. PAT-500: in scope for Phase 2 mirror pipeline; EULA review pending.",
+    "ring_policy": "immediate"
+  }
+}

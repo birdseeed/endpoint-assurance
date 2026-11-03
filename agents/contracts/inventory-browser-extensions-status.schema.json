@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patched.im/contracts/inventory-browser-extensions-status.schema.json",
+  "$comment": "PAT-2065. VENDORED, NOT AUTHORED HERE. The properties below are copied verbatim from payload.schema.json in Patched-LTD/patched.im (go-service/docs/payload.schema.json), which stays the authority for the whole payload: browser_extensions_status and browser_extensions from PAT-2055 (commit 714ccd5), and collection_status, for its safari_extensions key, from PAT-2067 (commit c3d2763e). Both agents' tests validate their browser_extensions_status block and browser_extensions rows against this copy; macos/lib/test-browser-extensions.zsh [contract-drift] compares it with the platform's current file whenever a patched.im checkout is present, so re-vendor it when that check goes red. The consistency rules the platform applies at ingest (validate_browser_extensions_status.go, browserExtensionsStatusProblem) cannot be written as JSON Schema; the agents' tests port them.",
+  "type": "object",
+  "properties": {
+    "browser_extensions_status": {
+      "type": "object",
+      "description": "PAT-2055. Completeness of browser_extensions, per user and browser, plus whether the collector hit its row cap. Optional: an agent that predates PAT-2055 omits the key, which means unknown; readers then keep the pre-PAT-2055 behaviour exactly. The browser_extensions array itself is unchanged. Strict at every level (additionalProperties false), and case- or fold-variant keys are rejected (PAT-2021). 'failed' may omit cap_reached and users; every other status sends both. cap_reached true is valid only with 'partial', and a capped block grants no absence authority even for pairs it reports complete. A complete block has only complete or not_present users and browsers; a not_present block only not_present ones; a complete user only complete or not_present browsers; a not_present user only not_present browsers. Cross-checked against browser_extensions (chrome, edge and firefox rows with a non-empty user_account, matched to users[].user exactly): no row may sit under a (user, browser) reported not_present, a not_present block lists no such row, and a complete block reports every such row's (user, browser) complete. Only the structure is enforced by rejection (400). A well-formed block that breaks a consistency rule here, or lists more than 500 users, is accepted and stored as partial with its authority withheld, so one bad completeness claim never drops the device's inventory. Only a complete or not_present, uncapped report after an extension's last_seen lets a reader treat that extension as gone.",
+      "required": [
+        "collection_status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "collection_status": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "partial",
+            "not_present",
+            "failed"
+          ],
+          "description": "'complete' = every user's Chrome, Edge and Firefox profiles were read in full, and browser_extensions lists every extension found. 'partial' = something was refused, unreadable or cut off by the cap: store what was sent, conclude nothing is gone except for pairs reported complete or not_present (and never when cap_reached). 'not_present' = no user has any of the three browsers. 'failed' = nothing trustworthy was read: record only the status."
+        },
+        "cap_reached": {
+          "type": "boolean",
+          "description": "True when the collector stopped at its row cap (1,000 on both agents today). Forces 'partial'."
+        },
+        "users": {
+          "type": "array",
+          "maxItems": 500,
+          "description": "One row per local user the collector considered, unique by user.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "user",
+              "user_id",
+              "collection_status",
+              "browsers"
+            ],
+            "properties": {
+              "user": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Exactly the user_account value the agent puts on this user's browser_extensions rows."
+              },
+              "user_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "uid on macOS, SID on Windows; informational."
+              },
+              "collection_status": {
+                "type": "string",
+                "enum": [
+                  "complete",
+                  "partial",
+                  "not_present",
+                  "failed"
+                ]
+              },
+              "browsers": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Per-browser status for this user. Every key is required unless the user's own collection_status is 'failed'.",
+                "required": [],
+                "properties": {
+                  "chrome": {
+                    "type": "string",
+                    "enum": [
+                      "complete",
+                      "partial",
+                      "not_present",
+                      "failed"
+                    ]
+                  },
+                  "edge": {
+                    "type": "string",
+                    "enum": [
+                      "complete",
+                      "partial",
+                      "not_present",
+                      "failed"
+                    ]
+                  },
+                  "firefox": {
+                    "type": "string",
+                    "enum": [
+                      "complete",
+                      "partial",
+                      "not_present",
+                      "failed"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "browser_extensions": {
+      "type": "array",
+      "description": "Browser extension inventory (Chrome, Edge, Firefox, Safari). Optional — absent in payloads from agents that predate PAT-125 (collector 0.9.0). browser/profile/user_account/extension_id are required per item because device_browser_extensions declares user_account/profile NOT NULL and uses all four as its conflict key; an item with one of those present but empty is schema-valid (this only checks the keys exist) and is skipped and logged by the extractor rather than failing the whole device snapshot (PAT-871). Safari is the one exception (PAT-2064): its extensions live in an app bundle, not a browser user profile, so the agent sends user_account: null and no profile for them; the extractor stores both as the fixed sentinel _system rather than skipping the row, and a Safari row is never marked removed by browser_extensions_status's device-wide completeness report, which has no Safari vocabulary at all. Every other browser still requires both fields present and non-empty. Ingested into device_browser_extensions; risk_level is computed server-side.",
+      "items": {
+        "type": "object",
+        "required": [
+          "browser",
+          "profile",
+          "user_account",
+          "extension_id"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "browser": {
+            "type": "string",
+            "examples": [
+              "chrome",
+              "edge",
+              "firefox",
+              "safari"
+            ]
+          },
+          "profile": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Browser profile directory name. Null for Safari (stored as the sentinel `_system`, PAT-2064), which has no browser-profile concept; required non-null for every other browser."
+          },
+          "user_account": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "macOS login name the profile belongs to. Null for Safari (stored as the sentinel `_system`, PAT-2064), whose extensions are not scoped to an OS user account; required non-null for every other browser."
+          },
+          "extension_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "host_permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "from_webstore": {
+            "type": "boolean"
+          },
+          "update_url": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "collection_status": {
+      "type": "object",
+      "description": "Optional top-level object (PAT-1732): the general home for the collection status of top-level array sections that don't have their own nested collection_status object. Nested objects such as hardware_health keep their own nested collection_status key (see hardware_health.collection_status below) rather than using this one. Absent object, or an absent certificates key within it, means that section was collected in full (apps and safari_extensions differ, see below) — old agents that never send this key keep working unchanged. Exists so a collector that fails to enumerate a top-level section (e.g. the Windows certificate store) can say so explicitly instead of choosing between an empty array (which the affected section's own three-way semantics would otherwise read as authoritative absence and prune every stored row) and omitting the key entirely (safe, but invisible to the server). An unrecognised value is treated as 'unavailable', the same conservative default hardware_health.collection_status and applied_configuration.collection_status use, never as 'complete'.",
+      "additionalProperties": false,
+      "properties": {
+        "certificates": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "partial",
+            "unavailable"
+          ],
+          "description": "'complete' (or absent) = today's replace-on-write behaviour: an empty certificates array prunes all stored rows, a non-empty array upserts by (device_id, sha1) and prunes rows whose sha1 is not sent. 'partial' = upsert only the certs sent (empty or not) and delete nothing — the sent array is known to be incomplete. 'unavailable' = write nothing at all; the sent certificates array (if any) is ignored outright."
+        },
+        "apps": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "partial",
+            "unavailable"
+          ],
+          "description": "PAT-2063. Whether the top-level apps array is the device's whole machine-wide application inventory (PAT-2075: rows with no user_account; per-user rows are governed by apps_users). Unlike certificates, an ABSENT key is not read as complete: it means no signal, and the server then prunes unreported apps only when a safety valve allows it (the report reconfirms at least one current app, and it does not remove more than 5 identifiers AND more than half of them at once). 'complete' (schema_version 3 only; ignored on v2) = the array is authoritative: upsert it and prune every stored app it does not list, even an empty array. 'partial' = upsert the apps sent, prune nothing, and grant no application absence authority (no installation, CVE finding or software policy finding is closed from this report). 'unavailable' = the scan failed: send no machine-wide rows and nothing machine-wide is pruned. A status that contradicts the array ('unavailable' with machine-wide apps listed, 'complete' without an apps array) is not rejected; it is treated as 'partial' and counted in patched_apps_prune_withheld_total{reason=\"inconsistent\"}."
+        },
+        "apps_users": {
+          "type": "array",
+          "description": "PAT-2075. The users whose per-user application inventory the agent tried to read in this run, each with its own verdict. Optional: absent means no per-user authority at all, and every stored per-user row is kept. A per-user row (apps[].user_account set) is pruned only when this array lists its user as 'complete' on a schema_version 3 payload that carries an apps array. A user missing from the array (typically logged off, so the hive or home folder is unreadable), or listed as 'partial' or 'unavailable', keeps every row, and no installation, CVE finding or software policy finding is closed for that user's apps. There is no safety valve for per-user rows: nothing is pruned without an explicit 'complete'. List only users actually read; never list a user as 'complete' whose hive or folder could not be enumerated in full. Two entries for one user merge, least authoritative wins; an entry with an empty user_account is ignored.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "user_account",
+              "collection_status"
+            ],
+            "properties": {
+              "user_account": {
+                "type": "string",
+                "description": "Matches apps[].user_account exactly after trimming. An opaque key to the server. Windows: the account name the SID resolves to (DOMAIN\\user or MACHINE\\user), or the SID string when it cannot be resolved. macOS: the short name. At most 128 characters: a longer entry is ignored (no authority for that user) rather than truncated."
+              },
+              "home": {
+                "type": "string",
+                "description": "PAT-2075. Optional, both platforms. The absolute path of this user's home directory exactly as the agent resolved it, with no trailing slash (macOS: the DirectoryService NFSHomeDirectory the scanned folder belongs to; Windows: the profile path, sent only when unambiguous). Never inferred by the server from user_account. It is used for one thing: deciding who owns an application row that an agent before PAT-2075 stored machine-wide and whose path lies in a user's home (/Users/<name>/...). A report that carries apps_users has no machine-wide authority over such a row. The row is pruned only when an entry is 'complete' and its home EQUALS the row's home directory (/Users/<name>, compared exactly, never as a prefix) and the user did not list the app; it is handed to a user's scope when that user lists the same app at the stored path or with a home equal to the row's home directory; otherwise it is held and counted in the run's coverage as apps_legacy_user_held. A non-string is rejected with 400. Any string is accepted, but one that is not exactly /Users/<name> (a relative path, a '.' or '..' segment, a trailing slash, '/', '/Users', '/Users/Shared'), a home sent by two different users, or a user sending two different homes grants nothing. DEPLOY ORDER: a server without this field rejects the whole report with 400 (additional property), so the server must be deployed before any agent sends home."
+              },
+              "collection_status": {
+                "type": "string",
+                "enum": [
+                  "complete",
+                  "partial",
+                  "unavailable"
+                ],
+                "description": "'complete' = every per-user app of this user is in apps; unreported per-user rows of this user are pruned, even when none are sent. 'partial' = some of the user's locations could not be read; upsert only. 'unavailable' = the user's inventory could not be read at all; upsert only."
+              }
+            }
+          }
+        },
+        "safari_extensions": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "partial",
+            "unavailable"
+          ],
+          "description": "PAT-2067. macOS. Whether the browser_extensions array lists every Safari app extension on the device. browser_extensions_status covers chrome, edge and firefox only, so this is the only signal that can prove a Safari extension gone. An ABSENT key means no signal: stored Safari rows are never marked absent (the pre-PAT-2067 behaviour). 'complete' (schema_version 3 only; ignored on v2) = the agent walked every Safari app-extension location with no error and emitted every Safari row it found; every stored Safari row this report does not list is marked absent, and an empty list marks them all absent. Send it only after a full, error-free walk. It is also ignored when browser_extensions is not sent as an array or browser_extensions_status.cap_reached is true. 'partial' = some locations could not be read; nothing is concluded. 'unavailable' = the walk failed; nothing is concluded. Recorded only for a device that also sends browser_extensions_status."
+        }
+      }
+    }
+  }
+}

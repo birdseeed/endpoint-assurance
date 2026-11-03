@@ -1,0 +1,418 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <?define UpgradeCode    = "{A1B2C3D4-E5F6-7890-ABCD-000000000311}" ?>
+  <?define Manufacturer   = "Patched" ?>
+  <?define ProductName    = "Patched Agent" ?>
+
+  <!-- Paths to self-contained single-file publish outputs, relative to this file.
+       WiX Sdk/5.0.0 OutputItemType=Harvest does not trigger publish via 'dotnet build';
+       CI publishes these explicitly (see windows-agent-release.yml) so the binaries
+       exist at these paths before WiX builds the MSI. Hardcoded Configuration=Release
+       because this file is only consumed by the release workflow. -->
+  <?define ServicePublishDir = "..\src\Service\bin\Release\net8.0-windows10.0.22621.0\win-x64\publish\" ?>
+
+  <Package
+    Name="$(ProductName)"
+    Manufacturer="$(Manufacturer)"
+    Version="$(var.ProductVersion)"
+    UpgradeCode="$(UpgradeCode)"
+    Language="1033"
+    Codepage="1252"
+    Scope="perMachine">
+
+    <!-- ── Upgrade logic ─────────────────────────────────────────────── -->
+    <MajorUpgrade
+      Schedule="afterInstallInitialize"
+      DowngradeErrorMessage="A newer version of $(ProductName) is already installed." />
+
+    <!-- ── Media ─────────────────────────────────────────────────────── -->
+    <Media Id="1" Cabinet="PatchedAgent.cab" EmbedCab="yes" />
+
+    <!-- ── Properties ───────────────────────────────────────────────── -->
+    <Property Id="ARPNOREPAIR"  Value="yes" Secure="yes" />
+    <!-- ARPNOMODIFY is defined by WixUI_Minimal in WiX 5 (WixToolset.UI.wixext);
+         defining it here too causes WIX0091 Duplicate Property error. -->
+
+    <!-- ── The only credential this installer accepts ────────────────────
+         PAT-1755 (Andy's ruling, 2026-09-15): an enrolment token, and nothing else.
+           msiexec /qn /i PatchedAgent.msi ENROLLMENT_TOKEN="<opaque-token>"
+         It is optional: a bare install (provisioned later, see README-install.md) is
+         valid, and so is a bare upgrade.
+
+         The raw-credential properties TENANT_ID, BEARER_TOKEN and HMAC_SECRET are gone.
+         They put two long-lived secrets on an msiexec command line for a path that only
+         ever served the legacy MDM pilot, while the enrolment token is single-use and
+         expires within 24 hours. TENANT_ID went with them: it existed only to accompany
+         those two (the component that wrote all three was conditioned on it) and is not
+         needed by any other install path. A device that cannot use a token is
+         provisioned after install instead, through Credential Manager or the credential
+         file store, which the service reads on every start; nothing about the service's
+         own credential sources changed.
+
+         Secure="yes" lets an admin pass the token on the msiexec command line and lets
+         the value cross from the client process into the elevated execute sequence, which
+         is where the deferred provisioning action below runs.
+
+         Hidden="yes" lists it in MsiHiddenProperties, so Windows Installer masks the
+         value as ********** in a verbose (/l*v) log's "Command Line:" entry, on every
+         "PROPERTY CHANGE" entry and in the closing "Property(S)" dump. Secure alone does
+         not do this. Hidden alone is not enough either: it does not touch the
+         execute-script ops, so the RegistryValue write this package used to carry logged
+         the token in clear text once per install as
+           Executing op: RegAddValue(Name=EnrollmentToken,Value=<token>,)
+         (verbose log of a bare upgrade, WIN-STAGING, 2026-09-15). That write is why the
+         token is now provisioned from a deferred custom action with HideTarget="yes"
+         instead, which is the only mechanism that suppresses an op's own data.
+
+         The msiexec process command line itself is outside the MSI's control; see
+         README-install.md, "Credentials and install logs".
+         windows/installer/test_hidden_credentials.py fails the build if the token loses
+         Secure or Hidden, if a raw-credential property comes back, if the provisioning
+         action loses HideTarget, or if any element starts writing the token where an op
+         would log it. -->
+    <Property Id="ENROLLMENT_TOKEN" Secure="yes" Hidden="yes" />
+
+    <!-- ── Enrolment-token provisioning (PAT-1755) ───────────────────────
+      The token is written to the agent's credential file store,
+      %ProgramData%\Patched\creds\enrollment-token, by the installed service binary
+      running as LocalSystem. That file is credential source 3 in
+      CredentialStore.LoadForStartup (checked before the registry provisioning key),
+      it is one of CredentialStore.AgentCredentialFileNames so PurgeAgentCredentials
+      deletes it on a full uninstall (PAT-1764), and AgentEnroller deletes it once the
+      token has been exchanged. The registry provisioning write this package used to
+      carry is gone: only HideTarget suppresses an execute-script op's own data, and
+      RegAddValue logged the token in clear text.
+
+      EXE-type custom action on the installed service binary, no DLL (PAT-599: the
+      credentials DLL custom action failed on ARM64), so this works on x64 and ARM64.
+
+        Execute="deferred"     the token is formatted into the execute script, which is
+                               where HideTarget applies, and the action needs the
+                               elevated context to write under %ProgramData%.
+        Impersonate="no"       runs as LocalSystem, the account that owns the hardened
+                               state directories and that the service itself runs as.
+        HideTarget="yes"       masks this action's target (its command line, which
+                               carries the token) everywhere the MSI would otherwise log
+                               it: the CustomActionSchedule op in the execute script and
+                               the action's own log entries.
+        Return="check"         deliberately the opposite of PurgeAgentCredentials. An
+                               install that was handed a token and could not provision it
+                               leaves a device that can never enrol and never collects
+                               anything, so it must fail and roll back rather than
+                               complete and look healthy. The service writes the reason
+                               to the Application event log under "Patched Agent"; the
+                               exit code appears in a verbose MSI log.
+        After="InstallFiles"   the binary is on disk (and CreateFolders has created
+                               %ProgramData%\Patched\creds), and this is still before
+                               InstallServices and StartServices, so the token is in
+                               place before the service's first start. It does not have
+                               to be: a service that starts without one polls for it
+                               (PAT-1766). It being there first simply means the device
+                               enrols on the first run cycle.
+
+      Condition, both parts required:
+        ENROLLMENT_TOKEN   nothing to do on a bare install, a bare upgrade or the
+                           agent's own self-update, which runs msiexec /i with no
+                           properties.
+        NOT Installed      a first install or a major upgrade only, never a repair or
+                           modify of the installed product. Same condition the
+                           registry component carried, so behaviour is unchanged: to
+                           re-enrol an installed agent, uninstall it first.
+
+      Unconsumed token across a major upgrade (PAT-1766), now with nothing to do:
+      the token file belongs to no component, so RemoveExistingProducts cannot remove
+      it (RemoveFiles only removes rows in the File table, and RemoveFolders leaves the
+      non-empty creds directory alone). A bare upgrade therefore leaves an unconsumed
+      token exactly where it was and the new service reads it from the same path. The
+      AppSearch / SetProperty carry-over that PAT-1766 needed existed only because the
+      token was a component-owned registry value that the old product's removal deleted;
+      it is removed here rather than left as machinery with nothing to preserve. A token
+      supplied on an upgrade command line still wins, because this action overwrites the
+      file.
+
+      There is deliberately no rollback action to delete the file. On a rolled-back
+      upgrade that would destroy the device's only identity, which is the exact PAT-1766
+      failure (Error 1920, 1603, rollback, no identity); leaving the file is the
+      behaviour that ticket chose, and the file is readable only by SYSTEM and
+      Administrators. A full uninstall still purges it.
+
+      windows/installer/test_hidden_credentials.py fails the build if this action loses
+      HideTarget, Return="check", its deferred non-impersonated context, its condition or
+      its place before StartServices, or if anything starts writing the token through a
+      component instead.
+    -->
+    <CustomAction Id="WriteEnrollmentToken"
+                  FileRef="PatchedServiceExe"
+                  ExeCommand="--write-enrollment-token &quot;[ENROLLMENT_TOKEN]&quot;"
+                  Execute="deferred"
+                  Impersonate="no"
+                  HideTarget="yes"
+                  Return="check" />
+
+    <!-- ── Uninstall credential purge (PAT-1764) ────────────────────── -->
+    <!--
+      A full uninstall removes the agent's identity: every PatchedAgent/* generic
+      credential in SYSTEM's Credential Manager, every credential file in
+      %ProgramData%\Patched\creds (the enrolment token this installer writes included),
+      and HKLM\SOFTWARE\Patched\Enrollment, which an installer predating PAT-1755 wrote.
+      Without this, a reinstall with a fresh ENROLLMENT_TOKEN loaded the old
+      credentials, never enrolled, and left the token unused.
+
+      EXE-type custom action on the installed service binary, no DLL (PAT-599: the
+      credentials DLL custom action failed on ARM64). Deferred with Impersonate="no"
+      so it runs as LocalSystem and reaches SYSTEM's Credential Manager. Scheduled
+      before RemoveFiles so the binary is still on disk (StopServices has already
+      stopped the service). Return="ignore": a failed purge never blocks uninstall;
+      the binary exits 1, which the verbose MSI log records, and writes the failing
+      targets (never values) to the Application event log.
+
+      Condition, all three parts required:
+        REMOVE~="ALL"               full uninstall only, never install/repair/modify.
+        NOT UPGRADINGPRODUCTCODE    never when this product is being removed by a
+                                    major upgrade. PendingUpdateApplier self-updates
+                                    with msiexec /i on a newer MSI, whose
+                                    RemoveExistingProducts uninstalls this product
+                                    with UPGRADINGPRODUCTCODE set. Purging there would
+                                    wipe the device's identity on every self-update.
+        NOT PATCHED_RETAIN_CREDENTIALS
+                                    set by the decommission purge=false handoff
+                                    (DecommissionHandoffScript), which keeps
+                                    credentials by contract.
+      windows/installer/test_hidden_credentials.py fails the build if any part
+      of this condition is lost.
+    -->
+    <Property Id="PATCHED_RETAIN_CREDENTIALS" Secure="yes" />
+
+    <CustomAction Id="PurgeAgentCredentials"
+                  FileRef="PatchedServiceExe"
+                  ExeCommand="--purge-credentials"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+
+    <InstallExecuteSequence>
+      <Custom Action="PurgeAgentCredentials"
+              Before="RemoveFiles"
+              Condition='REMOVE~="ALL" AND NOT UPGRADINGPRODUCTCODE AND NOT PATCHED_RETAIN_CREDENTIALS' />
+      <Custom Action="WriteEnrollmentToken"
+              After="InstallFiles"
+              Condition="ENROLLMENT_TOKEN AND NOT Installed" />
+    </InstallExecuteSequence>
+
+    <!-- ── Directory tree ───────────────────────────────────────────── -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Patched" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="STATEROOT" Name="Patched">
+        <Directory Id="LOGSDIR"      Name="logs" />
+        <Directory Id="TRIGGERSDIR"  Name="triggers" />
+        <Directory Id="PROVQUEUEDIR" Name="provenance-queue" />
+        <Directory Id="CREDSDIR"     Name="creds" />
+      </Directory>
+    </StandardDirectory>
+
+    <!-- ── Feature ──────────────────────────────────────────────────── -->
+    <Feature Id="ProductFeature" Title="$(ProductName)" Level="1">
+      <ComponentGroupRef Id="ServiceBinaries" />
+      <ComponentGroupRef Id="StateDirectories" />
+    </Feature>
+
+    <!-- ── UI ───────────────────────────────────────────────────────── -->
+    <ui:WixUI Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Overridable="yes" Value="License.rtf" />
+
+    <!-- ══════════════════════════════════════════════════════════════
+         Component groups
+         ══════════════════════════════════════════════════════════════ -->
+
+    <!-- ── Service binary + Windows Service registration ────────────── -->
+    <ComponentGroup Id="ServiceBinaries" Directory="INSTALLFOLDER">
+      <Component Id="CompPatchedService" Guid="{B0000001-0000-0311-0000-000000000001}">
+        <!--
+          Install directory ACL (PAT-2399). %ProgramFiles%\Patched holds the one executable
+          that runs as LocalSystem. Until this ticket it carried no ACL of its own: every
+          entry was inherited from Program Files, so the boundary was a default this
+          package never set. It is now explicit and protected (the "P": nothing is
+          inherited from Program Files any more):
+
+            SYSTEM          full control   the service, and Windows Installer itself
+            Administrators  full control   repair, uninstall, manual inspection
+            Users           read, execute  0x1200a9; lets an operator read the file version
+
+          OICI on each entry so everything created in the directory takes the same three
+          entries and nothing else. The executable carries the same ACL explicitly as well,
+          so it does not depend on the order Windows Installer creates things in.
+
+          Left out on purpose, and what each would have been for:
+            TrustedInstaller       Windows servicing never touches a third-party directory,
+                                   and install, repair, uninstall and major upgrade all run
+                                   in the Windows Installer service as SYSTEM.
+            ALL APPLICATION PACKAGES / ALL RESTRICTED APPLICATION PACKAGES
+                                   only an AppContainer process needs them. The service is
+                                   a Win32 LocalSystem process, its helpers are the same
+                                   executable started by it, and the package is headless
+                                   (PAT-2352): nothing here runs in an AppContainer.
+            CREATOR OWNER          would only re-grant the creator, who is already SYSTEM
+                                   or an administrator.
+          No owner is set: Windows Installer creates the directory as SYSTEM, and the
+          service checks the owner at every start.
+
+          Core PermissionEx with Sddl is the MsiLockPermissionsEx table, applied by Windows
+          Installer itself with no custom action. util:PermissionEx (used for the state
+          directories below) cannot do this: it merges entries into the inherited DACL and
+          leaves it unprotected. The CreateFolder sits in the same component as the
+          executable so the ACL is applied whenever the binary is installed: a first
+          install and a major upgrade alike (the old product is removed first, then this
+          component installs). Uninstall is unaffected: SYSTEM keeps full control and
+          RemoveFolders still removes the directory once it is empty.
+
+          The service verifies this at start (InstallIntegrityGate) and reports
+          install_integrity in agent health if it does not hold. That check also accepts the
+          inherited ACL of a device installed before this ticket.
+          windows/installer/test_install_directory_acl.py fails the build if either element
+          is removed, made conditional, left unprotected or grants anyone else.
+        -->
+        <CreateFolder>
+          <PermissionEx Sddl="D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)" />
+        </CreateFolder>
+
+        <!--
+          Self-contained single-file publish produces one exe.
+          The published output is harvested by the wixproj ProjectReference.
+          Adjust the Source path if the publish output differs.
+        -->
+        <File Id="PatchedServiceExe"
+              Name="Patched.Service.exe"
+              Source="$(var.ServicePublishDir)Patched.Service.exe"
+              KeyPath="yes">
+          <PermissionEx Sddl="D:PAI(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;BU)" />
+        </File>
+
+        <!-- Windows Service: auto-start, LocalSystem. Periodic agent work is hosted
+             inside this process, so this install/start and uninstall/stop lifecycle
+             is also its lifecycle: no second scheduled task or PowerShell
+             credential path exists. -->
+        <ServiceInstall
+          Id="PatchedAgentSvc"
+          Name="Patched Agent"
+          DisplayName="Patched Agent"
+          Description="Patched endpoint assurance agent. Collects inventory and validates posture."
+          Type="ownProcess"
+          Start="auto"
+          ErrorControl="normal"
+          Account="LocalSystem" />
+
+        <!-- Start on install, Stop+Delete on uninstall -->
+        <ServiceControl
+          Id="StartPatchedAgentSvc"
+          Name="Patched Agent"
+          Start="install"
+          Stop="both"
+          Remove="uninstall"
+          Wait="yes" />
+
+        <!-- Recovery: restart on 1st+2nd failure, none on 3rd; reset after 1 day -->
+        <util:ServiceConfig
+          ServiceName="Patched Agent"
+          FirstFailureActionType="restart"
+          SecondFailureActionType="restart"
+          ThirdFailureActionType="none"
+          ResetPeriodInDays="1"
+          RestartServiceDelayInSeconds="60" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- ── State directories with DACLs ─────────────────────────────── -->
+    <!--
+      %ProgramData%\Patched — SYSTEM + Administrators only (not world-writable).
+      %ProgramData%\Patched\triggers — SYSTEM=FullControl, Administrators=FullControl,
+        CREATOR OWNER=FullControl (inherit-only), Authenticated Users=WriteData+AppendData
+        (directory only, no inherit). Mirrors TriggerAcl.cs.
+      The service's TriggerAcl.cs re-applies the DACL on each start, so this MSI
+      DACL is the "first boot" baseline; the service is authoritative thereafter.
+    -->
+    <ComponentGroup Id="StateDirectories">
+
+      <!-- Root state dir: SYSTEM + Admins full control only.
+           util:PermissionEx Sddl= is not supported in WixToolset.Util.wixext/5.0.0;
+           use per-user ACEs instead. Service (TriggerAcl.cs) re-applies the
+           definitive DACL (with inheritance blocking) on each start. -->
+      <Component Id="CompStateRoot" Guid="{B0000003-0000-0311-0000-000000000003}"
+                 Directory="STATEROOT">
+        <CreateFolder>
+          <util:PermissionEx User="SYSTEM"          GenericAll="yes" />
+          <util:PermissionEx User="Administrators"  GenericAll="yes" />
+        </CreateFolder>
+      </Component>
+
+      <!-- logs\ — SYSTEM + Admins full control -->
+      <Component Id="CompLogsDir" Guid="{B0000004-0000-0311-0000-000000000004}"
+                 Directory="LOGSDIR">
+        <CreateFolder>
+          <util:PermissionEx User="SYSTEM"          GenericAll="yes" />
+          <util:PermissionEx User="Administrators"  GenericAll="yes" />
+        </CreateFolder>
+      </Component>
+
+      <!--
+        triggers\ — drop directory for trigger files. Definitive ACL (SDDL below)
+        is applied by TriggerAcl.cs on every service start; the MSI ACL here is the
+        brief install-time baseline (service starts immediately after InstallFiles).
+        WixToolset.Util.wixext/5.0.0 doesn't support PermissionEx Sddl=, so we use
+        per-user ACEs. The CREATOR OWNER inherit-only entry and per-ACE inheritance
+        flags (OI/CI/IO) cannot be expressed here — TriggerAcl.cs sets them.
+
+        Target SDDL (set by service):
+          D:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICIIO;FA;;;CO)(A;;0x100116;;;AU)
+      -->
+      <Component Id="CompTriggersDir" Guid="{B0000005-0000-0311-0000-000000000005}"
+                 Directory="TRIGGERSDIR">
+        <CreateFolder>
+          <util:PermissionEx User="SYSTEM"               GenericAll="yes" />
+          <util:PermissionEx User="Administrators"       GenericAll="yes" />
+          <!-- Minimal install-time write grant for trigger drops; service refines on start -->
+          <util:PermissionEx User="Authenticated Users"  CreateFile="yes" Synchronize="yes" />
+        </CreateFolder>
+      </Component>
+
+      <!-- provenance-queue\ — SYSTEM + Admins full control -->
+      <Component Id="CompProvQueueDir" Guid="{B0000006-0000-0311-0000-000000000006}"
+                 Directory="PROVQUEUEDIR">
+        <CreateFolder>
+          <util:PermissionEx User="SYSTEM"          GenericAll="yes" />
+          <util:PermissionEx User="Administrators"  GenericAll="yes" />
+        </CreateFolder>
+      </Component>
+
+      <!-- creds\ — SYSTEM + Admins full control. Never world-readable: this is where the
+           enrolment token the installer provisions lives (PAT-1755), and where a bearer
+           token and HMAC secret live when Credential Manager is unavailable.
+           util:PermissionEx merges its ACEs into the DACL this folder inherits from
+           %ProgramData%, so it is an install-time baseline, not the definitive ACL.
+           WriteEnrollmentToken above establishes the protected, non-inherited DACL
+           (SecureStagingDirectory) before it writes anything, and refuses to write at all
+           if this folder is a reparse point or is owned by anyone but SYSTEM or
+           Administrators. This component deliberately declares only the folder: nothing
+           under creds\ is component-owned, which is how an unconsumed enrolment token
+           survives the RemoveExistingProducts half of a major upgrade (PAT-1766). -->
+      <Component Id="CompCredsDir" Guid="{B0000009-0000-0311-0000-000000000009}"
+                 Directory="CREDSDIR">
+        <CreateFolder>
+          <util:PermissionEx User="SYSTEM"          GenericAll="yes" />
+          <util:PermissionEx User="Administrators"  GenericAll="yes" />
+        </CreateFolder>
+      </Component>
+
+    </ComponentGroup>
+
+  </Package>
+
+  <!-- PAT-2304 (2026-09-30): the deprecated legacy package-allowlist Fragment
+       that used to sit here was deleted with the files it sourced. Nothing
+       referenced it after PAT-1531, and the MSI build still fails if either
+       file appears in the File table (.github/actions/windows-agent-msi). -->
+</Wix>

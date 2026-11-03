@@ -1,0 +1,98 @@
+name: done-audit
+
+# PAT-985: Linear's GitHub integration auto-closes an issue the moment its
+# linked PR merges — branch names carry the issue identifier (e.g.
+# andy/pat-954-slug), so the automation fires with total reliability. This
+# systematically defeats the estate's rule that Done means operating, not
+# merged (root CLAUDE.md). The setting has proven hard to locate, and it
+# would not help retroactively or for a manual close either.
+#
+# So this workflow does not try to prevent the false Done; it detects it.
+# Once a day it pulls every issue on team PAT completed within a lookback
+# window, flags the ones that look runtime-affecting (something that has to
+# actually run somewhere to have any effect) but carry no comment evidence
+# that anyone ever confirmed it running, and posts the list as a comment on
+# PAT-985 itself — only when the flagged set has changed since the last
+# run, so a daily repeat of yesterday's list doesn't become ignorable noise.
+# See verifier/done_audit.py's module docstring for the full detection
+# logic and its known false-positive shape.
+#
+# Follows daily-vendor-verify.yml's LINEAR_API_TOKEN pattern exactly: the
+# token is scoped to the canonical scheduled run on this repo only (never a
+# PR, fork, or arbitrary workflow_dispatch ref), and a missing token on that
+# canonical run hard-fails the job. Here that assertion matters even more
+# than it does there — this tool's entire job is querying and posting to
+# Linear, so a missing token is not a degraded mode, it is total silent
+# failure. A detector that can silently stop detecting is the same bug
+# class it exists to find.
+
+on:
+  schedule:
+    - cron: '30 6 * * *'  # 06:30 UTC daily — offset from daily-vendor-verify's 03:00 run
+  workflow_dispatch:
+    inputs:
+      lookback_days:
+        description: 'Lookback window in days (default 30)'
+        required: false
+        default: '30'
+
+jobs:
+  audit:
+    name: Sweep completed issues for missing operating evidence
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run done-without-evidence audit
+        id: audit
+        env:
+          # Scoped to the canonical scheduled run on this repo only — same
+          # condition as daily-vendor-verify.yml's LINEAR_API_TOKEN gate, so
+          # workflow_dispatch or any PR/fork context never sees the token.
+          LINEAR_API_TOKEN: ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.repository == 'Patched-LTD/updater') && secrets.LINEAR_API_TOKEN || '' }}
+          LOOKBACK_DAYS: ${{ github.event.inputs.lookback_days || '30' }}
+        run: python3 verifier/done_audit.py --lookback-days "$LOOKBACK_DAYS"
+        continue-on-error: true
+
+      # Hard-fail if the canonical scheduled run has no LINEAR_API_TOKEN.
+      # Mirrors daily-vendor-verify.yml's "Assert Linear alerting token
+      # present" step exactly, for the same reason: done_audit.py itself
+      # already refuses to run quietly without a token (see its main()),
+      # but that alone is not enough — a silently red step in a scheduled
+      # workflow with nobody watching is exactly the "fails safe and is
+      # invisible when it fails" shape (root CLAUDE.md) this tool exists to
+      # catch. This assertion is the second, independent guard.
+      - name: Assert Linear API token present
+        if: always()
+        env:
+          AUDIT_EXPECTED: ${{ github.repository == 'Patched-LTD/updater' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
+          TOKEN_PRESENT: ${{ secrets.LINEAR_API_TOKEN != '' }}
+        run: |
+          echo "Done-audit token gate: expected=$AUDIT_EXPECTED token_present=$TOKEN_PRESENT"
+          if [[ "$AUDIT_EXPECTED" == "true" && "$TOKEN_PRESENT" != "true" ]]; then
+            echo "::error::LINEAR_API_TOKEN is not set on the canonical scheduled run. The done-without-evidence audit would silently stop detecting -- refusing to let this pass unnoticed. Set the LINEAR_API_TOKEN secret on Patched-LTD/updater."
+            exit 1
+          fi
+          if [[ "$TOKEN_PRESENT" != "true" ]]; then
+            echo "::warning::LINEAR_API_TOKEN not set -- this run was not the canonical schedule (workflow_dispatch or a PR/fork context), so no query or post was attempted."
+          fi
+
+      # Turn the continue-on-error above into a real job failure once the
+      # token gate has had its chance to run and produce a clearer error
+      # first (a missing-token failure should read as "set the secret", not
+      # a bare non-zero exit from the audit step).
+      - name: Fail on audit error
+        if: steps.audit.outcome == 'failure'
+        run: |
+          echo "::error::done_audit.py exited non-zero -- see the 'Run done-without-evidence audit' step log above for the reason (e.g. could not reach the Linear API, could not find PAT-985, or a missing token already reported by the assert step above)."
+          exit 1

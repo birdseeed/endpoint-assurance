@@ -1,0 +1,26 @@
+{
+  "label": "linear",
+  "name": "Linear",
+  "type": "dmg",
+  "app_path": "/Applications/Linear.app",
+  "expected_team_id": "7VZ2S3V9RV",
+  "download": {
+    "method": "static",
+    "url": "https://releases.linear.app/mac"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [
+    "Linear",
+    "Linear Helper"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

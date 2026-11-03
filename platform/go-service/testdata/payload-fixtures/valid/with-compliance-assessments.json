@@ -1,0 +1,51 @@
+{
+  "schema_version": 2,
+  "agent": "patched-collect",
+  "agent_version": "0.11.0",
+  "tenant_id": "55555555-5555-5555-5555-555555555555",
+  "collected_at": "2026-07-16T00:00:00Z",
+  "device": {
+    "serial": "C00000000002",
+    "hw_uuid": "22222222-AAAA-BBBB-CCCC-DDDDDDDDDDDD",
+    "hostname": "attested-test-host",
+    "hw_model": "Mac14,2",
+    "arch": "arm64",
+    "last_boot": "2026-07-16T00:00:00Z"
+  },
+  "hardware": {
+    "cpu_model": "Apple M2",
+    "cpu_cores": 8,
+    "ram_gb": 16,
+    "disk_total_gb": 512.0,
+    "disk_free_gb": 256.0
+  },
+  "os": {
+    "name": "macOS",
+    "version": "15.5",
+    "build": "24F74"
+  },
+  "compliance": {},
+  "security_tools": [],
+  "system_extensions": [],
+  "background_items": [],
+  "icloud": {
+    "signed_in": "Yes"
+  },
+  "compliance_findings": [
+    {
+      "id": "removable_storage_unencrypted",
+      "severity": "medium",
+      "volumes": [{ "mount": "/Volumes/USB" }]
+    }
+  ],
+  "compliance_assessments": {
+    "controls_assessed": ["disk_encryption_off", "removable_storage_unencrypted"]
+  },
+  "apps": [
+    {
+      "name": "Safari",
+      "version": "18.5",
+      "bundle_id": "com.apple.Safari"
+    }
+  ]
+}

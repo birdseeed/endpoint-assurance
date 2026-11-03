@@ -1,0 +1,24 @@
+{
+  "label": "hudlstudio",
+  "name": "Studio",
+  "type": "dmg",
+  "app_path": "/Applications/Studio.app",
+  "expected_team_id": "2YLQ7PASUE",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://www.hudl.com/downloads/elite"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

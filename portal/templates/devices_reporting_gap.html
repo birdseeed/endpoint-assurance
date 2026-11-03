@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "_macros.html" import device_table, device_result_notice %}
+{% block content %}
+<p class="crumb"><a href="/devices">&larr; Devices</a></p>
+<div class="page-head">
+  <h1>Not reporting in 24 hours</h1>
+  <p class="meta">{{ missing }} of {{ total }} known device{{ '' if total == 1 else 's' }} {{ 'has' if missing == 1 else 'have' }} not reported in the last 24 hours. Retired devices are not counted here.</p>
+  <p class="meta">Scores, findings and update state below are last reported values, not current verification.</p>
+</div>
+
+{{ device_result_notice(device_result) }}
+
+<div class="card card-table">
+  {{ device_table(devices, actions=True, exact_last_seen=True, can_edit=can_edit, csrf_token=csrf_token, return_to=return_to) }}
+  {% if not devices %}<p class="empty">Every known device has reported in the last 24 hours.</p>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{
+  "label": "lucidlink",
+  "name": "Lucid",
+  "type": "pkg",
+  "app_path": "/Applications/Lucid.app",
+  "expected_team_id": "Y4KMJPU2B4",
+  "download": {
+    "method": "static",
+    "url": "https://www.lucidlink.com/download/latest/osx/stable/"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

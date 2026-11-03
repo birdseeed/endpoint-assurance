@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block page_class %} page--narrow{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>What's new</h1>
+  <p class="meta">Recent changes to your Patched portal, newest first.</p>
+</div>
+
+{% if changelog_groups %}
+{% for group in changelog_groups %}
+<section class="card changelog-month" aria-labelledby="changelog-month-{{ loop.index }}">
+  <h2 id="changelog-month-{{ loop.index }}">{{ group.label }}</h2>
+  <ul class="changelog-list">
+    {% for entry in group.entries %}
+    <li class="changelog-entry">
+      <div class="changelog-entry__head">
+        <span class="pill {{ 'pill-ok' if entry.tag == 'Improved' else 'pill-warn' if entry.tag == 'Fixed' else 'pill-info' }}">{{ entry.tag }}</span>
+        <span class="changelog-entry__date mono">{{ entry.date | humandate }}</span>
+      </div>
+      <h3 class="changelog-entry__title"><a href="{{ entry.link }}">{{ entry.title }}</a></h3>
+      <p class="changelog-entry__body">{{ entry.body }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endfor %}
+{% else %}
+<div class="card">
+  <p class="empty">No updates yet.</p>
+</div>
+{% endif %}
+{% endblock %}

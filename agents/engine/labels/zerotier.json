@@ -1,0 +1,23 @@
+{
+  "label": "zerotier",
+  "name": "ZeroTier%20One",
+  "type": "pkg",
+  "app_path": "/Applications/ZeroTier%20One.app",
+  "expected_team_id": "8ZD9JUCZ4V",
+  "download": {
+    "method": "static",
+    "url": "https://download.zerotier.com/dist/ZeroTier%20One.pkg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

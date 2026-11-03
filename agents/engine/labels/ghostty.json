@@ -1,0 +1,40 @@
+{
+  "label": "ghostty",
+  "name": "ghostty",
+  "type": "dmg",
+  "app_path": "/Applications/ghostty.app",
+  "expected_team_id": "24VZTF6M5V",
+  "download": {
+    "method": "resolved",
+    "strategy": "sparkle-appcast",
+    "source": "https://release.files.ghostty.org/appcast.xml",
+    "asset_pattern": "Ghostty\\.dmg$"
+  },
+  "version": {
+    "source": "download-filename"
+  },
+  "blocking_processes": [
+    "ghostty"
+  ],
+  "pinned_sha256": "18cff2b0a6cee90eead9c7d3064e808a252a40baf214aa752c1ecb793b8f5f69",
+  "cross_hash_sources": [
+    {
+      "type": "homebrew_cask",
+      "id": "ghostty"
+    }
+  ],
+  "redistribution_notice": {
+    "spdx": "MIT",
+    "url": "https://raw.githubusercontent.com/ghostty-org/ghostty/v1.3.1/LICENSE",
+    "sha256": "386211873e5b7a02f663ae4d7adf96285999f91608f8f9f31fecfd0f4095e6f1"
+  },
+  "patched": {
+    "allowlisted": true,
+    "mirror": true,
+    "mirror_eula_approved": true,
+    "reviewed_by": "andy",
+    "reviewed_at": "2026-07-24",
+    "notes": "PAT-959: official Ghostty Sparkle appcast and Team ID 24VZTF6M5V verified against the notarized 1.3.1 DMG. MIT redistribution approved; the pinned licence notice is published alongside every mirrored artifact.",
+    "mirror_url": "https://mirror.patched.im/ghostty/1.3.1/ghostty-1.3.1.dmg"
+  }
+}

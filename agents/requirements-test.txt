@@ -1,0 +1,7 @@
+# Test-only dependencies, kept out of requirements.txt so a runtime install of
+# the CI helpers does not pull in a test framework.
+#
+# Most of this repo's tests are unittest-based and run as `python3 ci/test_x.py`,
+# but a few use pytest fixtures and pytest.raises, so the whole suite is run
+# under pytest (see .github/workflows/test-suite.yml). Keep this pinned.
+pytest==9.1.1

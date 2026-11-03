@@ -1,0 +1,23 @@
+{
+  "label": "rstudio",
+  "name": "RStudio",
+  "type": "dmg",
+  "app_path": "/Applications/RStudio.app",
+  "expected_team_id": "FYF2F5GFX4",
+  "download": {
+    "method": "static",
+    "url": "https://rstudio.org/download/latest/stable/desktop/mac/RStudio-latest.dmg"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

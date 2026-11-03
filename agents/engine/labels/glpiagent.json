@@ -1,0 +1,26 @@
+{
+  "label": "glpiagent",
+  "name": "GLPI-agent",
+  "type": "pkg",
+  "app_path": "/Applications/GLPI-agent.app",
+  "expected_team_id": "H7XJV96LX2",
+  "download": {
+    "method": "resolved",
+    "strategy": "vendor-api",
+    "source": "https://github.com/glpi-project/glpi-agent/releases/download"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [
+    "NONE"
+  ],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

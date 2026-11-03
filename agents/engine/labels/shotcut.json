@@ -1,0 +1,24 @@
+{
+  "label": "shotcut",
+  "name": "shotcut",
+  "type": "dmg",
+  "app_path": "/Applications/shotcut.app",
+  "expected_team_id": "Y6RX44QG2G",
+  "download": {
+    "method": "resolved",
+    "strategy": "github-release",
+    "source": "https://api.github.com/repos/mltframework/shotcut/releases/latest"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

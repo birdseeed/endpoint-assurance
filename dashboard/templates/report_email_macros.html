@@ -1,0 +1,9 @@
+{% macro action(url, label) -%}
+<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:20px;max-width:100%;"><tr>
+<td bgcolor="#2563eb" style="background-color:#2563eb;border-radius:6px;padding:12px 18px;">
+<a href="{{ url }}" style="color:#ffffff;font-size:15px;line-height:1.5;font-weight:bold;text-decoration:underline;overflow-wrap:anywhere;">{{ label }}</a>
+</td></tr></table>
+{%- endmacro %}
+{% macro fact(label, value) -%}
+<strong style="color:#334155;">{{ label }}:</strong> {{ value }}<br>
+{%- endmacro %}

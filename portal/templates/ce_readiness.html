@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% from "_macros.html" import kpi_summary %}
+{% block content %}
+<div class="page-head">
+  <p class="page-kicker">Endpoint assurance</p>
+  <div class="page-head__title">
+    <h1>Cyber Essentials readiness</h1>
+  </div>
+  <p class="meta">
+    Generated {{ generated_at | humandate(true) }} UTC
+    &middot; CVE matching: <span class="pill {{ cve_matching.pill }}">{{ cve_matching.label }}</span>
+    {%- if cve_matching.reason_text %} ({{ cve_matching.reason_text }}){% endif -%}
+  </p>
+</div>
+
+{#- PAT-1927: counts only, exactly the contract's estate block - devices
+   total, not passing, unknown, no outstanding items evidenced, and
+   retired excluded. No pass/fail figure is derived here. #}
+{% call kpi_summary([
+  ('Devices total', estate.devices_total, ''),
+  ('Not passing', estate.not_passing, 'bad-text' if estate.not_passing else ''),
+  ('Unknown', estate.unknown, 'warn-text' if estate.unknown else ''),
+  ('No outstanding items evidenced', estate.no_outstanding_items_evidenced, ''),
+  ('Retired excluded', estate.retired_excluded, ''),
+], 'Counts only. "No outstanding items evidenced" means nothing outstanding was found in the evidence Patched holds, which is not the same as nothing outstanding.') %}<a class="btn btn-small" href="{{ pdf_url }}">Download evidence pack (PDF)</a><a class="btn btn-small" href="{{ csv_url }}">Download CSV</a>{% endcall %}
+
+{#- Plain explanation (PAT-1927): what CE v3.3 requires, in plain words,
+   and the wording rule this whole page follows - state what the evidence
+   shows, never a verdict. #}
+<section class="card" aria-labelledby="ce-readiness-explainer-heading">
+  <h2 id="ce-readiness-explainer-heading">What this page shows</h2>
+  <p>Under Cyber Essentials v3.3, a critical or high severity update outside 14 days of its advisory is an automatic failure, and Cyber Essentials treats an unknown or non-reporting device as not passing. This page states what the evidence Patched holds shows for each device, not a certification verdict. Only a Cyber Essentials assessor certifies an estate, and Patched does not close the 14-day obligation for you. Remediation is routed through your own Intune, Jamf, Patch My PC or Robopack.</p>
+  <p>Due dates on this page are counted from when each advisory was published, not from when a vendor actually shipped the fix. This can make an item look more overdue than it really is against the true fix release date.</p>
+</section>
+
+<section class="card card-table" aria-labelledby="ce-readiness-devices-heading">
+  <h2 id="ce-readiness-devices-heading">Devices</h2>
+  {% if devices %}
+  <div class="table-scroll">
+  <table class="data-table table-stack ce-readiness-table">
+    <thead>
+      <tr>
+        <th>Hostname</th>
+        <th>Platform</th>
+        <th>State</th>
+        <th>Reporting</th>
+        <th>Overdue items</th>
+        <th>Controls not passing / not evidenced</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in devices %}
+      <tr>
+        <td data-label="Hostname" class="mono">{{ d.hostname }}</td>
+        <td data-label="Platform">{{ d.platform_label }}</td>
+        <td data-label="State">
+          <span class="pill {{ d.state_pill }}">{{ d.state_label }}</span>
+          {% if d.state_reasons %}
+          <p class="meta ce-readiness-reasons">{{ d.state_reasons | join('; ') | capitalize }}.</p>
+          {% endif %}
+        </td>
+        <td data-label="Reporting">
+          <span class="pill {{ d.reporting_pill }}">{{ d.reporting_bucket_label }}</span>
+          <p class="meta">Last seen {% if d.last_seen %}{{ d.last_seen | humandate_nowrap(true) }} UTC{% else %}not recorded{% endif %}</p>
+        </td>
+        <td data-label="Overdue items">{{ d.overdue_count }}</td>
+        <td data-label="Controls not passing / not evidenced">
+          {% if d.controls_not_passing or d.controls_not_evidenced %}
+          {% for c in d.controls_not_passing %}<span class="pill {{ c.pill }}">{{ c.control_label }}</span>{% endfor %}
+          {% for c in d.controls_not_evidenced %}<span class="pill {{ c.pill }}">{{ c.control_label }}</span>{% endfor %}
+          {% else %}
+          <span class="meta">None</span>
+          {% endif %}
+        </td>
+      </tr>
+      <tr class="row-summary ce-readiness-detail-row">
+        <td colspan="6">
+          <details>
+            <summary>{{ d.rows | length }} item{{ '' if d.rows | length == 1 else 's' }}, {{ d.controls | length - d.controls_not_evidenced | length }} of {{ d.controls | length }} control{{ '' if d.controls | length == 1 else 's' }} evidenced</summary>
+            {% if d.rows %}
+            <div class="table-scroll">
+            <table class="data-table table-stack ce-readiness-items-table">
+              <thead>
+                <tr>
+                  <th>CVE</th><th>Severity</th><th>Product</th><th>Installed</th><th>Fixed</th>
+                  <th>Due date</th><th>Days overdue</th><th>KEV</th><th>Due basis</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in d.rows %}
+                <tr>
+                  <td data-label="CVE" class="mono"><a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ item.cve_id }}" target="_blank" rel="noopener noreferrer">{{ item.cve_id }}</a></td>
+                  <td data-label="Severity"><span class="pill pill-{{ item.severity | lower }}">{{ item.severity | capitalize }}</span></td>
+                  <td data-label="Product">{{ item.product }}</td>
+                  <td data-label="Installed" class="mono cell-version" title="{{ item.installed_version }}">{{ item.installed_version }}</td>
+                  <td data-label="Fixed" class="mono cell-version"{% if item.fixed_version %} title="{{ item.fixed_version }}"{% endif %}>{{ item.fixed_version or '-' }}</td>
+                  <td data-label="Due date" class="mono">{% if item.due_at %}<span class="nowrap">{{ item.due_at | humandate }}</span>{% else %}-{% endif %}</td>
+                  <td data-label="Days overdue">{{ item.days_overdue if item.days_overdue is not none else '-' }}</td>
+                  <td data-label="KEV"><span class="pill {{ item.kev.pill }}">{{ item.kev.label }}</span></td>
+                  <td data-label="Due basis" class="meta">{{ item.due_basis_label or '-' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            </div>
+            {% else %}
+            <p class="empty">No outstanding items for this device in the evidence Patched holds.</p>
+            {% endif %}
+            {% if d.controls %}
+            <div class="table-scroll">
+            <table class="data-table table-stack ce-readiness-controls-table">
+              <thead><tr><th>Control</th><th>Category</th><th>State</th><th>Reason</th></tr></thead>
+              <tbody>
+                {% for c in d.controls %}
+                <tr>
+                  <td data-label="Control">{{ c.control_label }}</td>
+                  <td data-label="Category">{{ c.category_label or '-' }}</td>
+                  <td data-label="State"><span class="pill {{ c.pill }}">{{ c.label }}</span></td>
+                  <td data-label="Reason" class="meta">{{ c.reason_text or '-' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            </div>
+            {% else %}
+            <p class="empty">No controls are evidenced for this platform.</p>
+            {% endif %}
+          </details>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">No devices are currently known.</p>
+  {% endif %}
+</section>
+{% endblock %}

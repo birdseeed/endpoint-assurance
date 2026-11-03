@@ -1,0 +1,23 @@
+{
+  "label": "cloudflarewarp",
+  "name": "Cloudflare_WARP",
+  "type": "pkg",
+  "app_path": "/Applications/Cloudflare_WARP.app",
+  "expected_team_id": "68WVV388M8",
+  "download": {
+    "method": "static",
+    "url": "https://1111-releases.cloudflareclient.com/mac/latest"
+  },
+  "version": {
+    "source": "http-headers"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

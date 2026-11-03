@@ -1,0 +1,23 @@
+{
+  "label": "vonagebusiness",
+  "name": "Vonage Business",
+  "type": "dmg",
+  "app_path": "/Applications/Vonage Business.app",
+  "expected_team_id": "E37FZSUGQP",
+  "download": {
+    "method": "static",
+    "url": "https://vbc-downloads.vonage.com/mac/VonageBusinessSetup.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}

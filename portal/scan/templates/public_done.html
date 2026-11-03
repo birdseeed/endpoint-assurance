@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scan in progress | Patched.im</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="icon" type="image/svg+xml" href="{{ static_url('favicon.svg') }}">
+<link rel="stylesheet" href="{{ static_url('css/public-brand.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/site.css') }}">
+<style>
+.pub-spinner {
+  width: 48px; height: 48px;
+  border: 4px solid var(--slate-dim, rgba(255,255,255,.15));
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  margin: 0 auto 24px;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="pub-page">
+{% include "_site_nav.html" %}
+  <main class="scan-main">
+    <div class="scan-wrap" style="text-align:center">
+
+      <!-- scanning state (shown by default; JS swaps it out) -->
+      <div id="state-scanning">
+        <div class="pub-spinner"></div>
+        <h1 class="pub-page-title">Scanning your estate&hellip;</h1>
+        <p class="pub-lede">Processing the export for <b>{{ company }}</b>. This usually takes a few minutes.</p>
+        <p style="color:var(--on-slate-mute);font-size:15px;margin:0 0 14px;">We&rsquo;ll also email a copy to <b>{{ email_masked }}</b> as a backup.</p>
+      </div>
+
+      <!-- complete state (hidden until ready) -->
+      <div id="state-complete" style="display:none">
+        <div class="pub-tick">&#10003;</div>
+        <h1 class="pub-page-title">Your report is ready</h1>
+        <p class="pub-lede">Scan complete for <b>{{ company }}</b>.</p>
+        <a id="download-btn" href="#" class="pub-btn" style="display:inline-block;margin:20px 0 8px;text-decoration:none">Download report (.docx)</a>
+        <p style="color:var(--on-slate-mute);font-size:13px;margin:0;">A copy has also been sent to <b>{{ email_masked }}</b>.</p>
+      </div>
+
+      <!-- error state (hidden unless scan failed) -->
+      <div id="state-error" style="display:none">
+        <div class="pub-tick" style="opacity:.6">&#x2717;</div>
+        <h1 class="pub-page-title">Scan failed</h1>
+        <p class="pub-lede" id="error-detail">Something went wrong processing your export. The report could not be generated.</p>
+        <p style="font-size:14px;color:var(--on-slate-mute);">Please <a href="/public/scan">try again</a> or email <a href="mailto:hello@patched.im">hello@patched.im</a> if the problem persists.</p>
+      </div>
+
+    </div>
+  </main>
+{% include "_site_footer.html" %}
+</div>
+<script>document.querySelectorAll('[data-year]').forEach(function(e){e.textContent=new Date().getFullYear();});</script>
+<script>
+(function() {
+  var scanId = {{ scan_id | tojson }};
+  var pollInterval = 4000;
+  var maxPolls = 90; // ~6 minutes
+  var polls = 0;
+  var timer = null;
+
+  function show(id) {
+    ['state-scanning','state-complete','state-error'].forEach(function(s) {
+      document.getElementById(s).style.display = (s === id) ? '' : 'none';
+    });
+  }
+
+  function showError(msg) {
+    document.getElementById('error-detail').textContent = msg;
+    show('state-error');
+  }
+
+  function poll() {
+    polls++;
+    fetch('/public/scan/status/' + encodeURIComponent(scanId))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.status === 'complete' && data.download_url) {
+          clearTimeout(timer);
+          document.getElementById('download-btn').href = data.download_url;
+          show('state-complete');
+        } else if (data.status === 'complete') {
+          clearTimeout(timer);
+          showError("Your report finished processing but the download link isn't ready yet. Please refresh this page in a moment, or contact hello@patched.im.");
+        } else if (data.status === 'timeout') {
+          clearTimeout(timer);
+          showError("This scan took longer than we allow and was stopped. Your uploaded files have been deleted for privacy — please try again, or email hello@patched.im if it keeps happening.");
+        } else if (data.status === 'error' || data.status === 'deleted') {
+          clearTimeout(timer);
+          showError('Something went wrong processing your export. The report could not be generated.');
+        } else if (data.status === 'not_found') {
+          clearTimeout(timer);
+          showError("We couldn't find that scan any more. It may have expired. Please start a new one.");
+        } else if (polls < maxPolls) {
+          timer = setTimeout(poll, pollInterval);
+        } else {
+          showError("This is taking longer than we expected. We'll email your report once it's ready — no need to keep this page open.");
+        }
+      })
+      .catch(function() {
+        if (polls < maxPolls) {
+          timer = setTimeout(poll, pollInterval);
+        } else {
+          showError('We lost contact with the server while checking your scan status. Refresh the page to check again, or wait for the email copy.');
+        }
+      });
+  }
+
+  timer = setTimeout(poll, pollInterval);
+})();
+</script>
+</body>
+</html>

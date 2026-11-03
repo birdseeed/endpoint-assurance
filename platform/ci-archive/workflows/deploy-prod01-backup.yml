@@ -1,0 +1,102 @@
+name: deploy-prod01-backup
+
+# Deploys the prod-01 backup system to patched-prod-01 whenever the artefacts change on main.
+# Uses Tailscale to reach the box (it is not internet-exposed).
+#
+# Required GitHub secrets (all set as org-level secrets — no repo-level setup needed):
+# TS_OAUTH_CLIENT_ID — Tailscale OAuth client ID (tag:ci, ephemeral)
+# TS_OAUTH_SECRET — Tailscale OAuth client secret
+# DEPLOY_SSH_KEY — ed25519 private key authorised as root on prod boxes
+#
+# One-time setup (already done):
+#   1. Tailscale OAuth client kYQAnaAz8211CNTRL already wired to TS_OAUTH_CLIENT_ID + TS_OAUTH_SECRET.
+#   2. DEPLOY_SSH_KEY public key must be in /root/.ssh/authorized_keys on patched-prod-01.
+#   3. Apply the updated tailscale-acl.json (tag:ci SSH rule) in the Tailscale admin console.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'api-vps-artefacts/prod-01-backup/**'
+      - '.github/workflows/deploy-prod01-backup.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Verify root-owned operational script path
+        run: |
+          python3 -m unittest deploy.api-01.test_pat1788_prod01_backup_operational_path -v
+          python3 -m unittest deploy.api-01.test_pat1790_prod01_backup_db_validation -v
+          python3 -m unittest deploy.api-01.test_pat2310_deploy_ownership_guard -v
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          # Ephemeral — node is removed from the tailnet when the job ends.
+          # key-expiry-disabled not needed for ephemeral nodes.
+
+      - name: Copy artefacts to prod-01
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        # PAT-2312: --chown=root:root. Root runs install.sh from this
+        # directory. Without --chown `rsync -a` gave the directory and every
+        # file in it the runner's uid, 1001, which on prod-01 is the
+        # `patched` account, so that account could have rewritten what root
+        # runs next. With -a, rsync resets owner and group even on files
+        # whose content has not changed, and on the directory itself (a
+        # --dry-run --itemize-changes with rsync 3.2.7 on the box showed
+        # `.d....og... ./` and `.f....og...` for all eight files), so the
+        # tree already there as 1001 is fixed by this step before the check
+        # below runs. That is why this workflow needs no reclaim step.
+        run: |
+          install -m 600 <(printf '%s' "$SSH_KEY") /tmp/prod01_key
+          rsync -av --delete --chown=root:root \
+            -e "ssh -i /tmp/prod01_key -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15" \
+            api-vps-artefacts/prod-01-backup/ \
+            root@patched-prod-01:/opt/patched-backup-setup/
+
+      - name: Check root-run paths on prod-01 are root-owned before install.sh runs
+        # PAT-2312: fails the deploy, before root runs install.sh, if
+        # anything under /opt/patched-backup-setup or
+        # /usr/local/libexec/patched-prod-backup (where install.sh puts the
+        # scripts the backup and restore-drill units run as root) is a
+        # symlink, owned by a uid with no passwd entry or by anyone but
+        # root, or writable by group or other. The same check deploy-api-01
+        # runs (PAT-2310), with the prod-01 path set. It pipes the RUNNER's
+        # copy of the check to the box (`bash -s < file`) rather than
+        # running a copy on the box, so nothing on the box can edit it into
+        # passing; there is no box copy. `env -i` with a fixed PATH.
+        # ssh itself exits 255 on a connection failure, which the check
+        # never does, so that case is named as what it is.
+        run: |
+          rc=0
+          ssh -i /tmp/prod01_key \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-prod-01 \
+            '/usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --noprofile --norc -s -- check --box prod-01' \
+            < deploy/api-01/deploy-ownership-guard.sh || rc=$?
+          if [ "$rc" -eq 255 ]; then
+            echo "::error::Could not reach prod-01 to run the ownership check. This is an SSH/network failure, NOT an ownership finding."
+          fi
+          exit "$rc"
+
+      - name: Run install.sh on prod-01
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          ssh -i /tmp/prod01_key \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 \
+            root@patched-prod-01 \
+            'bash /opt/patched-backup-setup/install.sh'

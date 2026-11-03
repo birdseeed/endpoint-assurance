@@ -1,0 +1,84 @@
+#!/bin/bash
+# Patched.im Dashboard — post-receive deploy hook (PAT-909, version-controlled).
+#
+# Installed at /opt/git/dashboard.git/hooks/post-receive on patched-prod-01.
+# See deploy/RUNBOOK.md for the install procedure (backup-first, exact
+# commands, and the verification steps to run after installing).
+#
+# Deploy model: push-to-mirror (PAT-617). GitHub Actions (deploy.yml), or a
+# manual `git push root@patched-prod-01:/opt/git/dashboard.git main`, pushes
+# to this bare mirror over Tailscale. This hook reacts to that push and
+# drives the deploy of the checkout at /opt/patched-dashboard. It never
+# fetches from GitHub on the box — deploy keys are disabled org-wide
+# (PAT-617), so the box cannot pull from GitHub; that direction is
+# push-only, box-ward.
+#
+# This hook runs as whatever user received the push over SSH. On
+# patched-prod-01 that's root (deploy.yml and the manual push both connect
+# as root@patched-prod-01), the same as the previous raw hook this replaces
+# — `systemctl restart` requires that, and nothing here changes the
+# privilege model.
+#
+# All deploy logic (pull/reset, requirements, restart, smoke test,
+# auto-rollback) lives in scripts/deploy.sh — one implementation, not
+# duplicated here. This hook's job is narrow: for each push to main, capture
+# the SHA that's actually checked out right now (before anything moves) and
+# hand off {new SHA, rollback-to SHA} to that script.
+#
+# TWO TIMING PROPERTIES THAT SURPRISE PEOPLE (PAT-1441)
+#
+# 1. A change to scripts/deploy.sh takes effect one deploy LATE. This hook
+#    execs $REPO_DIR/scripts/deploy.sh, and the `git reset --hard` that brings
+#    the new commit into the checkout happens INSIDE that script -- so the
+#    version running during a deploy is always the version that was on the box
+#    BEFORE it. This is inherent to a script that rewrites itself mid-run and
+#    is not worth engineering around, but it does mean: after shipping a
+#    deploy.sh change, do not conclude it is broken because the deploy that
+#    shipped it did not exhibit the new behaviour. The next one will.
+#
+# 2. This hook does not fire at all when the push moves no ref. `git push`
+#    with nothing new prints "Everything up-to-date" and sends nothing, so
+#    re-dispatching the deploy workflow to pick up (1) runs no code whatsoever
+#    -- not "runs and exits early". scripts/deploy.sh now reconciles box-side
+#    config before its own no-op guard, and .github/workflows/deploy.yml
+#    detects the no-op push and invokes the script directly, so drift is still
+#    recoverable without inventing a commit. See PAT-1441 for the incident:
+#    a hardened systemd unit shipped, the deploy went green, and the box kept
+#    running the old unit.
+set -e
+unset GIT_DIR GIT_WORK_TREE
+
+REPO_DIR="${DEPLOY_REPO_DIR:-/opt/patched-dashboard}"
+DEPLOY_SCRIPT="$REPO_DIR/scripts/deploy.sh"
+
+while read -r oldrev newrev refname; do
+    if [ "$refname" = "refs/heads/main" ]; then
+        echo "==> Deploying main ($newrev)..."
+
+        if [ ! -x "$DEPLOY_SCRIPT" ]; then
+            echo "==> ERROR: deploy script not found or not executable at $DEPLOY_SCRIPT" >&2
+            echo "==> Push accepted (objects are in the mirror) but nothing was deployed." >&2
+            exit 1
+        fi
+
+        # The currently-deployed SHA per the checkout itself, not the ref's
+        # pre-push value (oldrev) — these are normally the same, but reading
+        # the checkout directly is correct even if it ever drifted from the
+        # mirror (a manual scp hotfix, a hand-run standalone deploy, etc).
+        CURRENT_DEPLOYED=$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null || echo "$oldrev")
+        echo "==> Currently deployed: $CURRENT_DEPLOYED (pre-push ref was $oldrev)"
+
+        set +e
+        "$DEPLOY_SCRIPT" --from-hook "$newrev" --rollback-to "$CURRENT_DEPLOYED"
+        STATUS=$?
+        set -e
+
+        if [ "$STATUS" -ne 0 ]; then
+            echo "==> Deploy FAILED (exit $STATUS). See /var/log/patched-deploy.log for detail." >&2
+            echo "==> Push accepted (objects are in the mirror) but the working deploy did not change to $newrev. See the log for whether it rolled back cleanly." >&2
+            exit "$STATUS"
+        fi
+
+        echo "==> Deploy complete: $(git -C "$REPO_DIR" rev-parse HEAD)"
+    fi
+done

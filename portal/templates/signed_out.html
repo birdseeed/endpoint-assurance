@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card card-narrow card-center">
+  <h1>Sign in to Patched</h1>
+  <p>The Patched portal is for customers with a linked estate. Sign in to continue.</p>
+  <p><a class="btn btn-primary" href="{{ sign_in_url }}">Sign in</a></p>
+  <p class="meta">Not sure you have access? Contact <a href="mailto:{{ support_email }}">{{ support_email }}</a>.</p>
+</div>
+{% endblock %}

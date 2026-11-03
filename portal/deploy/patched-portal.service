@@ -1,0 +1,32 @@
+[Unit]
+Description=Patched customer portal (app.patched.im)
+After=network.target
+
+[Service]
+Type=simple
+User=portal
+Group=portal
+WorkingDirectory=/opt/patched-portal
+EnvironmentFile=/etc/patched-portal/env
+ExecStart=/opt/patched-portal/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+# Hardening — the portal is read-only and stateless, so lock it down hard.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

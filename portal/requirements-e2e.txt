@@ -1,0 +1,9 @@
+# Browser-driven E2E coverage for the portal (PAT-1021). Kept separate from
+# requirements.txt on purpose: Playwright and its Chromium download are only
+# needed for `pytest e2e/`, never for the app itself or the default `pytest`
+# run, so production installs and plain `pytest` never pull this in.
+#
+#   pip install -r requirements.txt -r requirements-e2e.txt
+#   python -m playwright install --with-deps chromium
+#   python -m pytest e2e/ -v
+playwright==1.47.0

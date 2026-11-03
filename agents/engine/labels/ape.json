@@ -1,0 +1,23 @@
+{
+  "label": "ape",
+  "name": "ApE",
+  "type": "dmg",
+  "app_path": "/Applications/ApE.app",
+  "expected_team_id": "F5459JB4SG",
+  "download": {
+    "method": "static",
+    "url": "https://jorgensen.biology.utah.edu/wayned/ape/Download/Mac/ApE_OSX_modern_current.dmg"
+  },
+  "version": {
+    "source": "resolved-source"
+  },
+  "blocking_processes": [],
+  "pinned_sha256": null,
+  "patched": {
+    "allowlisted": false,
+    "mirror": false,
+    "reviewed_by": "installomator-import",
+    "reviewed_at": null,
+    "notes": "Auto-converted from Installomator fragment. Team ID and URL require human review before setting allowlisted=true."
+  }
+}
